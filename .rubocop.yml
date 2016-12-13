@@ -1,0 +1,12 @@
+LineLength:
+  Enabled: false
+MethodLength:
+  Enabled: false
+AbcSize:
+  Enabled: false
+VariableName:
+  Enabled: false
+RedundantBegin:
+  Enabled: false
+AccessorMethodName:
+  Enabled: false
