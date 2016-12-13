@@ -15,8 +15,7 @@ credentials = node['azureCredentials']
 
 # get all necessary info from node
 cloud_name = node[:workorder][:cloud][:ciName]
-compute_service =
-  node[:workorder][:services][:compute][cloud_name][:ciAttributes]
+compute_service = node[:workorder][:services][:compute][cloud_name][:ciAttributes]
 nsPathParts = node[:workorder][:rfcCi][:nsPath].split('/')
 org = nsPathParts[1]
 assembly = nsPathParts[2]
@@ -28,16 +27,11 @@ subscription = compute_service[:subscription]
 network_security_group_name = node[:name]
 
 # Get resource group name
-resource_group_name =
-  AzureResources::ResourceGroup.get_name(org,
-                                         assembly,
-                                         platform_ci_id,
-                                         environment,
-                                         location)
+resource_group_name = AzureResources::ResourceGroup.get_name(org, assembly, platform_ci_id, environment, location)
 
  # Creating security rules objects
 nsg = AzureNetwork::NetworkSecurityGroup.new(credentials, subscription)
-nsg_result = nsg_result = nsg.delete_security_group(resource_group_name, network_security_group_name)
+nsg_result = nsg.delete_security_group(resource_group_name, network_security_group_name)
 
 if nsg_result.nil?
   Chef::Log.info("The network security group #{network_security_group_name} has been deleted")

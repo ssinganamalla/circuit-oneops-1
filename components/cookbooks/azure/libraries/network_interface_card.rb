@@ -13,18 +13,15 @@ module AzureNetwork
     def initialize(credentials, subscription_id)
       @creds = credentials
       @subscription = subscription_id
-      @client =
-        Azure::ARM::Network::NetworkResourceProviderClient.new(credentials)
+      @client = Azure::ARM::Network::NetworkManagementClient.new(credentials)
       @client.subscription_id = subscription_id
     end
 
     # define the NIC's IP Config
     def define_nic_ip_config(ip_type, subnet)
-      nic_ip_config_props =
-        Azure::ARM::Network::Models::NetworkInterfaceIpConfigurationPropertiesFormat.new
-      nic_ip_config_props.private_ipallocation_method =
-        Azure::ARM::Network::Models::IpAllocationMethod::Dynamic
-      nic_ip_config_props.subnet = subnet
+      nic_ip_config = Azure::ARM::Network::Models::NetworkInterfaceIpConfiguration.new
+      nic_ip_config.private_ipallocation_method = Azure::ARM::Network::Models::IpAllocationMethod::Dynamic
+      nic_ip_config.subnet = subnet
 
       if ip_type == 'public'
         publicip = AzureNetwork::PublicIp.new(@creds, @subscription)
@@ -32,32 +29,23 @@ module AzureNetwork
         # get public ip object
         public_ip_address = publicip.build_public_ip_object(@ci_id)
         # create public ip
-        public_ip_if =
-          publicip.create_update(@rg_name,
-                                 public_ip_address.name,
-                                 public_ip_address)
+        public_ip_if = publicip.create_update(@rg_name, public_ip_address.name, public_ip_address)
 
         # set the public ip on the nic ip config
-        nic_ip_config_props.public_ipaddress = public_ip_if
+        nic_ip_config.public_ipaddress = public_ip_if
       end
-      nic_ip_config =
-        Azure::ARM::Network::Models::NetworkInterfaceIpConfiguration.new
+
       nic_ip_config.name = Utils.get_component_name("privateip",@ci_id)
-      nic_ip_config.properties = nic_ip_config_props
       OOLog.info("NIC IP name is: #{nic_ip_config.name}")
       nic_ip_config
     end
 
     # define the NIC object
     def define_network_interface(nic_ip_config)
-      network_interface_props =
-        Azure::ARM::Network::Models::NetworkInterfacePropertiesFormat.new
-      network_interface_props.ip_configurations = [nic_ip_config]
-
       network_interface = Azure::ARM::Network::Models::NetworkInterface.new
       network_interface.location = @location
       network_interface.name = Utils.get_component_name("nic",@ci_id)
-      network_interface.properties = network_interface_props
+      network_interface.ip_configurations = [nic_ip_config]
 
       OOLog.info("Network Interface name is: #{network_interface.name}")
       network_interface
@@ -67,13 +55,11 @@ module AzureNetwork
       begin
         OOLog.info("Fetching NIC '#{nic_name}' ")
         start_time = Time.now.to_i
-        promise = @client.network_interfaces.get(@rg_name, nic_name)
-        response = promise.value!
-        result = response.body
+        response = @client.network_interfaces.get(@rg_name, nic_name)
         end_time = Time.now.to_i
         duration = end_time - start_time
         OOLog.info("operation took #{duration} seconds")
-        result
+        response
       rescue MsRestAzure::AzureOperationError => e
         OOLog.fatal("Error getting NIC: #{nic_name}. Excpetion: #{e.body}")
       rescue => ex
@@ -86,19 +72,12 @@ module AzureNetwork
       begin
         OOLog.info("Updating NIC '#{network_interface.name}' ")
         start_time = Time.now.to_i
-        promise =
-          @client.network_interfaces.create_or_update(@rg_name,
-                                                      network_interface.name,
-                                                      network_interface)
-
-        response = promise.value!
-        result = response.body
+        response = @client.network_interfaces.create_or_update(@rg_name, network_interface.name, network_interface)
         end_time = Time.now.to_i
         duration = end_time - start_time
         puts("operation took #{duration} seconds")
-        return result
         OOLog.info("NIC '#{network_interface.name}' was updated in #{duration} seconds")
-        result
+        response
       rescue MsRestAzure::AzureOperationError => e
         OOLog.fatal("Error creating/updating NIC.  Exception: #{e.body}")
       rescue => ex
@@ -146,11 +125,9 @@ module AzureNetwork
         end
       end
 
-      subnetlist = network.body.properties.subnets
+      subnetlist = network.body.subnets
       # get the subnet to use for the network
-      subnet =
-          subnet_cls.get_subnet_with_available_ips(subnetlist,
-                                                   express_route_enabled)
+      subnet = subnet_cls.get_subnet_with_available_ips(subnetlist, express_route_enabled)
 
       # define the NIC ip config object
       nic_ip_config = define_nic_ip_config(ip_type, subnet)
@@ -162,15 +139,14 @@ module AzureNetwork
       nsg = AzureNetwork::NetworkSecurityGroup.new(creds, subscription)
       network_security_group = nsg.get(@rg_name, security_group_name)
       if !network_security_group.nil?
-        network_interface.properties.network_security_group = network_security_group
+        network_interface.network_security_group = network_security_group
       end
 
       # create the nic
       nic = create_update(network_interface)
 
       # retrieve and set the private ip
-      @private_ip =
-          nic.properties.ip_configurations[0].properties.private_ipaddress
+      @private_ip = nic.ip_configurations[0].private_ipaddress
       OOLog.info('Private IP is: ' + @private_ip)
 
       # set the nic id on the network_interface object

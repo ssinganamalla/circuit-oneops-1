@@ -15,8 +15,7 @@ module AzureNetwork
     def initialize(creds, subscription)
       @creds = creds
       @subscription = subscription
-      @client =
-        Azure::ARM::Network::NetworkResourceProviderClient.new(creds)
+      @client = Azure::ARM::Network::NetworkManagementClient.new(creds)
       @client.subscription_id = subscription
     end
 
@@ -42,15 +41,11 @@ module AzureNetwork
       subnet.name = @name
       sub_nets = subnet.build_subnet_object
 
-      virtual_network_properties =
-        Azure::ARM::Network::Models::VirtualNetworkPropertiesFormat.new
-      virtual_network_properties.address_space = address_space
-      virtual_network_properties.dhcp_options = dhcp_options
-      virtual_network_properties.subnets = sub_nets
-
       virtual_network = Azure::ARM::Network::Models::VirtualNetwork.new
       virtual_network.location = @location
-      virtual_network.properties = virtual_network_properties
+      virtual_network.address_space = address_space
+      virtual_network.dhcp_options = dhcp_options
+      virtual_network.subnets = sub_nets
 
       virtual_network
     end
@@ -60,8 +55,7 @@ module AzureNetwork
       begin
         OOLog.info("Creating Virtual Network '#{@name}' ...")
         start_time = Time.now.to_i
-        promise = @client.virtual_networks.create_or_update(resource_group_name, @name, virtual_network)
-        response = promise.value!
+        response = @client.virtual_networks.create_or_update(resource_group_name, @name, virtual_network)
         end_time = Time.now.to_i
         duration = end_time - start_time
         OOLog.info('Successfully created/updated network name: ' + @name)
@@ -82,8 +76,7 @@ module AzureNetwork
         OOLog.info("Getting Virtual Network '#{@name}' ...")
         start_time = Time.now.to_i
 
-        promise = @client.virtual_networks.get(resource_group_name, @name)
-        response = promise.value!
+        response = @client.virtual_networks.get(resource_group_name, @name)
 
         end_time = Time.now.to_i
         duration = end_time - start_time
@@ -102,13 +95,11 @@ module AzureNetwork
       begin
         OOLog.info("Getting vnets from Resource Group '#{resource_group_name}' ...")
         start_time = Time.now.to_i
-        promise = @client.virtual_networks.list(resource_group_name)
-        response = promise.value!
-        result = response.body
+        response = @client.virtual_networks.list(resource_group_name)
         end_time = Time.now.to_i
         duration = end_time - start_time
         OOLog.info("operation took #{duration} seconds")
-        result
+        response
       rescue MsRestAzure::AzureOperationError => e
         OOLog.fatal("Error getting all vnets for resource group. Exception: #{e.body}")
       rescue => ex
@@ -121,13 +112,11 @@ module AzureNetwork
       begin
         OOLog.info("Getting subscription vnets ...")
         start_time = Time.now.to_i
-        promise = @client.virtual_networks.list_all()
-        response = promise.value!
-        result = response.body
+        response = @client.virtual_networks.list_all()
         end_time = Time.now.to_i
         duration = end_time - start_time
         OOLog.info("operation took #{duration} seconds")
-        result
+        response
       rescue MsRestAzure::AzureOperationError => e
         OOLog.fatal("Error getting all vnets for the sub. Exception: #{e.body}")
       rescue => ex
@@ -141,8 +130,7 @@ module AzureNetwork
 
       begin
         OOLog.info("Checking if Virtual Network '#{@name}' Exists! ...")
-        promise = @client.virtual_networks.get(resource_group_name, @name)
-        response = promise.value!
+        response = @client.virtual_networks.get(resource_group_name, @name)
         OOLog.info('VNET EXISTS!!')
         return true
       rescue MsRestAzure::AzureOperationError => e

@@ -59,11 +59,7 @@ end
 OOLog.info('ip_type: ' + ip_type)
 
 # get the credentials needed to call Azure SDK
-creds =
-  Utils.get_credentials(compute_service[:tenant_id],
-                        compute_service[:client_id],
-                        compute_service[:client_secret]
-                       )
+creds = Utils.get_credentials(compute_service[:tenant_id], compute_service[:client_id], compute_service[:client_secret])
 
 # must do this until all is refactored to use the util above.
 node.set['azureCredentials'] = creds
@@ -116,14 +112,12 @@ secgroup_name = node.workorder.payLoad.DependsOn[0]['ciName']
 
 # invoke class to build the network profile
 begin
-  network_interface_cls =
-    AzureNetwork::NetworkInterfaceCard.new(creds, subscription)
+  network_interface_cls = AzureNetwork::NetworkInterfaceCard.new(creds, subscription)
   network_interface_cls.location = location
   network_interface_cls.rg_name = resource_group_name
   network_interface_cls.ci_id = ci_id
 
-  network_profile =
-    network_interface_cls.build_network_profile(express_route_enabled,
+  network_profile = network_interface_cls.build_network_profile(express_route_enabled,
                                                 master_resource_group_name,
                                                 preconfigured_network_name,
                                                 network_address,
@@ -192,7 +186,7 @@ if ip_type == 'public'
     pip = AzureNetwork::PublicIp.new(creds,subscription)
     publicip_details = pip.get(resource_group_name, public_ip_name)
     publicip = publicip_details.response.body
-    obj=JSON.parse(publicip)
+    obj = JSON.parse(publicip)
     pubip_address = obj['properties']['ipAddress']
     OOLog.info("public ip found: #{pubip_address}")
     # set the public ip and dns record on stdout for the inductor

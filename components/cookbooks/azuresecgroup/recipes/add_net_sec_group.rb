@@ -15,8 +15,7 @@ credentials = node['azureCredentials']
 
 # get all necessary info from node
 cloud_name = node[:workorder][:cloud][:ciName]
-compute_service =
-  node[:workorder][:services][:compute][cloud_name][:ciAttributes]
+compute_service = node[:workorder][:services][:compute][cloud_name][:ciAttributes]
 nsPathParts = node[:workorder][:rfcCi][:nsPath].split('/')
 org = nsPathParts[1]
 assembly = nsPathParts[2]
@@ -28,12 +27,7 @@ subscription = compute_service[:subscription]
 network_security_group_name = node[:name]
 
 # Get resource group name
-resource_group_name =
-  AzureResources::ResourceGroup.get_name(org,
-                                         assembly,
-                                         platform_ci_id,
-                                         environment,
-                                         location)
+resource_group_name = AzureResources::ResourceGroup.get_name(org, assembly, platform_ci_id, environment, location)
 
 # Creating security rules objects
 nsg = AzureNetwork::NetworkSecurityGroup.new(credentials, subscription)
@@ -70,10 +64,7 @@ end
 
 parameters = NetworkSecurityGroup.new
 parameters.location = location
-
-nsg_props = NetworkSecurityGroupPropertiesFormat.new
-nsg_props.security_rules = sec_rules
-parameters.properties = nsg_props
+parameters.security_rules = sec_rules
 
 nsg_result = nsg.create_update(resource_group_name, network_security_group_name, parameters)
 
