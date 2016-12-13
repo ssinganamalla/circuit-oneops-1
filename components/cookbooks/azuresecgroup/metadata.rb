@@ -1,14 +1,14 @@
-name             "azuresecgroup"
-description      "Security group for Azure"
-version          "0.1"
-maintainer       "OneOps, Inc."
-maintainer_email "support@oneops.com"
-license          "Apache License, Version 2.0"
+name 'azuresecgroup'
+description 'Security group for Azure'
+version '0.1'
+maintainer 'OneOps, Inc.'
+maintainer_email 'support@oneops.com'
+license 'Apache License, Version 2.0'
 
 grouping 'default',
-  :access => "global",
+  :access => 'global',
   :packages => [ 'base', 'account', 'mgmt.catalog', 'mgmt.manifest', 'catalog', 'manifest' ]
 
 grouping 'bom',
-  :access => "global",
+  :access => 'global',
   :packages => [ 'bom' ]
