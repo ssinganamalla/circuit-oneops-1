@@ -16,8 +16,8 @@ module AzureNetwork
     # this will build the public_ip object to be used for creating a public
     # ip in azure
     def build_public_ip_object(ci_id)
-      public_ip_address = Azure::ARM::Network::Models::PublicIpAddress.new
-      public_ip_address.public_ipallocation_method = Azure::ARM::Network::Models::IpAllocationMethod::Dynamic
+      public_ip_address = Azure::ARM::Network::Models::PublicIPAddress.new
+      public_ip_address.public_ipallocation_method = Azure::ARM::Network::Models::IPAllocationMethod::Dynamic
       public_ip_address.location = @location
       public_ip_address.name = Utils.get_component_name('publicip', ci_id)
       OOLog.info("Public IP name is: #{public_ip_address.name}")
@@ -30,7 +30,7 @@ module AzureNetwork
       begin
         OOLog.info("Fetching public IP '#{public_ip_name}' from '#{resource_group_name}' ")
         start_time = Time.now.to_i
-        response = @client.public_ip_addresses.get(resource_group_name, public_ip_name)
+        response = @client.public_ipaddresses.get(resource_group_name, public_ip_name)
         end_time = Time.now.to_i
         duration = end_time - start_time
       rescue MsRestAzure::AzureOperationError => e
@@ -47,7 +47,7 @@ module AzureNetwork
       begin
         OOLog.info("Deleting public IP '#{public_ip_name}' from '#{resource_group_name}' ")
         start_time = Time.now.to_i
-        response = @client.public_ip_addresses.delete(resource_group_name, public_ip_name)
+        response = @client.public_ipaddresses.delete(resource_group_name, public_ip_name)
         end_time = Time.now.to_i
         duration = end_time - start_time
       rescue MsRestAzure::AzureOperationError => e
@@ -66,7 +66,7 @@ module AzureNetwork
       begin
         OOLog.info("Creating/Updating public IP '#{public_ip_name}' from '#{resource_group_name}' ")
         start_time = Time.now.to_i
-        response = @client.public_ip_addresses.create_or_update(resource_group_name, public_ip_name, public_ip_address)
+        response = @client.public_ipaddresses.create_or_update(resource_group_name, public_ip_name, public_ip_address)
         end_time = Time.now.to_i
         duration = end_time - start_time
       rescue MsRestAzure::AzureOperationError => ex
@@ -84,7 +84,7 @@ module AzureNetwork
       begin
         OOLog.info("Checking existance of public IP '#{public_ip_name}' in '#{resource_group_name}' ")
         start_time = Time.now.to_i
-        @client.public_ip_addresses.get(resource_group_name, public_ip_name)
+        @client.public_ipaddresses.get(resource_group_name, public_ip_name)
         end_time = Time.now.to_i
         duration = end_time - start_time
       rescue MsRestAzure::AzureOperationError => e

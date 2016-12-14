@@ -16,8 +16,8 @@ module AzureNetwork
 
     # define the NIC's IP Config
     def define_nic_ip_config(ip_type, subnet)
-      nic_ip_config = Azure::ARM::Network::Models::NetworkInterfaceIpConfiguration.new
-      nic_ip_config.private_ipallocation_method = Azure::ARM::Network::Models::IpAllocationMethod::Dynamic
+      nic_ip_config = Azure::ARM::Network::Models::NetworkInterfaceIPConfiguration.new
+      nic_ip_config.private_ipallocation_method = Azure::ARM::Network::Models::IPAllocationMethod::Dynamic
       nic_ip_config.subnet = subnet
 
       if ip_type == 'public'
@@ -121,7 +121,7 @@ module AzureNetwork
         end
       end
 
-      subnetlist = network.body.subnets
+      subnetlist = network.subnets
       # get the subnet to use for the network
       subnet = subnet_cls.get_subnet_with_available_ips(subnetlist, express_route_enabled)
 

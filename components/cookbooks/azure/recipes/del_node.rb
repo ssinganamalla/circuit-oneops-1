@@ -41,10 +41,9 @@ end
 def delete_nic(credentials, subscription_id, resource_group_name, nic_name)
   begin
     start_time = Time.now.to_i
-    networkclient = NetworkResourceProviderClient.new(credentials)
+    networkclient = NetworkManagementClient.new(credentials)
     networkclient.subscription_id = subscription_id
-    promise = networkclient.network_interfaces.delete(resource_group_name, nic_name)
-    result = promise.value!
+    networkclient.network_interfaces.delete(resource_group_name, nic_name)
     end_time = Time.now.to_i
     duration = end_time - start_time
     Chef::Log.info("Deleting NIC '#{nic_name}' in #{duration} seconds")
@@ -59,10 +58,9 @@ end
 def delete_publicip(credentials,subscription_id,resource_group_name, public_ip_name)
   begin
     start_time = Time.now.to_i
-    networkclient = NetworkResourceProviderClient.new(credentials)
+    networkclient = NetworkManagementClient.new(credentials)
     networkclient.subscription_id = subscription_id
-    promise = networkclient.public_ip_addresses.delete(resource_group_name, public_ip_name)
-    details = promise.value!
+    networkclient.public_ip_addresses.delete(resource_group_name, public_ip_name)
     end_time = Time.now.to_i
     duration = end_time - start_time
     Chef::Log.info("Deleting public ip '#{public_ip_name}' in #{duration} seconds")

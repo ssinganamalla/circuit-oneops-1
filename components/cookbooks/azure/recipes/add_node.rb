@@ -116,7 +116,6 @@ begin
   network_interface_cls.location = location
   network_interface_cls.rg_name = resource_group_name
   network_interface_cls.ci_id = ci_id
-
   network_profile = network_interface_cls.build_network_profile(express_route_enabled,
                                                 master_resource_group_name,
                                                 preconfigured_network_name,

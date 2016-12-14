@@ -21,10 +21,10 @@ module AzureNetwork
     def build_subnet_object
       sub_nets = []
       @sub_address.each do |sub_address|
-        OOLog.info('sub_address[' + i.to_s + ']: ' + sub_address[i].strip)
+        OOLog.info('sub_address[' + @sub_address.index(sub_address).to_s + ']: ' + sub_address.strip)
         subnet = Azure::ARM::Network::Models::Subnet.new
-        subnet.name = 'subnet_' + i.to_s + '_' + @name
-        subnet.address_prefix = sub_address[i].strip
+        subnet.name = 'subnet_' + @sub_address.index(sub_address).to_s + '_' + @name
+        subnet.address_prefix = sub_address.strip
         sub_nets.push(subnet)
         OOLog.info('Subnet name is: ' + subnet.name)
       end
@@ -35,11 +35,10 @@ module AzureNetwork
     # ips
     def get_subnet_with_available_ips(subnets, express_route_enabled)
       subnets.each do |subnet|
-        next if subnet.name.casecmp('gatewaysubnet')
+        next if subnet.name.downcase == 'gatewaysubnet'
 
         OOLog.info('checking for ip availability in ' + subnet.name)
-        address_prefix = subnet.properties.address_prefix
-
+        address_prefix = subnet.address_prefix
         if express_route_enabled == 'true'
           # Broadcast(1) + Gateway(1) + azure express routes(3) = 5
           total_num_of_ips_possible = (2**(32 - address_prefix.split('/').last.to_i)) - 5

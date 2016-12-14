@@ -25,7 +25,7 @@ module AzureNetwork
 
       ns_list = []
       @dns_list.each do |dns_list|
-        OOLog.info('dns address[' + i.to_s + ']: ' + dns_list[i].strip)
+        OOLog.info('dns address[' + @dns_list.index(dns_list) + ']: ' + dns_list.strip)
         ns_list.push(dns_list.strip)
       end
       dhcp_options = Azure::ARM::Network::Models::DhcpOptions.new
