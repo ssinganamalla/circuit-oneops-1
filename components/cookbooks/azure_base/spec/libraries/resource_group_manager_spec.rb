@@ -5,13 +5,14 @@ require File.expand_path('../../../libraries/resource_group_manager.rb', __FILE_
 
 describe AzureBase::ResourceGroupManager do
   before do
-    @azure_credentials = YAML.load_file('spec/azure_creds.yml')
+    @azure_creds = YAML.load_file('spec/azure_creds.yml')
 
     node_test = {
+      asdf: sdf
 
     }
 
-    rg_mgr = AzureBase::ResourceGroupManager.new()
+    rg_mgr = AzureBase::ResourceGroupManager.new(node_test)
   end
 
   context 'creating rg_mgr' do
