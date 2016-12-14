@@ -1,12 +1,9 @@
 # module to contain classes for dealing with the Azure Network features.
 require 'azure_mgmt_network'
 module AzureNetwork
-
   # thie class has all the methods in it to handle Azure's subnet.
   class Subnet
-
     attr_accessor :sub_address, :name
-
     attr_reader :creds, :subscription
 
     # Include SDK modules to ease access to network classes.
@@ -22,12 +19,12 @@ module AzureNetwork
 
     # this builds an array of subnets to be used for creating a vnet.
     def build_subnet_object
-      sub_nets = Array.new
-      for i in 0..@sub_address.length-1
-        OOLog.info('sub_address[' + i.to_s + ']: ' + @sub_address[i].strip)
+      sub_nets = []
+      @sub_address.each do |sub_address|
+        OOLog.info('sub_address[' + i.to_s + ']: ' + sub_address[i].strip)
         subnet = Azure::ARM::Network::Models::Subnet.new
         subnet.name = 'subnet_' + i.to_s + '_' + @name
-        subnet.address_prefix = @sub_address[i].strip
+        subnet.address_prefix = sub_address[i].strip
         sub_nets.push(subnet)
         OOLog.info('Subnet name is: ' + subnet.name)
       end
@@ -38,33 +35,29 @@ module AzureNetwork
     # ips
     def get_subnet_with_available_ips(subnets, express_route_enabled)
       subnets.each do |subnet|
-        next if subnet.name.downcase == "gatewaysubnet"
+        next if subnet.name.casecmp('gatewaysubnet')
 
         OOLog.info('checking for ip availability in ' + subnet.name)
         address_prefix = subnet.properties.address_prefix
 
         if express_route_enabled == 'true'
-          #Broadcast(1)+Gateway(1)+azure express routes(3) = 5
-          total_num_of_ips_possible = (2 ** (32 - (address_prefix.split('/').last.to_i)))-5
+          # Broadcast(1) + Gateway(1) + azure express routes(3) = 5
+          total_num_of_ips_possible = (2**(32 - address_prefix.split('/').last.to_i)) - 5
         else
-          #Broadcast(1)+Gateway(1)
-          total_num_of_ips_possible = (2 ** (32 - (address_prefix.split('/').last.to_i)))-2
+          # Broadcast(1) + Gateway(1)
+          total_num_of_ips_possible = (2**(32 - address_prefix.split('/').last.to_i)) - 2
         end
-        OOLog.info("Total number of ips possible is: #{total_num_of_ips_possible.to_s}")
+        OOLog.info("Total number of ips possible is: #{total_num_of_ips_possible}")
 
-        if subnet.ip_configurations.nil?
-          no_ips_inuse = 0
-        else
-          no_ips_inuse = subnet.ip_configurations.length
-        end
-        OOLog.info("Num of ips in use: #{no_ips_inuse.to_s}")
+        no_ips_inuse = subnet.ip_configurations.nil? ? 0 : subnet.ip_configurations.length
+        OOLog.info("Num of ips in use: #{no_ips_inuse}")
 
-        remaining_ips = total_num_of_ips_possible - (no_ips_inuse)
+        remaining_ips = total_num_of_ips_possible - no_ips_inuse
         if remaining_ips == 0
           OOLog.info("No IP address remaining in the Subnet '#{subnet.name}'")
-          OOLog.info("Total number of subnets(subnet_name_list.count) = #{(subnets.count).to_s}")
+          OOLog.info("Total number of subnets(subnet_name_list.count) = #{subnets.count}")
           OOLog.info('checking the next subnet')
-          next #check the next subnet
+          next # check the next subnet
         else
           return subnet
         end
@@ -80,13 +73,13 @@ module AzureNetwork
         response = @client.subnets.list(resource_group_name, vnet_name)
         end_time = Time.now.to_i
         duration = end_time - start_time
-        OOLog("operation took #{duration} seconds")
-        response
       rescue MsRestAzure::AzureOperationError => e
         OOLog.fatal("Error getting all subnets for vnet. Exception: #{e.body}")
       rescue => ex
         OOLog.fatal("Error getting all subnets for vnet. Exception: #{ex.message}")
       end
+      OOLog("operation took #{duration} seconds")
+      response
     end
 
     # retrieve the subnet
@@ -97,15 +90,13 @@ module AzureNetwork
         response = @client.subnets.get(resource_group_name, vnet_name, subnet_name)
         end_time = Time.now.to_i
         duration = end_time - start_time
-        OOLog.info("operation took #{duration} seconds")
-        response
       rescue MsRestAzure::AzureOperationError => e
         OOLog.fatal("Error getting subnet.  Excpetion: #{e.body}")
       rescue => ex
         OOLog.fatal("Error getting subnet.  Excpetion: #{ex.message}")
       end
+      OOLog.info("operation took #{duration} seconds")
+      response
     end
-
   end
-
 end

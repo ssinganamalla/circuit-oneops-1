@@ -1,13 +1,10 @@
-#TODO: add checks in each method for rg_name
+# TODO: add checks in each method for rg_name
 require File.expand_path('../../../azuresecgroup/libraries/network_security_group.rb', __FILE__)
 # module to contain classes for dealing with the Azure Network features.
 module AzureNetwork
-
   # class to implement all functionality needed for an Azure NIC.
   class NetworkInterfaceCard
-
     attr_accessor :location, :rg_name, :private_ip, :profile, :ci_id
-
     attr_reader :creds, :subscription
 
     def initialize(credentials, subscription_id)
@@ -30,12 +27,11 @@ module AzureNetwork
         public_ip_address = publicip.build_public_ip_object(@ci_id)
         # create public ip
         public_ip_if = publicip.create_update(@rg_name, public_ip_address.name, public_ip_address)
-
         # set the public ip on the nic ip config
         nic_ip_config.public_ipaddress = public_ip_if
       end
 
-      nic_ip_config.name = Utils.get_component_name("privateip",@ci_id)
+      nic_ip_config.name = Utils.get_component_name('privateip', @ci_id)
       OOLog.info("NIC IP name is: #{nic_ip_config.name}")
       nic_ip_config
     end
@@ -44,7 +40,7 @@ module AzureNetwork
     def define_network_interface(nic_ip_config)
       network_interface = Azure::ARM::Network::Models::NetworkInterface.new
       network_interface.location = @location
-      network_interface.name = Utils.get_component_name("nic",@ci_id)
+      network_interface.name = Utils.get_component_name('nic', @ci_id)
       network_interface.ip_configurations = [nic_ip_config]
 
       OOLog.info("Network Interface name is: #{network_interface.name}")
@@ -58,13 +54,13 @@ module AzureNetwork
         response = @client.network_interfaces.get(@rg_name, nic_name)
         end_time = Time.now.to_i
         duration = end_time - start_time
-        OOLog.info("operation took #{duration} seconds")
-        response
       rescue MsRestAzure::AzureOperationError => e
         OOLog.fatal("Error getting NIC: #{nic_name}. Excpetion: #{e.body}")
       rescue => ex
         OOLog.fatal("Error getting NIC: #{nic_name}. Excpetion: #{ex.message}")
       end
+      OOLog.info("operation took #{duration} seconds")
+      response
     end
 
     # create or update the NIC
@@ -75,14 +71,14 @@ module AzureNetwork
         response = @client.network_interfaces.create_or_update(@rg_name, network_interface.name, network_interface)
         end_time = Time.now.to_i
         duration = end_time - start_time
-        puts("operation took #{duration} seconds")
-        OOLog.info("NIC '#{network_interface.name}' was updated in #{duration} seconds")
-        response
       rescue MsRestAzure::AzureOperationError => e
         OOLog.fatal("Error creating/updating NIC.  Exception: #{e.body}")
       rescue => ex
         OOLog.fatal("Error creating/updating NIC.  Exception: #{ex.message}")
       end
+      puts("operation took #{duration} seconds")
+      OOLog.info("NIC '#{network_interface.name}' was updated in #{duration} seconds")
+      response
     end
 
     # this manages building the network profile in preperation of creating
@@ -98,14 +94,14 @@ module AzureNetwork
       if express_route_enabled == 'true'
         OOLog.info("Master resource group: '#{master_rg}'")
         OOLog.info("Pre VNET: '#{pre_vnet}'")
-        #TODO add checks for master rg and preconf vnet
+        # TODO: add checks for master rg and preconf vnet
         virtual_network.name = pre_vnet
         # get the preconfigured vnet from Azure
         network = virtual_network.get(master_rg)
         # fail if we can't find a vnet
         OOLog.fatal('Expressroute requires preconfigured networks') if network.nil?
       else
-        network_name = 'vnet_'+ network_address.gsub('.','_').gsub('/', '_')
+        network_name = 'vnet_' + network_address.tr('.', '_').tr('/', '_')
         OOLog.info("Using RG: '#{@rg_name}' to find vnet: '#{network_name}'")
         virtual_network.name = network_name
         # network = virtual_network.get(@rg_name)
@@ -135,12 +131,10 @@ module AzureNetwork
       # define the nic
       network_interface = define_network_interface(nic_ip_config)
 
-      #include the network securtiry group to the network interface
+      # include the network securtiry group to the network interface
       nsg = AzureNetwork::NetworkSecurityGroup.new(creds, subscription)
       network_security_group = nsg.get(@rg_name, security_group_name)
-      if !network_security_group.nil?
-        network_interface.network_security_group = network_security_group
-      end
+      network_interface.network_security_group = network_security_group unless network_security_group.nil?
 
       # create the nic
       nic = create_update(network_interface)
@@ -159,6 +153,5 @@ module AzureNetwork
       # set the profile on the object.
       @profile = network_profile
     end
-
   end
 end
