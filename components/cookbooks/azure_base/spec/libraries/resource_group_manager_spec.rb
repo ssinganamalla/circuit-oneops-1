@@ -1,31 +1,80 @@
 require 'chefspec'
 
 require 'yaml'
+require 'json'
+
 require File.expand_path('../../../libraries/resource_group_manager.rb', __FILE__)
+require File.expand_path('../../../libraries/logger.rb', __FILE__)
+require File.expand_path('../../../libraries/utils.rb', __FILE__)
 
 describe AzureBase::ResourceGroupManager do
-  before do
-    @azure_creds = YAML.load_file('spec/azure_creds.yml')
+  let(:rg_mgr) do
+    workorder = File.read('spec/workorders/keypair.json')
+    workorder_hash = JSON.parse(workorder)
 
-    node_test = {
-      asdf: sdf
+    node = Chef::Node.new
+    node.normal = workorder_hash
 
-    }
-
-    rg_mgr = AzureBase::ResourceGroupManager.new(node_test)
+    AzureBase::ResourceGroupManager.new(node)
   end
 
-  context 'creating rg_mgr' do
-    context 'all three parameters are passed in' do
-      it 'uses those params to create resource group manager' do
+  describe '#initialize' do
+    context 'when object is instantiated' do
+      it 'creates rg_mgmt client' do
         expect(rg_mgr.client).not_to be_nil
       end
+    end
+  end
 
-      it 'creates a resource group and deletes it'
-        rg_mgr.add
-        expect(rg_mgr.exists?).to be true
-        rg_mgr.delete
-        expect(rg_mgr.exists?).to be false
+  describe '#exists?' do
+    context 'when called' do
+      it 'returns Boolean' do
+        is_bool = false
+        response = rg_mgr.exists?
+        if response.is_a?(TrueClass) || response.is_a?(FalseClass)
+          is_bool = true
+        end
+
+        expect(is_bool).to be true
+      end
+    end
+  end
+
+  describe '#add' do
+    context 'when resource group does not exist' do
+      it 'creates the resource group' do
+        unless rg_mgr.exists?
+          rg_mgr.add
+          expect(rg_mgr.exists?).to be true
+        end
+      end
+    end
+
+    context 'when resource group exists' do
+      it 'does nothing and moves on' do
+        if rg_mgr.exists?
+          rg_mgr.add
+          expect(rg_mgr.exists?).to be true
+        end
+      end
+    end
+  end
+
+  describe '#delete' do
+    context 'when resource group exists' do
+      it 'deletes the resource group' do
+        if rg_mgr.exists?
+          rg_mgr.delete
+          expect(rg_mgr.exists?).to be false
+        end
+      end
+    end
+
+    context 'when resource group does not exist' do
+      it 'throws exception' do
+        unless rg_mgr.exists?
+          expect { rg_mgr.delete }.to raise_error('no backtrace')
+        end
       end
     end
   end
