@@ -1,6 +1,9 @@
 require 'azure_mgmt_compute'
 require File.expand_path('../../libraries/resource_group_manager.rb', __FILE__)
 
+require File.expand_path('../../libraries/logger.rb', __FILE__)
+require File.expand_path('../../libraries/utils.rb', __FILE__)
+
 ::Chef::Recipe.send(:include, Azure::ARM::Compute)
 ::Chef::Recipe.send(:include, Azure::ARM::Compute::Models)
 

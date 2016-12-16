@@ -1,11 +1,8 @@
-require 'chefspec'
+require 'spec_helper'
 
-require 'yaml'
 require 'json'
 
 require File.expand_path('../../../libraries/resource_group_manager.rb', __FILE__)
-require File.expand_path('../../../libraries/logger.rb', __FILE__)
-require File.expand_path('../../../libraries/utils.rb', __FILE__)
 
 describe AzureBase::AzureBaseManager do
   let(:base_mgr) do
@@ -20,7 +17,7 @@ describe AzureBase::AzureBaseManager do
 
   describe '#initialize' do
     context 'when object is created' do
-      it 'creds are not nil' do
+      it 'creates token' do
         expect(base_mgr.creds).not_to be_nil
       end
     end

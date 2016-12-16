@@ -1,17 +1,17 @@
 require 'spec_helper'
 require 'json'
 
-require File.expand_path('../../../libraries/resource_group_manager.rb', __FILE__)
+require File.expand_path('../../../libraries/availability_set_manager.rb', __FILE__)
 
-describe AzureBase::ResourceGroupManager do
+describe AzureBase::AvailabilitySetManager do
   let(:rg_mgr) do
-    workorder = File.read('spec/workorders/keypair.json')
+    workorder = File.read('spec/workorders/compute.json')
     workorder_hash = JSON.parse(workorder)
 
     node = Chef::Node.new
     node.normal = workorder_hash
 
-    AzureBase::ResourceGroupManager.new(node)
+    AzureBase::AvailabilitySetManager.new(node)
   end
 
   describe '#initialize' do
