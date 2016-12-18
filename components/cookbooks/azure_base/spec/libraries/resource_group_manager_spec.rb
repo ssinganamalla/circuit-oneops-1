@@ -49,8 +49,7 @@ describe AzureBase::ResourceGroupManager do
     context 'when resource group exists' do
       it 'does nothing and moves on' do
         if rg_mgr.exists?
-          rg_mgr.add
-          expect(rg_mgr.exists?).to be true
+          expect { rg_mgr.add }.not_to raise_error()
         end
       end
     end
