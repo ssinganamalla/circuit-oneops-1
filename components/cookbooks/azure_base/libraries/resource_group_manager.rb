@@ -1,6 +1,9 @@
 require 'azure_mgmt_resources'
 require File.expand_path('../../libraries/azure_base_manager.rb', __FILE__)
 
+require File.expand_path('../../libraries/logger.rb', __FILE__)
+require File.expand_path('../../libraries/utils.rb', __FILE__)
+
 ::Chef::Recipe.send(:include, Azure::ARM::Resources)
 ::Chef::Recipe.send(:include, Azure::ARM::Resources::Models)
 
@@ -52,7 +55,7 @@ module AzureBase
           resource_group.location = @location
           response =
             @client.resource_groups.create_or_update(@rg_name,
-                                                     resource_group).value!
+                                                     resource_group)
           return response
         else
           OOLog.info("Resource Group, #{@rg_name} already exists.  Moving on...")
@@ -68,8 +71,8 @@ module AzureBase
     # if the resource group is not found it will return a nil.
     def exists?
       begin
-        response = @client.resource_groups.check_existence(@rg_name).value!
-        return response.body
+        response = @client.resource_groups.check_existence(@rg_name)
+        return response
       rescue MsRestAzure::AzureOperationError => e
         OOLog.fatal("Error checking resource group: #{@rg_name}. Exception: #{e.body}")
       rescue => ex
@@ -80,7 +83,8 @@ module AzureBase
     # This method will delete the resource group
     def delete
       begin
-        response = @client.resource_groups.delete(@rg_name).value!
+        response = @client.resource_groups.delete(@rg_name)
+        return response
       rescue MsRestAzure::AzureOperationError => e
         OOLog.fatal("Error deleting resource group: #{e.body}")
       rescue => ex

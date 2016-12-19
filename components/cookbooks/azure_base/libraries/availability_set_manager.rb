@@ -1,6 +1,9 @@
 require 'azure_mgmt_compute'
 require File.expand_path('../../libraries/resource_group_manager.rb', __FILE__)
 
+require File.expand_path('../../libraries/logger.rb', __FILE__)
+require File.expand_path('../../libraries/utils.rb', __FILE__)
+
 ::Chef::Recipe.send(:include, Azure::ARM::Compute)
 ::Chef::Recipe.send(:include, Azure::ARM::Compute::Models)
 
@@ -22,7 +25,7 @@ module AzureBase
     # will return whether or not the availability set exists.
     def get
       begin
-        promise = @client.availability_sets.get(@rg_name,@as_name).value!
+        promise = @client.availability_sets.get(@rg_name,@as_name)
         return promise
       rescue MsRestAzure::AzureOperationError => e
         # if the error is that the availability set doesn't exist,
@@ -54,7 +57,7 @@ module AzureBase
           response =
             @client.availability_sets.create_or_update(@rg_name,
                                                        @as_name,
-                                                       avail_set).value!
+                                                       avail_set)
           return response
         rescue MsRestAzure::AzureOperationError => e
           OOLog.fatal("Error adding an availability set: #{e.body}")
@@ -68,17 +71,16 @@ module AzureBase
 
     # create the properties object for creating availability sets
     def get_avail_set_props
-      avail_set_props =
-        Azure::ARM::Compute::Models::AvailabilitySetProperties.new
+      avail_set =
+        Azure::ARM::Compute::Models::AvailabilitySet.new
       # At least two domain faults
-      avail_set_props.platform_fault_domain_count = 2
-      avail_set_props.platform_update_domain_count = 2
+      avail_set.platform_fault_domain_count = 2
+      avail_set.platform_update_domain_count = 2
       # At this point we do not have virtual machines to include
-      avail_set_props.virtual_machines = []
-      avail_set_props.statuses = []
-      avail_set = Azure::ARM::Compute::Models::AvailabilitySet.new
+      avail_set.virtual_machines = []
+      avail_set.statuses = []
+
       avail_set.location = @location
-      avail_set.properties = avail_set_props
       return avail_set
     end
 

@@ -1,3 +1,5 @@
+require File.expand_path('../../libraries/logger.rb', __FILE__)
+
 module AzureBase
   # This is a base class that will handle grabbing information from the node
   # that all the recipes will use.
@@ -25,6 +27,7 @@ module AzureBase
       when /storage/
         service_name = 'storage'
       end
+
       OOLog.info("Service name is: #{service_name}")
 
       @service =
