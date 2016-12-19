@@ -3,6 +3,7 @@
 
 require File.expand_path('../../libraries/application_gateway.rb', __FILE__)
 require File.expand_path('../../../azure/libraries/public_ip.rb', __FILE__)
+gem 'azure_mgmt_network', '=0.8.0'
 require 'azure_mgmt_network'
 
 ::Chef::Recipe.send(:include, Utils)
@@ -55,7 +56,7 @@ begin
   credentials = Utils.get_credentials(tenant_id, client_id, client_secret)
   application_gateway = AzureNetwork::Gateway.new(resource_group_name, ag_name, credentials, subscription_id)
 
-  public_ip_name = Utils.get_component_name('lb_publicip', node.workorder.rfcCi.ciId)
+  public_ip_name = Utils.get_component_name('ag_publicip', node.workorder.rfcCi.ciId)
 
   application_gateway.delete
   public_ip_obj = AzureNetwork::PublicIp.new(credentials, subscription_id)

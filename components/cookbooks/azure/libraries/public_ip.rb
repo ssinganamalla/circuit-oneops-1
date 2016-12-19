@@ -18,15 +18,16 @@ module AzureNetwork
 
     # this will build the public_ip object to be used for creating a public
     # ip in azure
-    def build_public_ip_object(ci_id)
+    def build_public_ip_object(ci_id, name = 'publicip')
       public_ip_configs =
         Azure::ARM::Network::Models::PublicIpAddressPropertiesFormat.new
       public_ip_configs.public_ipallocation_method =
         Azure::ARM::Network::Models::IpAllocationMethod::Dynamic
 
+      public_ip_configs.idle_timeout_in_minutes = 5
       public_ip_address = Azure::ARM::Network::Models::PublicIpAddress.new
       public_ip_address.location = @location
-      public_ip_address.name = Utils.get_component_name('publicip',ci_id)
+      public_ip_address.name = Utils.get_component_name(name ,ci_id)
       public_ip_address.properties = public_ip_configs
       OOLog.info("Public IP name is: #{public_ip_address.name}")
       public_ip_address
