@@ -7,22 +7,22 @@ require 'azure_mgmt_storage'
 total_start_time = Time.now.to_i
 
 #set the proxy if it exists as a cloud var
-Utils.set_proxy(node.workorder.payLoad.OO_CLOUD_VARS)
+Utils.set_proxy(node['workorder']['payLoad']['OO_CLOUD_VARS'])
 
 ######################################
 # get everything needed from the node
 # and info that you will need for all the recipes
 ######################################
-cloud_name = node[:workorder][:cloud][:ciName]
+cloud_name = node['workorder']['cloud']['ciName']
 OOLog.info("Cloud Name: #{cloud_name}")
 compute_service =
-  node[:workorder][:services][:compute][cloud_name][:ciAttributes]
+  node['workorder']['services']['compute'][cloud_name]['ciAttributes']
 location = compute_service[:location]
 express_route_enabled = compute_service[:express_route_enabled]
 OOLog.info('Express Route is enabled: ' + express_route_enabled )
 subscription = compute_service[:subscription]
 OOLog.info("Subscription ID: #{subscription}")
-ci_id = node[:workorder][:rfcCi][:ciId]
+ci_id = node['workorder']['rfcCi']['ciId']
 OOLog.info("ci_id: #{ci_id.to_s}")
 
 # this is the resource group the preconfigured vnet will be in
@@ -30,7 +30,7 @@ master_resource_group_name = compute_service[:resource_group]
 # preconfigured vnet name
 preconfigured_network_name = compute_service[:network]
 
-#TODO:validate data entry with regex.
+# TODO:validate data entry with regex.
 # we get these values if it's NOT express route.
 network_address = compute_service[:network_address].strip
 subnet_address_list = (compute_service[:subnet_address]).split(',')
@@ -38,10 +38,10 @@ dns_list = (compute_service[:dns_ip]).split(',')
 
 initial_user = compute_service[:initial_user]
 # put initial_user on the node for the following recipes
-node.set[:initial_user] = initial_user
-keypair = node[:workorder][:payLoad][:SecuredBy].first
+node.set['initial_user'] = initial_user
+keypair = node['workorder']['payLoad']['SecuredBy'].first
 pub_key = keypair[:ciAttributes][:public]
-server_name = node[:server_name]
+server_name = node['server_name']
 #######################################
 
 # get platform resource group and availability set
@@ -59,11 +59,7 @@ end
 OOLog.info('ip_type: ' + ip_type)
 
 # get the credentials needed to call Azure SDK
-creds =
-  Utils.get_credentials(compute_service[:tenant_id],
-                        compute_service[:client_id],
-                        compute_service[:client_secret]
-                       )
+creds = Utils.get_credentials(compute_service[:tenant_id], compute_service[:client_id], compute_service[:client_secret])
 
 # must do this until all is refactored to use the util above.
 node.set['azureCredentials'] = creds
@@ -93,9 +89,9 @@ end
 
 # get the hard ware profile class
 begin
-  OOLog.info("VM Size: #{node[:size_id]}")
+  OOLog.info("VM Size: #{node['size_id']}")
   hwprofilecls = AzureCompute::HardwareProfile.new
-  hwprofile = hwprofilecls.build_profile(node[:size_id])
+  hwprofile = hwprofilecls.build_profile(node['size_id'])
 rescue => ex
   OOLog.fatal("Error getting hardware profile: #{ex.message}")
 end
@@ -112,18 +108,15 @@ rescue => ex
 end
 
 # get the network securtiy group name
-secgroup_name = node.workorder.payLoad.DependsOn[0]['ciName']
+secgroup_name = node['workorder']['payLoad']['DependsOn'][0]['ciName']
 
 # invoke class to build the network profile
 begin
-  network_interface_cls =
-    AzureNetwork::NetworkInterfaceCard.new(creds, subscription)
+  network_interface_cls = AzureNetwork::NetworkInterfaceCard.new(creds, subscription)
   network_interface_cls.location = location
   network_interface_cls.rg_name = resource_group_name
   network_interface_cls.ci_id = ci_id
-
-  network_profile =
-    network_interface_cls.build_network_profile(express_route_enabled,
+  network_profile = network_interface_cls.build_network_profile(express_route_enabled,
                                                 master_resource_group_name,
                                                 preconfigured_network_name,
                                                 network_address,
@@ -139,11 +132,11 @@ end
 node.set['ip'] = network_interface_cls.private_ip
 # write the ip information to stdout for the inductor to pick up and use.
 if ip_type == 'private'
-  puts "***RESULT:private_ip="+node['ip']
-  puts "***RESULT:public_ip="+node['ip']
-  puts "***RESULT:dns_record="+node['ip']
+  puts "***RESULT:private_ip=#{node['ip']}"
+  puts "***RESULT:public_ip=#{node['ip']}"
+  puts "***RESULT:dns_record=#{node['ip']}"
 else
-  puts "***RESULT:private_ip="+node['ip']
+  puts "***RESULT:private_ip=#{node['ip']}"
 end
 
 # get the availability set to use
@@ -163,7 +156,7 @@ params.properties = props
 params.location = location
 begin
   start_time = Time.now.to_i
-  OOLog.info("Creating New Azure VM :" + server_name)
+  OOLog.info("Creating New Azure VM :#{server_name}")
   # create the VM in the platform resource group
   vm_promise = client.virtual_machines.create_or_update(resource_group_name, server_name, params)
   my_new_vm = vm_promise.value!
@@ -171,7 +164,7 @@ begin
   duration = end_time - start_time
   OOLog.info("Azure VM created in #{duration} seconds")
 	OOLog.info("New VM: #{my_new_vm.body.name} CREATED!!!")
-  puts "***RESULT:instance_id="+my_new_vm.body.id
+  puts "***RESULT:instance_id=#{my_new_vm.body.id}"
 rescue MsRestAzure::AzureOperationError => e
   OOLog.fatal("Error Creating VM: #{e.body}")
 rescue MsRestAzure::CloudErrorData => ce
@@ -186,13 +179,13 @@ if ip_type == 'public'
   # need to get the public ip that was assigned to the VM
   begin
     # get the pip name
-    public_ip_name = Utils.get_component_name("publicip",ci_id)
+    public_ip_name = Utils.get_component_name('publicip', ci_id)
     OOLog.info("public ip name: #{public_ip_name }")
 
     pip = AzureNetwork::PublicIp.new(creds,subscription)
     publicip_details = pip.get(resource_group_name, public_ip_name)
     publicip = publicip_details.response.body
-    obj=JSON.parse(publicip)
+    obj = JSON.parse(publicip)
     pubip_address = obj['properties']['ipAddress']
     OOLog.info("public ip found: #{pubip_address}")
     # set the public ip and dns record on stdout for the inductor
@@ -206,31 +199,31 @@ if ip_type == 'public'
   end
 end
 
-include_recipe "compute::ssh_port_wait"
+include_recipe 'compute::ssh_port_wait'
 
-rfcCi = node["workorder"]["rfcCi"]
-nsPathParts = rfcCi["nsPath"].split("/")
-customer_domain = node["customer_domain"]
-owner = node.workorder.payLoad.Assembly[0].ciAttributes["owner"] || "na"
-node.set["max_retry_count_add"] = 30
+rfcCi = node['workorder']['rfcCi']
+nsPathParts = rfcCi['nsPath'].split("/")
+customer_domain = node['customer_domain']
+owner = node['workorder']['payLoad']['Assembly'][0]['ciAttributes']['owner'] || 'na'
+node.set['max_retry_count_add'] = 30
 
-mgmt_url = "https://"+node.mgmt_domain
-if node.has_key?("mgmt_url") && !node.mgmt_url.empty?
-  mgmt_url = node.mgmt_url
+mgmt_url = "https://#{node['mgmt_domain']}"
+if node.has_key?('mgmt_url') && !node['mgmt_url'].empty?
+  mgmt_url = node['mgmt_url']
 end
 
 metadata = {
   "owner" => owner,
   "mgmt_url" =>  mgmt_url,
-  "organization" => node.workorder.payLoad[:Organization][0][:ciName],
-  "assembly" => node.workorder.payLoad[:Assembly][0][:ciName],
-  "environment" => node.workorder.payLoad[:Environment][0][:ciName],
-  "platform" => node.workorder.box.ciName,
-  "component" => node.workorder.payLoad[:RealizedAs][0][:ciId].to_s,
-  "instance" => node.workorder.rfcCi.ciId.to_s
+  "organization" => node['workorder']['payLoad']['Organization'][0]['ciName'],
+  "assembly" => node['workorder']['payLoad']['Assembly'][0]['ciName'],
+  "environment" => node['workorder']['payLoad']['Environment'][0]['ciName'],
+  "platform" => node['workorder']['box']['ciName'],
+  "component" => node['workorder']['payLoad']['RealizedAs'][0]['ciId'].to_s,
+  "instance" => node['workorder']['rfcCi']['ciId'].to_s
 }
 
-puts "***RESULT:metadata="+JSON.dump(metadata)
+puts "***RESULT:metadata=#{JSON.dump(metadata)}"
 total_end_time = Time.now.to_i
 duration = total_end_time - total_start_time
 OOLog.info("Total Time for azure::add_node recipe is #{duration} seconds")
