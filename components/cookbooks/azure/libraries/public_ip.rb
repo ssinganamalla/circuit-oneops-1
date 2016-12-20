@@ -9,20 +9,19 @@ module AzureNetwork
     def initialize(credentials, subscription_id)
       @creds = credentials
       @subscription = subscription_id
-      @client = Azure::ARM::Network::NetworkManagementClient.new(credentials)
+      @client =
+        Azure::ARM::Network::NetworkManagementClient.new(credentials)
       @client.subscription_id = subscription_id
     end
 
     # this will build the public_ip object to be used for creating a public
     # ip in azure
     def build_public_ip_object(ci_id, name = 'publicip')
-      public_ip_address = Azure::ARM::Network::Models::PublicIPAddress.new
-
-      public_ip_address.public_ipallocation_method = Azure::ARM::Network::Models::IPAllocationMethod::Dynamic
-      public_ip_address.idle_timeout_in_minutes = 5
+      public_ip_address = Azure::ARM::Network::Models::PublicIpAddress.new
       public_ip_address.location = @location
-      public_ip_address.name = Utils.get_component_name(name ,ci_id)
-      
+      public_ip_address.idle_timeout_in_minutes = 5
+      public_ip_address.name = Utils.get_component_name(name, ci_id)
+      public_ip_address.public_ipallocation_method = Azure::ARM::Network::Models::IpAllocationMethod::Dynamic
       OOLog.info("Public IP name is: #{public_ip_address.name}")
       public_ip_address
     end

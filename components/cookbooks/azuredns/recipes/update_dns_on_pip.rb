@@ -1,7 +1,8 @@
+gem 'azure_mgmt_network', '=0.8.0'
 require 'azure_mgmt_network'
 
-#set the proxy if it exists as a cloud var
-Utils.set_proxy(node.workorder.payLoad.OO_CLOUD_VARS)
+# set the proxy if it exists as a cloud var
+Utils.set_proxy(node['workorder']['payLoad']['OO_CLOUD_VARS'])
 
 # get platform resource group and availability set
 include_recipe 'azure::get_platform_rg_and_as'
@@ -12,16 +13,16 @@ dns_attributes = node['workorder']['services']['dns'][cloud_name]['ciAttributes'
 
 # Check for lb service
 # will need to get out of this if application gateway is enabled.
-cloud_service = nil
-application_gateway_enabled = false
-if !node.workorder.services["lb"].nil? &&
-  !node.workorder.services["lb"][cloud_name].nil?
 
-  cloud_service = node.workorder.services["lb"][cloud_name]
+application_gateway_enabled = false
+if !node['workorder']['services']['lb'].nil? &&
+  !node['workorder']['services']['lb'][cloud_name].nil?
+
+  cloud_service = node['workorder']['services']['lb'][cloud_name]
   Chef::Log.info("FQDN:: Cloud service name: #{cloud_service[:ciClassName]}")
 
   # Checks if Application Gateway service is enabled
-  if cloud_service[:ciClassName].split(".").last.downcase =~ /azuregateway/
+  if cloud_service[:ciClassName].split('.').last.downcase =~ /azuregateway/
     application_gateway_enabled = true
     Chef::Log.info("FQDN::add Application Gateway Enabled: #{application_gateway_enabled}")
   end
