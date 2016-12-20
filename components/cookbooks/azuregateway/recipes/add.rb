@@ -5,6 +5,7 @@ require File.expand_path('../../libraries/application_gateway.rb', __FILE__)
 require File.expand_path('../../../azure/libraries/public_ip.rb', __FILE__)
 require File.expand_path('../../../azure/libraries/virtual_network.rb', __FILE__)
 
+gem 'azure_mgmt_network', '=0.8.0'
 require 'azure_mgmt_network'
 require 'rest-client'
 require 'chef'
@@ -22,7 +23,7 @@ include_recipe 'azure::get_platform_rg_and_as'
 include_recipe 'azuredns::get_azure_token'
 token = node['azure_rest_token']
 
-def get_compute_nodes
+def fetch_compute_nodes
   compute_nodes = []
   compute_list = node.workorder.payLoad.DependsOn.select { |d| d[:ciClassName] =~ /Compute/ }
   if compute_list
@@ -32,16 +33,6 @@ def get_compute_nodes
     end
   end
   compute_nodes
-end
-
-def get_public_ip(location, timeout = 5)
-  pip_address_props = PublicIpAddressPropertiesFormat.new
-  pip_address_props.idle_timeout_in_minutes = timeout
-  pip_address_props.public_ipallocation_method = IpAllocationMethod::Dynamic
-  public_ip = PublicIpAddress.new
-  public_ip.location = location
-  public_ip.properties = pip_address_props
-  public_ip
 end
 
 def add_gateway_subnet_to_vnet(virtual_network, gateway_subnet_address, gateway_subnet_name)
@@ -68,9 +59,8 @@ end
 
 def create_public_ip(credentials, subscription_id, location, resource_group_name)
   public_ip_name = Utils.get_component_name('ag_publicip', node['workorder']['rfcCi']['ciId'])
-  public_ip_address = get_public_ip(location)
   public_ip_obj = AzureNetwork::PublicIp.new(credentials, subscription_id)
-  public_ip_obj.create_update(resource_group_name, public_ip_name, public_ip_address)
+  public_ip_obj.create_update(resource_group_name, public_ip_name, public_ip_obj.build_public_ip_object(location))
 end
 
 def get_vnet(resource_group_name, vnet_name, vnet_obj)
@@ -89,18 +79,14 @@ if !node.workorder.services['lb'].nil? && !node.workorder.services['lb'][cloud_n
   ag_service = node.workorder.services['lb'][cloud_name]
 end
 
-if ag_service.nil?
-  OOLog.fatal('missing application gateway service')
-end
+OOLog.fatal('missing application gateway service') if ag_service.nil?
 
 compute_service = nil
 if !node.workorder.services['compute'].nil? && !node.workorder.services['compute'][cloud_name].nil?
   compute_service = node.workorder.services['compute'][cloud_name]
 end
 
-if compute_service.nil?
-  OOLog.fatal('missing compute service')
-end
+OOLog.fatal('missing compute service') if compute_service.nil?
 
 platform_name = node.workorder.box.ciName
 environment_name = node.workorder.payLoad.Environment[0]['ciName']
@@ -111,9 +97,9 @@ resource_group_name = node['platform-resource-group']
 subscription_id = ag_service[:ciAttributes]['subscription']
 location = ag_service[:ciAttributes][:location]
 
-asmb_name = assembly_name.gsub(/-/, '').downcase
-plat_name = platform_name.gsub(/-/, '').downcase
-env_name = environment_name.gsub(/-/, '').downcase
+asmb_name = assembly_name.delete(/-/, '').downcase
+plat_name = platform_name.delete(/-/, '').downcase
+env_name = environment_name.delete(/-/, '').downcase
 ag_name = "ag-#{plat_name}"
 
 tenant_id = ag_service[:ciAttributes][:tenant_id]
@@ -168,7 +154,7 @@ begin
   else
     # Create public IP
     public_ip = create_public_ip(credentials, subscription_id, location, resource_group_name)
-    vnet_name = 'vnet_' + network_address.gsub('.','_').gsub('/', '_')
+    vnet_name = 'vnet_' + network_address.delete('.', '_').delete('/', '_')
     vnet = get_vnet(resource_group_name, vnet_name, vnet_obj)
   end
 
@@ -192,7 +178,7 @@ begin
   application_gateway.set_gateway_configuration(gateway_subnet)
 
   # Backend Address Pool
-  backend_ip_address_list = get_compute_nodes
+  backend_ip_address_list = fetch_compute_nodes
   application_gateway.set_backend_address_pool(backend_ip_address_list)
 
   # Gateway Settings
@@ -201,11 +187,10 @@ begin
   ssl_certificate_exist = false
   certs = node.workorder.payLoad.DependsOn.select { |d| d[:ciClassName] =~ /Certificate/ }
   certs.each do |cert|
-    if !cert[:ciAttributes][:pfx_enable].nil? && cert[:ciAttributes][:pfx_enable] == 'true'
-      data = cert[:ciAttributes][:ssl_data]
-      password = cert[:ciAttributes][:ssl_password]
-      ssl_certificate_exist = true
-    end
+    next if cert[:ciAttributes][:pfx_enable].nil? && cert[:ciAttributes][:pfx_enable] == 'true'
+    data = cert[:ciAttributes][:ssl_data]
+    password = cert[:ciAttributes][:ssl_password]
+    ssl_certificate_exist = true
   end
 
   enable_cookie = true
@@ -250,12 +235,11 @@ begin
     # Application Gateway was not created.
     OOLog.fatal("Application Gateway '#{ag_name}' could not be created")
   else
-    ag_ip = nil
-    if express_route_enabled
-      ag_ip = application_gateway.get_private_ip_address(token)
-    else
-      ag_ip = public_ip.properties.ip_address
-    end
+    ag_ip = if express_route_enabled
+              application_gateway.get_private_ip_address(token)
+            else
+              public_ip.properties.ip_address
+            end
 
     if ag_ip.nil? || ag_ip == ''
       OOLog.fatal("Application Gateway '#{gateway_result.name}' NOT configured with IP")
