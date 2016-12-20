@@ -11,7 +11,6 @@ module AzureBase
   # class to handle operations on the Azure Resource Group
   # this is the base class, other classes will extend
   class ResourceGroupManager < AzureBase::AzureBaseManager
-
     attr_accessor :rg_name,
                   :org,
                   :assembly,
@@ -24,15 +23,15 @@ module AzureBase
       super(node)
 
       # get the info needed to get the resource group name
-      nsPathParts = node[:workorder][:rfcCi][:nsPath].split('/')
+      nsPathParts = node['workorder']['rfcCi']['nsPath'].split('/')
       @org = nsPathParts[1]
       @assembly = nsPathParts[2]
       @environment = nsPathParts[3]
-      @platform_ci_id = node[:workorder][:box][:ciId]
-      if @service[:location] != nil
-       @location = @service[:location]
-      elsif @service[:region] != nil
-       @location = @service[:region]
+      @platform_ci_id = node['workorder']['box']['ciId']
+      if !@service[:location].nil?
+        @location = @service[:location]
+      elsif !@service[:region].nil?
+        @location = @service[:region]
       end
       @subscription = @service[:subscription]
 
@@ -49,14 +48,12 @@ module AzureBase
         OOLog.info("RG Name is: #{@rg_name}")
         # check if the rg is there
         if !exists?
-          OOLog.info("RG does NOT exists.  Creating...")
+          OOLog.info('RG does NOT exists.  Creating...')
           # create it if it isn't.
           resource_group = Azure::ARM::Resources::Models::ResourceGroup.new
           resource_group.location = @location
-          response =
-            @client.resource_groups.create_or_update(@rg_name,
-                                                     resource_group)
-          return response
+          @client.resource_groups.create_or_update(@rg_name,
+                                                   resource_group)
         else
           OOLog.info("Resource Group, #{@rg_name} already exists.  Moving on...")
         end
@@ -71,8 +68,7 @@ module AzureBase
     # if the resource group is not found it will return a nil.
     def exists?
       begin
-        response = @client.resource_groups.check_existence(@rg_name)
-        return response
+        @client.resource_groups.check_existence(@rg_name)
       rescue MsRestAzure::AzureOperationError => e
         OOLog.fatal("Error checking resource group: #{@rg_name}. Exception: #{e.body}")
       rescue => ex
@@ -83,8 +79,7 @@ module AzureBase
     # This method will delete the resource group
     def delete
       begin
-        response = @client.resource_groups.delete(@rg_name)
-        return response
+        @client.resource_groups.delete(@rg_name)
       rescue MsRestAzure::AzureOperationError => e
         OOLog.fatal("Error deleting resource group: #{e.body}")
       rescue => ex
@@ -102,12 +97,11 @@ module AzureBase
     # de-provision platforms in the same assembly / env / location without
     # destroying all of them together.
     def get_name
-      resource_group_name = @org[0..15] + '-' +
-        @assembly[0..15] + '-' +
-        @platform_ci_id.to_s + '-' +
-        @environment[0..15] + '-' +
-        Utils.abbreviate_location(@location)
-      return resource_group_name
+      @org[0..15] + '-' +
+      @assembly[0..15] + '-' +
+      @platform_ci_id.to_s + '-' +
+      @environment[0..15]  + '-' +
+      Utils.abbreviate_location(@location)
     end
   end
 end
