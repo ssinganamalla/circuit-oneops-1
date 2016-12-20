@@ -10,3 +10,7 @@ RedundantBegin:
   Enabled: false
 AccessorMethodName:
   Enabled: false
+GuardClause:
+  Enabled: false
+ParameterLists:
+  Enabled: false
