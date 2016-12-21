@@ -1,4 +1,4 @@
-name             "Azure Keypair"
+name             "azurekeypair"
 description      "General purpose key pairs"
 version          "0.1"
 maintainer       "OneOps, Inc."
