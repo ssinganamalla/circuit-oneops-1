@@ -8,8 +8,8 @@ require File.expand_path('../../libraries/utils.rb', __FILE__)
 ::Chef::Recipe.send(:include, Azure::ARM::Compute::Models)
 
 module AzureBase
+  # Add/Get/Delete operations of availability set
   class AvailabilitySetManager < AzureBase::ResourceGroupManager
-
     attr_accessor :as_name
 
     def initialize(node)
@@ -25,8 +25,7 @@ module AzureBase
     # will return whether or not the availability set exists.
     def get
       begin
-        promise = @client.availability_sets.get(@rg_name,@as_name)
-        return promise
+        @client.availability_sets.get(@rg_name, @as_name)
       rescue MsRestAzure::AzureOperationError => e
         # if the error is that the availability set doesn't exist,
         # just return a nil
@@ -52,13 +51,11 @@ module AzureBase
         # need to create the availability set
         OOLog.info("Creating Availability Set
                       '#{@as_name}' in #{@location} region")
-        avail_set = get_avail_set_props
+        avail_set = get_avail_set
         begin
-          response =
-            @client.availability_sets.create_or_update(@rg_name,
-                                                       @as_name,
-                                                       avail_set)
-          return response
+          @client.availability_sets.create_or_update(@rg_name,
+                                                     @as_name,
+                                                     avail_set)
         rescue MsRestAzure::AzureOperationError => e
           OOLog.fatal("Error adding an availability set: #{e.body}")
         rescue => ex
@@ -70,7 +67,7 @@ module AzureBase
     private
 
     # create the properties object for creating availability sets
-    def get_avail_set_props
+    def get_avail_set
       avail_set =
         Azure::ARM::Compute::Models::AvailabilitySet.new
       # At least two domain faults
@@ -79,10 +76,8 @@ module AzureBase
       # At this point we do not have virtual machines to include
       avail_set.virtual_machines = []
       avail_set.statuses = []
-
       avail_set.location = @location
-      return avail_set
+      avail_set
     end
-
   end
 end
