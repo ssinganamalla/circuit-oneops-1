@@ -62,14 +62,17 @@ module AzureCompute
       if storage_name_avail?(storage_account_name)
         #Storage account name is available; Need to create storage account
         #Select the storage according to VM size
+        account_type = Azure::ARM::Storage::Models::Sku.new
         if node[:size_id] =~ /(.*)GS(.*)|(.*)DS(.*)/
-          account_type = Azure::ARM::Storage::Models::AccountType::PremiumLRS
+          account_type.name = Azure::ARM::Storage::Models::SkuName::PremiumLRS
+          account_type.tier = Azure::ARM::Storage::Models::SkuTier::Premium
         else
-          account_type = Azure::ARM::Storage::Models::AccountType::StandardLRS
+          account_type.name = Azure::ARM::Storage::Models::SkuName::StandardLRS
+          account_type.tier = Azure::ARM::Storage::Models::SkuTier::Standard
         end
 
         OOLog.info("VM size: #{node[:size_id]}")
-        OOLog.info("Storage Type: #{account_type}")
+        OOLog.info("Storage Type: #{account_type.name}")
 
         storage_account =
           create_storage_account(storage_account_name, account_type)
@@ -172,9 +175,8 @@ private
 
     def get_resource_group_vm_count
       vm_count = 0
-      promise = @compute_client.virtual_machines.list(@resource_group_name)
-      result = promise.value!
-      vm_list = result.body.value
+      response = @compute_client.virtual_machines.list(@resource_group_name)
+      vm_list = response
       if !vm_list.nil? and !vm_list.empty?
         vm_count = vm_list.size
       else
@@ -188,12 +190,10 @@ private
          params = Azure::ARM::Storage::Models::StorageAccountCheckNameAvailabilityParameters.new
          params.name = storage_account_name
          params.type = 'Microsoft.Storage/storageAccounts'
-         promise =
+         response =
             @storage_client.storage_accounts.check_name_availability(params)
-         response = promise.value!
-         result = response.body
-         OOLog.info("Storage Name Available: #{result.name_available}")
-         return result.name_available
+         OOLog.info("Storage Name Available: #{response.name_available}")
+         return response.name_available
        rescue  MsRestAzure::AzureOperationError => e
          OOLog.info("ERROR checking availability of #{storage_account_name}")
          OOLog.info("ERROR Body: #{e.body}")
@@ -205,12 +205,10 @@ private
 
     def storage_account_created?(storage_account_name)
       begin
-         promise =
+         response =
             @storage_client.storage_accounts.get_properties(@resource_group_name, storage_account_name)
-         response = promise.value!
-         result = response.body
-         OOLog.info("Storage Account Provisioning State: #{result.properties.provisioning_state}")
-         return result.properties.provisioning_state == "Succeeded"
+                  OOLog.info("Storage Account Provisioning State: #{response.provisioning_state}")
+         return response.provisioning_state == "Succeeded"
        rescue  MsRestAzure::AzureOperationError => e
          OOLog.info("#ERROR Body: #{e.body}")
          return false
@@ -221,27 +219,24 @@ private
 
     def create_storage_account(storage_account_name, account_type)
       # Create a model for new storage account.
-      properties = Azure::ARM::Storage::Models::StorageAccountPropertiesCreateParameters.new
-      properties.account_type = account_type
 
       params = Azure::ARM::Storage::Models::StorageAccountCreateParameters.new
-      params.properties = properties
+      params.kind = Azure::ARM::Storage::Models::Kind::Storage
+      params.sku = account_type
       params.location = @location
 
       begin
-        Chef::Log.info("Creating Storage Account: [ #{storage_account_name} ] in Resource Group: #{resource_group_name} ...")
+        Chef::Log.info("Creating Storage Account: [ #{storage_account_name} ] in Resource Group: #{@resource_group_name} ...")
         start_time = Time.now.to_i
-        promise =
+        response =
           @storage_client.storage_accounts.create(@resource_group_name,
                                                   storage_account_name, params)
-        response = promise.value!
-        result = response.body
         end_time = Time.now.to_i
 
         duration = end_time - start_time
         Chef::Log.info("Storage Account created in #{duration} seconds")
 
-        return result
+        return response
       rescue MsRestAzure::AzureOperationError => e
         OOLog.fatal("Error creating storage account: #{e.body.values[0]['message']}")
       rescue => ex

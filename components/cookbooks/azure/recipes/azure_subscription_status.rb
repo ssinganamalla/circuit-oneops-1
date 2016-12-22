@@ -36,9 +36,9 @@ if express_route_enabled == 'true'
     client = ResourceManagementClient.new(credentials)
     client.subscription_id = subscription_id
     # First, check if resource group is already created
-    response = client.resource_groups.check_existence(resource_group_name).value!
+    response = client.resource_groups.check_existence(resource_group_name)
     OOLog.info('response from azure:' + response.inspect)
-    if response.body == true
+    if response == true
       OOLog.info('Subscription details entered are verified')
     else
       OOLog.fatal("Error verifying the subscription and credentials for #{subscription_id}")
@@ -60,10 +60,9 @@ elsif express_route_enabled == 'false' || express_route_enabled == nil
   client = ResourceManagementClient.new(credentials)
   client.subscription_id = subscription_id
   # First, get list if resources associated with subdcription just to verify subscription and credentials
-  promise = client.resource_groups.list()
-  response = promise.value!
+  response = client.resource_groups.list()
   OOLog.debug('response from azure:' + response.inspect)
-  if response.body != nil
+  if response != nil
     OOLog.info('Subscription details entered are verified')
   else
     raise e
