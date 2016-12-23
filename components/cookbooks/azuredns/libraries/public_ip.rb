@@ -1,3 +1,5 @@
+gem 'azure_mgmt_network', '=0.8.0'
+require 'azure_mgmt_network'
 
 # AzureDns Module
 module AzureDns
