@@ -20,21 +20,21 @@ module AzureNetwork
       @ag_name = ag_name
       @client = Azure::ARM::Network::NetworkManagementClient.new(credentials)
       @client.subscription_id = @subscription_id
-      @gateway_attributes = Hash.new
+      @gateway_attributes = {}
       @configurations = YAML.load_file(File.expand_path('../config/config.yml', __dir__))
     end
 
     def get_attribute_id(gateway_attribute, attribute_name)
-      @configurations['gateway']['subscription_id']  %{subscription_id: @subscription_id, resource_group_name: @resource_group_name, ag_name:@ag_name, gateway_attribute: gateway_attribute, attribute_name: attribute_name}
+      @configurations['gateway']['subscription_id'] % { subscription_id: @subscription_id, resource_group_name: @resource_group_name, ag_name: @ag_name, gateway_attribute: gateway_attribute, attribute_name: attribute_name }
     end
 
     def get_private_ip_address(token)
       resource_url = "https://management.azure.com/subscriptions/#{@subscription_id}/resourceGroups/#{@resource_group_name}/providers/Microsoft.Network/applicationGateways/#{@ag_name}?api-version=2016-03-30"
       dns_response = RestClient.get(
-          resource_url,
-          accept: 'application/json',
-          content_type: 'application/json',
-          authorization: token
+        resource_url,
+        accept: 'application/json',
+        content_type: 'application/json',
+        authorization: token
       )
       OOLog.info("Azuregateway::Application Gateway - API response is #{dns_response}")
       dns_hash = JSON.parse(dns_response)
@@ -54,7 +54,7 @@ module AzureNetwork
     end
 
     def set_gateway_configuration(subnet)
-      gateway_ipconfig = Azure::ARM::Network::Models::ApplicationGatewayIpConfiguration.new
+      gateway_ipconfig = Azure::ARM::Network::Models::ApplicationGatewayIPConfiguration.new
       gateway_ipconfig.name = @configurations['gateway']['gateway_config_name']
       gateway_ipconfig.subnet = subnet
 
@@ -70,7 +70,6 @@ module AzureNetwork
         backend_addresses.push(backend_address_obj)
       end
 
-
       gateway_backend_pool.name = @configurations['gateway']['backend_address_pool_name']
       gateway_backend_pool.id = get_attribute_id('backendAddressPools', gateway_backend_pool.name)
       gateway_backend_pool.backend_addresses = backend_addresses
@@ -84,11 +83,11 @@ module AzureNetwork
       gateway_backend_http_settings.id = get_attribute_id('backendHttpSettingsCollection', gateway_backend_http_settings.name)
       gateway_backend_http_settings.port = 80
       gateway_backend_http_settings.protocol = ApplicationGatewayProtocol::Http
-      if enable_cookie
-        gateway_backend_http_settings.cookie_based_affinity = ApplicationGatewayCookieBasedAffinity::Enabled
-      else
-        gateway_backend_http_settings.cookie_based_affinity = ApplicationGatewayCookieBasedAffinity::Disabled
-      end
+      gateway_backend_http_settings.cookie_based_affinity = if enable_cookie
+                                                              ApplicationGatewayCookieBasedAffinity::Enabled
+                                                            else
+                                                              ApplicationGatewayCookieBasedAffinity::Disabled
+                                                            end
 
       @gateway_attributes[:https_settings] = gateway_backend_http_settings
     end
@@ -103,12 +102,12 @@ module AzureNetwork
     end
 
     def set_frontend_ip_config(public_ip, subnet)
-      frontend_ip_config = ApplicationGatewayFrontendIpConfiguration.new
+      frontend_ip_config = ApplicationGatewayFrontendIPConfiguration.new
       frontend_ip_config.name = @configurations['gateway']['frontend_ip_config_name']
-      frontend_ip_config.id = get_attribute_id('frontendIPConfigurations',frontend_ip_config.name)
+      frontend_ip_config.id = get_attribute_id('frontendIPConfigurations', frontend_ip_config.name)
       if public_ip.nil?
         frontend_ip_config.subnet = subnet
-        frontend_ip_config.private_ipallocation_method = IpAllocationMethod::Dynamic
+        frontend_ip_config.private_ipallocation_method = IPAllocationMethod::Dynamic
       else
         frontend_ip_config.public_ipaddress = public_ip
       end
@@ -119,7 +118,7 @@ module AzureNetwork
     def set_ssl_certificate(data, password)
       ssl_certificate = ApplicationGatewaySslCertificate.new
       ssl_certificate.name = @configurations['gateway']['ssl_certificate_name']
-      ssl_certificate.id = get_attribute_id('sslCertificates',ssl_certificate.name)
+      ssl_certificate.id = get_attribute_id('sslCertificates', ssl_certificate.name)
       ssl_certificate.data = data
       ssl_certificate.password = password
 
@@ -129,7 +128,7 @@ module AzureNetwork
     def set_listener(certificate_exist)
       gateway_listener = ApplicationGatewayHttpListener.new
       gateway_listener.name = @configurations['gateway']['gateway_listener_name']
-      gateway_listener.id = get_attribute_id('httpListeners',gateway_listener.name)
+      gateway_listener.id = get_attribute_id('httpListeners', gateway_listener.name)
       gateway_listener.protocol = certificate_exist ? ApplicationGatewayProtocol::Https : ApplicationGatewayProtocol::Http
       gateway_listener.frontend_ipconfiguration = @gateway_attributes[:frontend_ip_config]
       gateway_listener.frontend_port = @gateway_attributes[:gateway_port]
@@ -151,16 +150,16 @@ module AzureNetwork
 
     def set_gateway_sku(sku_name)
       gateway_sku = ApplicationGatewaySku.new
-      case sku_name.downcase
-      when 'small'
-        gateway_sku.name = ApplicationGatewaySkuName::StandardSmall
-      when 'medium'
-        gateway_sku.name = ApplicationGatewaySkuName::StandardMedium
-      when 'large'
-        gateway_sku.name = ApplicationGatewaySkuName::StandardLarge
-      else
-        gateway_sku.name = ApplicationGatewaySkuName::StandardMedium
-      end
+      gateway_sku.name = case sku_name.downcase
+                         when 'small'
+                           ApplicationGatewaySkuName::StandardSmall
+                         when 'medium'
+                           ApplicationGatewaySkuName::StandardMedium
+                         when 'large'
+                           ApplicationGatewaySkuName::StandardLarge
+                         else
+                           ApplicationGatewaySkuName::StandardMedium
+                         end
 
       gateway_sku.tier = ApplicationGatewayTier::Standard
       gateway_sku.capacity = 2

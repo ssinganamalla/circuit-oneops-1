@@ -68,7 +68,7 @@ def get_vnet(resource_group_name, vnet_name, vnet_obj)
   if vnet.nil?
     OOLog.fatal("Could not retrieve vnet '#{vnet_name}' from express route")
   end
-  vnet.body
+  vnet
 end
 
 cloud_name = node.workorder.cloud.ciName
@@ -77,18 +77,14 @@ if !node.workorder.services['lb'].nil? && !node.workorder.services['lb'][cloud_n
   ag_service = node.workorder.services['lb'][cloud_name]
 end
 
-if ag_service.nil?
-  OOLog.fatal('missing application gateway service')
-end
+OOLog.fatal('missing application gateway service') if ag_service.nil?
 
 compute_service = nil
 if !node.workorder.services['compute'].nil? && !node.workorder.services['compute'][cloud_name].nil?
   compute_service = node.workorder.services['compute'][cloud_name]
 end
 
-if compute_service.nil?
-  OOLog.fatal('missing compute service')
-end
+OOLog.fatal('missing compute service') if compute_service.nil?
 
 platform_name = node.workorder.box.ciName
 environment_name = node.workorder.payLoad.Environment[0]['ciName']
@@ -156,7 +152,7 @@ begin
   else
     # Create public IP
     public_ip = create_public_ip(credentials, subscription_id, location, resource_group_name)
-    vnet_name = 'vnet_' + network_address.gsub('.','_').gsub('/', '_')
+    vnet_name = 'vnet_' + network_address.gsub('.', '_').gsub('/', '_')
     vnet = get_vnet(resource_group_name, vnet_name, vnet_obj)
   end
 
@@ -167,7 +163,6 @@ begin
   vnet = add_gateway_subnet_to_vnet(vnet, gateway_subnet_address, gateway_subnet_name)
   rg_name = master_rg.nil? ? resource_group_name : master_rg
   vnet = vnet_obj.create_update(rg_name, vnet)
-  vnet = vnet.body
   gateway_subnet = nil
   vnet.subnets.each do |subnet|
     if subnet.name == gateway_subnet_name
@@ -238,12 +233,11 @@ begin
     # Application Gateway was not created.
     OOLog.fatal("Application Gateway '#{ag_name}' could not be created")
   else
-    ag_ip = nil
-    if express_route_enabled
-      ag_ip = application_gateway.get_private_ip_address(token)
-    else
-      ag_ip = public_ip.ip_address
-    end
+    ag_ip = if express_route_enabled
+              application_gateway.get_private_ip_address(token)
+            else
+              public_ip.ip_address
+            end
 
     if ag_ip.nil? || ag_ip == ''
       OOLog.fatal("Application Gateway '#{gateway_result.name}' NOT configured with IP")
