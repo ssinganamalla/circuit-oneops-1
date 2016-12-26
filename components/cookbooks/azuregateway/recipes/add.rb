@@ -235,7 +235,7 @@ begin
     ag_ip = if express_route_enabled
               application_gateway.get_private_ip_address(token)
             else
-              public_ip.ip_address
+              public_ip.properties.ip_address
             end
 
     if ag_ip.nil? || ag_ip == ''
