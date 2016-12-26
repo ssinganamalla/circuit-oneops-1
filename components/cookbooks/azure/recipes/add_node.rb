@@ -71,8 +71,7 @@ client.subscription_id = subscription
 node.set['VM_exists'] = false
 #check whether the VM with given name exists already
 begin
-  promise = client.virtual_machines.get(resource_group_name, server_name)
-  result = promise.value!
+  client.virtual_machines.get(resource_group_name, server_name)
   node.set['VM_exists'] = true
 rescue MsRestAzure::AzureOperationError => e
   OOLog.debug("Error Body: #{e.body}")
@@ -143,28 +142,26 @@ end
 availability_set = AzureCompute::AvailabilitySet.new(compute_service)
 
 # Create a model for new virtual machine
-props = VirtualMachineProperties.new
-props.os_profile = osprofile
-props.hardware_profile = hwprofile
-props.storage_profile = storageprofile
-props.network_profile = network_profile
-props.availability_set = availability_set.get(resource_group_name, node['platform-availability-set'])
-
 params = VirtualMachine.new
+params.os_profile = osprofile
+params.hardware_profile = hwprofile
+params.storage_profile = storageprofile
+params.network_profile = network_profile
+params.availability_set = availability_set.get(resource_group_name, node['platform-availability-set'])
+
 params.type = 'Microsoft.Compute/virtualMachines'
-params.properties = props
 params.location = location
 begin
   start_time = Time.now.to_i
   OOLog.info("Creating New Azure VM :#{server_name}")
   # create the VM in the platform resource group
   vm_promise = client.virtual_machines.create_or_update(resource_group_name, server_name, params)
-  my_new_vm = vm_promise.value!
+  my_new_vm = vm_promise
   end_time = Time.now.to_i
   duration = end_time - start_time
   OOLog.info("Azure VM created in #{duration} seconds")
-	OOLog.info("New VM: #{my_new_vm.body.name} CREATED!!!")
-  puts "***RESULT:instance_id=#{my_new_vm.body.id}"
+	OOLog.info("New VM: #{my_new_vm.name} CREATED!!!")
+  puts "***RESULT:instance_id=#{my_new_vm.id}"
 rescue MsRestAzure::AzureOperationError => e
   OOLog.fatal("Error Creating VM: #{e.body}")
 rescue MsRestAzure::CloudErrorData => ce
@@ -184,7 +181,9 @@ if ip_type == 'public'
 
     pip = AzureNetwork::PublicIp.new(creds,subscription)
     publicip_details = pip.get(resource_group_name, public_ip_name)
-    pubip_address = publicip_details.ip_address
+    publicip = publicip_details.response.body
+    obj = JSON.parse(publicip)
+    pubip_address = obj['properties']['ipAddress']
     OOLog.info("public ip found: #{pubip_address}")
     # set the public ip and dns record on stdout for the inductor
     puts "***RESULT:public_ip=#{pubip_address}"
