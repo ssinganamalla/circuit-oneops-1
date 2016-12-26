@@ -44,14 +44,14 @@ rules.each do |item|
   security_rule_destination_port_range = item2[1].to_s
   security_rule_direction = SecurityRuleDirection::Inbound
   security_rule_priority = priority
-  case item2[2].downcase
-  when 'tcp'
-    security_rule_protocol = SecurityRuleProtocol::Tcp
-  when 'udp'
-    security_rule_protocol = SecurityRuleProtocol::Udp
-  else
-    security_rule_protocol = SecurityRuleProtocol::Asterisk
-  end
+  security_rule_protocol = case item2[2].downcase
+                           when 'tcp'
+                             SecurityRuleProtocol::Tcp
+                           when 'udp'
+                             SecurityRuleProtocol::Udp
+                           else
+                             SecurityRuleProtocol::Asterisk
+                           end
   security_rule_provisioning_state = nil
   security_rule_destination_addres_prefix = '0.0.0.0/0'
   security_rule_source_port_range = item2[0].to_s

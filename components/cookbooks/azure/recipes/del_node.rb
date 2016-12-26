@@ -20,14 +20,13 @@ def get_vm(client, resource_group_name, vm_name)
       puts("Getting VM #{vm_name}")
       start_time = Time.now.to_i
       promise = client.virtual_machines.get(resource_group_name, vm_name)
-      result = promise.value!
       end_time = Time.now.to_i
 
       duration = end_time - start_time
 
       puts("VM fetched in #{duration} seconds")
 
-      return result.body
+      return promise
     rescue MsRestAzure::AzureOperationError => e
       puts 'Error fetching VM'
       puts("Error Body: #{e.body}")
@@ -105,18 +104,18 @@ begin
     Chef::Log.info("VM '#{server_name}' was not found. Nothing to delete. ")
   else
     #retrive the vhd name from the VM properties and use it to delete the associated VHD in the later step.
-    vhd_uri = vm.properties.storage_profile.os_disk.vhd.uri
+    vhd_uri = vm.storage_profile.os_disk.vhd.uri
     storage_account  = (vhd_uri.split(".").first).split("//").last
     node.set["storage_account"] = storage_account
     node.set["vhd_uri"]=vhd_uri
-    Chef::Log.info(vm.properties.inspect)
-    if vm.properties.storage_profile.data_disks.count > 0
-      node.set["datadisk_uri"] = vm.properties.storage_profile.data_disks[0].vhd.uri
+    Chef::Log.info(vm.inspect)
+    if vm.storage_profile.data_disks.count > 0
+      node.set["datadisk_uri"] = vm.storage_profile.data_disks[0].vhd.uri
     end
     ci_name = node['workorder']['rfcCi']['ciId']
     Chef::Log.info("Deleting Azure VM: '#{server_name}'")
     #delete the VM from the platform resource group
-    result = client.virtual_machines.delete(node['platform-resource-group'], server_name).value!
+    result = client.virtual_machines.delete(node['platform-resource-group'], server_name)
     Chef::Log.info("Delete VM response is: #{result.inspect}")
     # delete the NIC. A NIC is created with each VM, so we will delete the NIC when we delete the VM
     nic_name = Utils.get_component_name("nic",ci_name)

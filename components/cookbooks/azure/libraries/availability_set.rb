@@ -21,8 +21,8 @@ module AzureCompute
       begin
         promise =
           @client.availability_sets.get(resource_group,
-                                        availability_set).value!
-        promise.body
+                                        availability_set)
+        promise
       rescue MsRestAzure::AzureOperationError => e
         # if the error is that the availability set doesn't exist,
         # just return a nil
@@ -55,8 +55,8 @@ module AzureCompute
           response =
             @client.availability_sets.create_or_update(resource_group,
                                                        availability_set,
-                                                       avail_set).value!
-          response.body
+                                                       avail_set)
+          response
           end_time = Time.now.to_i
           duration = end_time - start_time
           OOLog.info("Availability Set created in #{duration} seconds")
@@ -72,17 +72,15 @@ module AzureCompute
 
     # create the properties object for creating availability sets
     def get_avail_set_props(location)
-      avail_set_props =
-        Azure::ARM::Compute::Models::AvailabilitySetProperties.new
+      avail_set =
+          Azure::ARM::Compute::Models::AvailabilitySet.new
       # At least two domain faults
-      avail_set_props.platform_fault_domain_count = 2
-      avail_set_props.platform_update_domain_count = 2
+      avail_set.platform_fault_domain_count = 2
+      avail_set.platform_update_domain_count = 2
       # At this point we do not have virtual machines to include
-      avail_set_props.virtual_machines = []
-      avail_set_props.statuses = []
-      avail_set = Azure::ARM::Compute::Models::AvailabilitySet.new
+      avail_set.virtual_machines = []
+      avail_set.statuses = []
       avail_set.location = location
-      avail_set.properties = avail_set_props
       avail_set
     end
   end

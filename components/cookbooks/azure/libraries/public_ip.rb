@@ -17,6 +17,7 @@ module AzureNetwork
     # ip in azure
     def build_public_ip_object(ci_id, name = 'publicip')
       public_ip_address = Azure::ARM::Network::Models::PublicIpAddress.new
+
       public_ip_address.public_ipallocation_method = Azure::ARM::Network::Models::IPAllocationMethod::Dynamic
       public_ip_address.idle_timeout_in_minutes = 5
       public_ip_address.location = @location
