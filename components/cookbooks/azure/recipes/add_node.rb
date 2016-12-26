@@ -181,9 +181,7 @@ if ip_type == 'public'
 
     pip = AzureNetwork::PublicIp.new(creds,subscription)
     publicip_details = pip.get(resource_group_name, public_ip_name)
-    publicip = publicip_details.response.body
-    obj = JSON.parse(publicip)
-    pubip_address = obj['properties']['ipAddress']
+    pubip_address = publicip_details.ip_address
     OOLog.info("public ip found: #{pubip_address}")
     # set the public ip and dns record on stdout for the inductor
     puts "***RESULT:public_ip=#{pubip_address}"
