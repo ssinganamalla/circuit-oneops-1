@@ -28,7 +28,7 @@ module AzureDns
         full_hostname = node['full_hostname'].split('.').reverse.join('.').partition('.').last.split('.').reverse.join('.').downcase
         Chef::Log.info('domain name label :' + full_hostname)
         full_hostname = full_hostname.tr('.', '-')
-        new_dns_settings = Azure::ARM::Network::Models::PublicIpAddressDnsSettings.new
+        new_dns_settings = Azure::ARM::Network::Models::PublicIPAddressDnsSettings.new
         new_dns_settings.domain_name_label = (full_hostname.length >= 61) ? full_hostname.slice!(0, 60) : full_hostname
         pip.properties.dns_settings = new_dns_settings
         @pubip.create_update(@resource_group, public_ip_name, pip)
@@ -36,7 +36,7 @@ module AzureDns
     end
 
     def update_dns_for_fqdn(node)
-      new_dns_settings = Azure::ARM::Network::Models::PublicIpAddressDnsSettings.new
+      new_dns_settings = Azure::ARM::Network::Models::PublicIPAddressDnsSettings.new
       short_name_available = false
       public_ip_name = nil
       # create a new dns settings object with the new values.
@@ -69,7 +69,7 @@ module AzureDns
           full_hostname = full_hostname.split('.').reverse.join('.').partition('.').last.split('.').reverse.join('.').downcase
           Chef::Log.info('domain name label :' + full_hostname)
           full_hostname = full_hostname.tr('.', '-')
-          new_dns_settings = Azure::ARM::Network::Models::PublicIpAddressDnsSettings.new
+          new_dns_settings = Azure::ARM::Network::Models::PublicIPAddressDnsSettings.new
           if full_hostname.length >= 61
             new_dns_settings.domain_name_label = full_hostname.slice!(0, 60)
             new_dns_settings.domain_name_label.chomp!('-') if new_dns_settings.domain_name_label[59] == '-'
