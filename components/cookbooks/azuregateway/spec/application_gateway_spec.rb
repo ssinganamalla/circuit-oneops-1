@@ -1,5 +1,3 @@
-# **Rubocop Suppression**
-# rubocop:disable LineLength
 require 'simplecov'
 require 'rest-client'
 SimpleCov.start
@@ -72,14 +70,14 @@ describe AzureNetwork::Gateway do
 
       expect(http_settings).to_not eq(nil)
       expect(http_settings.name).to eq('gateway_settings')
-      expect(http_settings.properties.cookie_based_affinity).to eq(ApplicationGatewayCookieBasedAffinity::Enabled)
+      expect(http_settings.cookie_based_affinity).to eq(ApplicationGatewayCookieBasedAffinity::Enabled)
     end
     it 'varify if cookies are disabled in https settings' do
       @gateway.set_https_settings(false)
       http_settings = @gateway.gateway_attributes[:https_settings]
 
       expect(http_settings).to_not eq(nil)
-      expect(http_settings.properties.cookie_based_affinity).to eq(ApplicationGatewayCookieBasedAffinity::Disabled)
+      expect(http_settings.cookie_based_affinity).to eq(ApplicationGatewayCookieBasedAffinity::Disabled)
     end
   end
 
@@ -90,14 +88,14 @@ describe AzureNetwork::Gateway do
 
       expect(gateway_fronend_port).to_not eq(nil)
       expect(gateway_fronend_port.name).to eq('gateway_front_port')
-      expect(gateway_fronend_port.properties.port).to eq(443)
+      expect(gateway_fronend_port.port).to eq(443)
     end
     it 'verify if application gateway front port is 80 if ssl certificate does not exist' do
       @gateway.set_gateway_port(false)
       gateway_fronend_port = @gateway.gateway_attributes[:gateway_port]
 
       expect(gateway_fronend_port).to_not eq(nil)
-      expect(gateway_fronend_port.properties.port).to eq(80)
+      expect(gateway_fronend_port.port).to eq(80)
     end
   end
 
@@ -110,8 +108,8 @@ describe AzureNetwork::Gateway do
 
       expect(frontend_ip_config).to_not eq(nil)
       expect(frontend_ip_config.name).to eq('frontend_ip_config')
-      expect(frontend_ip_config.properties.private_ipallocation_method).to eq(IpAllocationMethod::Dynamic)
-      expect(frontend_ip_config.properties.subnet).to_not eq(nil)
+      expect(frontend_ip_config.private_ipallocation_method).to eq(IPAllocationMethod::Dynamic)
+      expect(frontend_ip_config.subnet).to_not eq(nil)
     end
     it 'sets the public IP for frontend ip configurations if public IP is not nil' do
       public_ip = double
@@ -120,7 +118,7 @@ describe AzureNetwork::Gateway do
       frontend_ip_config = @gateway.gateway_attributes[:frontend_ip_config]
 
       expect(frontend_ip_config).to_not eq(nil)
-      expect(frontend_ip_config.properties.public_ipaddress).to_not eq(nil)
+      expect(frontend_ip_config.public_ipaddress).to_not eq(nil)
     end
   end
 
@@ -133,8 +131,8 @@ describe AzureNetwork::Gateway do
 
       expect(ssl_certificate).to_not eq(nil)
       expect(ssl_certificate.name).to eq('ssl_certificate')
-      expect(ssl_certificate.properties.data).to eq(data)
-      expect(ssl_certificate.properties.password).to eq(password)
+      expect(ssl_certificate.data).to eq(data)
+      expect(ssl_certificate.password).to eq(password)
     end
   end
 
@@ -145,7 +143,7 @@ describe AzureNetwork::Gateway do
 
       expect(listener).to_not eq(nil)
       expect(listener.name).to eq('gateway_listener')
-      expect(listener.properties.protocol).to eq(ApplicationGatewayProtocol::Https)
+      expect(listener.protocol).to eq(ApplicationGatewayProtocol::Https)
     end
     it 'returns application gateway listener properties with HTTP protocol' do
       @gateway.set_listener(false)
@@ -153,7 +151,7 @@ describe AzureNetwork::Gateway do
 
       expect(listener).to_not eq(nil)
       expect(listener.name).to eq('gateway_listener')
-      expect(listener.properties.protocol).to eq(ApplicationGatewayProtocol::Http)
+      expect(listener.protocol).to eq(ApplicationGatewayProtocol::Http)
     end
   end
 

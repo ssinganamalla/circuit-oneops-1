@@ -5,6 +5,7 @@ require File.expand_path('../../libraries/application_gateway.rb', __FILE__)
 require File.expand_path('../../../azure/libraries/public_ip.rb', __FILE__)
 require File.expand_path('../../../azure/libraries/virtual_network.rb', __FILE__)
 
+gem 'azure_mgmt_network', '=0.8.0'
 require 'azure_mgmt_network'
 require 'rest-client'
 require 'chef'
@@ -34,20 +35,10 @@ def get_compute_nodes
   compute_nodes
 end
 
-def get_public_ip(location, timeout = 5)
-  pip_address_props = PublicIpAddressPropertiesFormat.new
-  pip_address_props.idle_timeout_in_minutes = timeout
-  pip_address_props.public_ipallocation_method = IpAllocationMethod::Dynamic
-  public_ip = PublicIpAddress.new
-  public_ip.location = location
-  public_ip.properties = pip_address_props
-  public_ip
-end
-
 def add_gateway_subnet_to_vnet(virtual_network, gateway_subnet_address, gateway_subnet_name)
-  if virtual_network.properties.subnets.count > 1
+  if virtual_network.subnets.count > 1
 
-    virtual_network.properties.subnets.each do |subnet|
+    virtual_network.subnets.each do |subnet|
       if subnet.name == gateway_subnet_name
         OOLog.info('No need to add Gateway subnet. Gateway subnet already exist...')
         return virtual_network
@@ -55,22 +46,19 @@ def add_gateway_subnet_to_vnet(virtual_network, gateway_subnet_address, gateway_
     end
   end
 
-  subnet_properties = Azure::ARM::Network::Models::SubnetPropertiesFormat.new
-  subnet_properties.address_prefix = gateway_subnet_address
-
   subnet = Azure::ARM::Network::Models::Subnet.new
   subnet.name = gateway_subnet_name
-  subnet.properties = subnet_properties
+  subnet.address_prefix = gateway_subnet_address
 
-  virtual_network.properties.subnets.push(subnet)
+  virtual_network.subnets.push(subnet)
   virtual_network
 end
 
 def create_public_ip(credentials, subscription_id, location, resource_group_name)
-  public_ip_name = Utils.get_component_name('ag_publicip', node['workorder']['rfcCi']['ciId'])
-  public_ip_address = get_public_ip(location)
   public_ip_obj = AzureNetwork::PublicIp.new(credentials, subscription_id)
-  public_ip_obj.create_update(resource_group_name, public_ip_name, public_ip_address)
+  public_ip_obj.location = location
+  public_ip_address = public_ip_obj.build_public_ip_object(node['workorder']['rfcCi']['ciId'], 'ag_publicip')
+  public_ip_obj.create_update(resource_group_name, public_ip_address.name, public_ip_address)
 end
 
 def get_vnet(resource_group_name, vnet_name, vnet_obj)
@@ -80,7 +68,7 @@ def get_vnet(resource_group_name, vnet_name, vnet_obj)
   if vnet.nil?
     OOLog.fatal("Could not retrieve vnet '#{vnet_name}' from express route")
   end
-  vnet.body
+  vnet
 end
 
 cloud_name = node.workorder.cloud.ciName
@@ -89,18 +77,14 @@ if !node.workorder.services['lb'].nil? && !node.workorder.services['lb'][cloud_n
   ag_service = node.workorder.services['lb'][cloud_name]
 end
 
-if ag_service.nil?
-  OOLog.fatal('missing application gateway service')
-end
+OOLog.fatal('missing application gateway service') if ag_service.nil?
 
 compute_service = nil
 if !node.workorder.services['compute'].nil? && !node.workorder.services['compute'][cloud_name].nil?
   compute_service = node.workorder.services['compute'][cloud_name]
 end
 
-if compute_service.nil?
-  OOLog.fatal('missing compute service')
-end
+OOLog.fatal('missing compute service') if compute_service.nil?
 
 platform_name = node.workorder.box.ciName
 environment_name = node.workorder.payLoad.Environment[0]['ciName']
@@ -162,13 +146,13 @@ begin
     master_rg = ag_service[:ciAttributes][:resource_group]
     vnet = get_vnet(master_rg, vnet_name, vnet_obj)
 
-    if vnet.properties.subnets.count < 1
+    if vnet.subnets.count < 1
       OOLog.fatal("VNET '#{vnet_name}' does not have subnets")
     end
   else
     # Create public IP
     public_ip = create_public_ip(credentials, subscription_id, location, resource_group_name)
-    vnet_name = 'vnet_' + network_address.gsub('.','_').gsub('/', '_')
+    vnet_name = 'vnet_' + network_address.gsub('.', '_').gsub('/', '_')
     vnet = get_vnet(resource_group_name, vnet_name, vnet_obj)
   end
 
@@ -179,9 +163,8 @@ begin
   vnet = add_gateway_subnet_to_vnet(vnet, gateway_subnet_address, gateway_subnet_name)
   rg_name = master_rg.nil? ? resource_group_name : master_rg
   vnet = vnet_obj.create_update(rg_name, vnet)
-  vnet = vnet.body
   gateway_subnet = nil
-  vnet.properties.subnets.each do |subnet|
+  vnet.subnets.each do |subnet|
     if subnet.name == gateway_subnet_name
       gateway_subnet = subnet
       break
@@ -250,12 +233,11 @@ begin
     # Application Gateway was not created.
     OOLog.fatal("Application Gateway '#{ag_name}' could not be created")
   else
-    ag_ip = nil
-    if express_route_enabled
-      ag_ip = application_gateway.get_private_ip_address(token)
-    else
-      ag_ip = public_ip.properties.ip_address
-    end
+    ag_ip = if express_route_enabled
+              application_gateway.get_private_ip_address(token)
+            else
+              public_ip.ip_address
+            end
 
     if ag_ip.nil? || ag_ip == ''
       OOLog.fatal("Application Gateway '#{gateway_result.name}' NOT configured with IP")
