@@ -13,13 +13,11 @@ module AzureCompute
       begin
         OOLog.info("Fetching virtual machines from subscription")
         start_time = Time.now.to_i
-        promise = @client.virtual_machines.list_all()
-        response = promise.value!
-        result = response.body
+        response = @client.virtual_machines.list_all()
         end_time = Time.now.to_i
         duration = end_time - start_time
         OOLog.info("operation took #{duration} seconds")
-        return result
+        return response
       rescue MsRest::DeserializationError => de
         OOLog.info("Error getting subscription VMs")
         OOLog.info("Error: #{de.message}")
@@ -46,13 +44,11 @@ module AzureCompute
       begin
         OOLog.info("Fetcing virtual machines in '#{resource_group_name}'")
         start_time = Time.now.to_i
-        promise = @client.virtual_machines.list(resource_group_name)
-        response = promise.value!
-        result = response.body
+        response = @client.virtual_machines.list(resource_group_name)
         end_time = Time.now.to_i
         duration = end_time - start_time
         OOLog.info("operation took #{duration} seconds")
-        return result
+        return response
       rescue  MsRestAzure::AzureOperationError =>e
         OOLog.info("Error getting resource group VM")
         OOLog.info("Error Response: #{e.response}")
@@ -66,13 +62,11 @@ module AzureCompute
       begin
         OOLog.info("Fetching VM '#{vm_name}' in '#{resource_group_name}' ")
         start_time = Time.now.to_i
-        promise = @client.virtual_machines.get(resource_group_name, vm_name)
-        response = promise.value!
-        result = response.body
+        response = @client.virtual_machines.get(resource_group_name, vm_name)
         end_time = Time.now.to_i
         duration = end_time - start_time
         OOLog.info("operation took #{duration} seconds")
-        return result
+        return response
       rescue  MsRestAzure::AzureOperationError =>e
         OOLog.fatal("Error fetching VM.  #{e.body}")
       rescue => ex
@@ -84,10 +78,11 @@ module AzureCompute
       begin
         OOLog.info("Starting VM: #{vm_name} in resource group: #{resource_group_name}")
         start_time = Time.now.to_i
-        @client.virtual_machines.start(resource_group_name, vm_name)
+        response = @client.virtual_machines.start(resource_group_name, vm_name)
         end_time = Time.now.to_i
         duration = end_time - start_time
         OOLog.info("VM started in #{duration} seconds")
+        return response
       rescue  MsRestAzure::AzureOperationError =>e
         OOLog.fatal("Error starting VM. #{e.response}")
       rescue Exception => ex
@@ -99,11 +94,11 @@ module AzureCompute
       begin
         OOLog.info("Restarting VM: #{vm_name} in resource group: #{resource_group_name}")
         start_time = Time.now.to_i
-        response = @client.virtual_machines.restart(resource_group_name, vm_name).value!
+        response = @client.virtual_machines.restart(resource_group_name, vm_name)
         end_time = Time.now.to_i
         duration = end_time - start_time
         OOLog.info("operation took #{duration} seconds")
-        response
+        return response
       rescue MsRestAzure::AzureOperationError => e
         OOLog.fatal("Error restarting VM.  #{e.body}")
       rescue => ex
@@ -115,10 +110,11 @@ module AzureCompute
       begin
         OOLog.info("Power off VM: #{vm_name} in resource group: #{resource_group_name}")
         start_time = Time.now.to_i
-        @client.virtual_machines.power_off(resource_group_name, vm_name).value!
+        response = @client.virtual_machines.power_off(resource_group_name, vm_name)
         end_time = Time.now.to_i
         duration = end_time - start_time
         OOLog.info("operation took #{duration} seconds")
+        return response
       rescue  MsRestAzure::AzureOperationError =>e
         OOLog.fatal("Error powering off VM. #{e.response}")
       rescue Exception => ex
