@@ -23,7 +23,7 @@ include_recipe 'azure::get_platform_rg_and_as'
 include_recipe 'azuredns::get_azure_token'
 token = node['azure_rest_token']
 
-def get_compute_nodes
+def fetch_compute_nodes
   compute_nodes = []
   compute_list = node.workorder.payLoad.DependsOn.select { |d| d[:ciClassName] =~ /Compute/ }
   if compute_list
@@ -95,9 +95,9 @@ resource_group_name = node['platform-resource-group']
 subscription_id = ag_service[:ciAttributes]['subscription']
 location = ag_service[:ciAttributes][:location]
 
-asmb_name = assembly_name.gsub(/-/, '').downcase
-plat_name = platform_name.gsub(/-/, '').downcase
-env_name = environment_name.gsub(/-/, '').downcase
+asmb_name = assembly_name.delete(/-/, '').downcase
+plat_name = platform_name.delete(/-/, '').downcase
+env_name = environment_name.delete(/-/, '').downcase
 ag_name = "ag-#{plat_name}"
 
 tenant_id = ag_service[:ciAttributes][:tenant_id]
@@ -152,7 +152,7 @@ begin
   else
     # Create public IP
     public_ip = create_public_ip(credentials, subscription_id, location, resource_group_name)
-    vnet_name = 'vnet_' + network_address.gsub('.', '_').gsub('/', '_')
+    vnet_name = 'vnet_' + network_address.delete('.', '_').delete('/', '_')
     vnet = get_vnet(resource_group_name, vnet_name, vnet_obj)
   end
 
@@ -175,7 +175,7 @@ begin
   application_gateway.set_gateway_configuration(gateway_subnet)
 
   # Backend Address Pool
-  backend_ip_address_list = get_compute_nodes
+  backend_ip_address_list = fetch_compute_nodes
   application_gateway.set_backend_address_pool(backend_ip_address_list)
 
   # Gateway Settings
@@ -184,11 +184,10 @@ begin
   ssl_certificate_exist = false
   certs = node.workorder.payLoad.DependsOn.select { |d| d[:ciClassName] =~ /Certificate/ }
   certs.each do |cert|
-    if !cert[:ciAttributes][:pfx_enable].nil? && cert[:ciAttributes][:pfx_enable] == 'true'
-      data = cert[:ciAttributes][:ssl_data]
-      password = cert[:ciAttributes][:ssl_password]
-      ssl_certificate_exist = true
-    end
+    next if cert[:ciAttributes][:pfx_enable].nil? && cert[:ciAttributes][:pfx_enable] == 'true'
+    data = cert[:ciAttributes][:ssl_data]
+    password = cert[:ciAttributes][:ssl_password]
+    ssl_certificate_exist = true
   end
 
   enable_cookie = true
@@ -236,7 +235,7 @@ begin
     ag_ip = if express_route_enabled
               application_gateway.get_private_ip_address(token)
             else
-              public_ip.ip_address
+              public_ip.properties.ip_address
             end
 
     if ag_ip.nil? || ag_ip == ''
