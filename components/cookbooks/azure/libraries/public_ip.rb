@@ -40,6 +40,7 @@ module AzureNetwork
       rescue => e
         OOLog.fatal("Exception trying to get public ip #{public_ip_name} from resource group: #{resource_group_name}, Exception: #{e.message}")
       end
+
       OOLog.info("operation took #{duration} seconds")
       response
     end
@@ -57,6 +58,7 @@ module AzureNetwork
       rescue => e
         OOLog.fatal("Error deleting PublicIP '#{public_ip_name}' in ResourceGroup '#{resource_group_name}'. Exception: #{e.message}")
       end
+
       OOLog.info("operation took #{duration} seconds")
       response
     end
@@ -76,6 +78,7 @@ module AzureNetwork
       rescue => e
         OOLog.fatal("Exception trying to create/update public ip #{public_ip_address.name} from resource group: #{resource_group_name}.  Exception: #{e.message}")
       end
+
       OOLog.info("operation took #{duration} seconds")
       response
     end
@@ -99,6 +102,7 @@ module AzureNetwork
       rescue => e
         OOLog.fatal("Exception trying to get public ip #{public_ip_name} from resource group: #{resource_group_name}. Exception: #{e.message}")
       end
+
       OOLog.info("operation took #{duration} seconds")
       true
     end

@@ -48,8 +48,8 @@ module AzureNetwork
 
     # this will create/update the vnet
     def create_update(resource_group_name, virtual_network)
+      OOLog.info("Creating Virtual Network '#{@name}' ...")
       begin
-        OOLog.info("Creating Virtual Network '#{@name}' ...")
         start_time = Time.now.to_i
         response = @client.virtual_networks.create_or_update(resource_group_name, @name, virtual_network)
         end_time = Time.now.to_i
@@ -59,6 +59,7 @@ module AzureNetwork
       rescue => ex
         OOLog.fatal("Failed creating/updating vnet: #{@name} with exception #{ex.message}")
       end
+
       OOLog.info('Successfully created/updated network name: ' + @name)
       OOLog.info("operation took #{duration} seconds")
       response
@@ -68,8 +69,8 @@ module AzureNetwork
     def get(resource_group_name)
       OOLog.fatal('VNET name is nil. It is required.') if @name.nil?
 
+      OOLog.info("Getting Virtual Network '#{@name}' ...")
       begin
-        OOLog.info("Getting Virtual Network '#{@name}' ...")
         start_time = Time.now.to_i
         response = @client.virtual_networks.get(resource_group_name, @name)
         end_time = Time.now.to_i
@@ -79,14 +80,15 @@ module AzureNetwork
       rescue => ex
         OOLog.fatal("Error getting virtual network: #{@name} from resource group #{resource_group_name}.  Exception: #{ex.message}")
       end
+
       OOLog.info("operation took #{duration} seconds")
       response
     end
 
     # this method will return a list of vnets from the resource group
     def list(resource_group_name)
+      OOLog.info("Getting vnets from Resource Group '#{resource_group_name}' ...")
       begin
-        OOLog.info("Getting vnets from Resource Group '#{resource_group_name}' ...")
         start_time = Time.now.to_i
         response = @client.virtual_networks.list(resource_group_name)
         end_time = Time.now.to_i
@@ -96,14 +98,15 @@ module AzureNetwork
       rescue => ex
         OOLog.fatal("Error getting all vnets for resource group. Exception: #{ex.message}")
       end
+
       OOLog.info("operation took #{duration} seconds")
       response
     end
 
     # this method will return a list of vnets from the subscription
     def list_all
+      OOLog.info('Getting subscription vnets ...')
       begin
-        OOLog.info('Getting subscription vnets ...')
         start_time = Time.now.to_i
         response = @client.virtual_networks.list_all
         end_time = Time.now.to_i
@@ -113,6 +116,7 @@ module AzureNetwork
       rescue => ex
         OOLog.fatal("Error getting all vnets for the sub. Exception: #{ex.message}")
       end
+
       OOLog.info("operation took #{duration} seconds")
       response
     end
@@ -140,6 +144,7 @@ module AzureNetwork
       rescue => ex
         OOLog.fatal("Error getting virtual network: #{@name} from resource group #{resource_group_name}.  Exception: #{ex.message}")
       end
+
       OOLog.info('VNET EXISTS!!')
       true
     end

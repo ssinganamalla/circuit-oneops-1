@@ -19,10 +19,8 @@ module AzureCompute
     # will return whether or not the availability set exists.
     def get(resource_group, availability_set)
       begin
-        promise =
           @client.availability_sets.get(resource_group,
                                         availability_set)
-        promise
       rescue MsRestAzure::AzureOperationError => e
         # if the error is that the availability set doesn't exist,
         # just return a nil
@@ -52,19 +50,18 @@ module AzureCompute
         avail_set = get_avail_set_props(location)
         begin
           start_time = Time.now.to_i
-          response =
-            @client.availability_sets.create_or_update(resource_group,
-                                                       availability_set,
-                                                       avail_set)
-          response
+          @client.availability_sets.create_or_update(resource_group,
+                                                     availability_set,
+                                                     avail_set)
           end_time = Time.now.to_i
           duration = end_time - start_time
-          OOLog.info("Availability Set created in #{duration} seconds")
         rescue MsRestAzure::AzureOperationError => e
           OOLog.fatal("Error adding an availability set: #{e.body}")
         rescue => ex
           OOLog.fatal("Error adding an availability set: #{ex.message}")
         end
+
+        OOLog.info("Availability Set created in #{duration} seconds")
       end
     end
 

@@ -13,7 +13,7 @@ def generate_rg_name(org,assembly,platform,environment,location)
   resource_group_name = org[0..15] + '-' + assembly[0..15] + '-' + node.workorder.box.ciId.to_s + '-' + environment[0..15] + '-' + Utils.abbreviate_location(location)
   OOLog.info("platform-resource-group is: #{resource_group_name}")
   OOLog.info("Resource Group Name Length = #{resource_group_name.length}")
-  return resource_group_name
+  resource_group_name
 end
 
 OOLog.info("get_platform_rg_and_as.rb called from ")

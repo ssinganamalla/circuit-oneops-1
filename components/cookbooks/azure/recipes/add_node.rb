@@ -155,8 +155,7 @@ begin
   start_time = Time.now.to_i
   OOLog.info("Creating New Azure VM :#{server_name}")
   # create the VM in the platform resource group
-  vm_promise = client.virtual_machines.create_or_update(resource_group_name, server_name, params)
-  my_new_vm = vm_promise
+  my_new_vm = client.virtual_machines.create_or_update(resource_group_name, server_name, params)
   end_time = Time.now.to_i
   duration = end_time - start_time
   OOLog.info("Azure VM created in #{duration} seconds")

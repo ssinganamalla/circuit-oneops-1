@@ -127,7 +127,7 @@ module AzureCompute
       storage_profile.os_disk.create_option = Azure::ARM::Compute::Models::DiskCreateOptionTypes::FromImage
 
 
-      return storage_profile
+      storage_profile
     end
 
 private
@@ -152,7 +152,7 @@ private
         storage_accounts[index-1] = account_name
       end
 
-      return storage_accounts
+      storage_accounts
     end
 
     #Calculate the index of the storage account name array
@@ -170,19 +170,18 @@ private
           return storage_index
         end
       end
-      return -1
+      -1
     end
 
     def get_resource_group_vm_count
       vm_count = 0
-      response = @compute_client.virtual_machines.list(@resource_group_name)
-      vm_list = response
+      vm_list = @compute_client.virtual_machines.list(@resource_group_name)
       if !vm_list.nil? and !vm_list.empty?
         vm_count = vm_list.size
       else
         vm_count = 0
       end
-      return vm_count
+      vm_count
     end
 
     def storage_name_avail?(storage_account_name)
@@ -192,15 +191,16 @@ private
          params.type = 'Microsoft.Storage/storageAccounts'
          response =
             @storage_client.storage_accounts.check_name_availability(params)
-         OOLog.info("Storage Name Available: #{response.name_available}")
-         return response.name_available
        rescue  MsRestAzure::AzureOperationError => e
          OOLog.info("ERROR checking availability of #{storage_account_name}")
          OOLog.info("ERROR Body: #{e.body}")
          return nil
        rescue => ex
          OOLog.fatal("Error checking availability of #{storage_account_name}: #{ex.message}")
-       end
+      end
+
+      OOLog.info("Storage Name Available: #{response.name_available}")
+      response.name_available
     end
 
     def storage_account_created?(storage_account_name)
@@ -208,13 +208,14 @@ private
          response =
             @storage_client.storage_accounts.get_properties(@resource_group_name, storage_account_name)
                   OOLog.info("Storage Account Provisioning State: #{response.provisioning_state}")
-         return response.provisioning_state == "Succeeded"
        rescue  MsRestAzure::AzureOperationError => e
          OOLog.info("#ERROR Body: #{e.body}")
          return false
        rescue => ex
          OOLog.fatal("Error getting properties of #{storage_account_name}: #{ex.message}")
-       end
+      end
+
+      response.provisioning_state == 'Succeeded'
     end
 
     def create_storage_account(storage_account_name, account_type)
@@ -225,23 +226,22 @@ private
       params.sku = account_type
       params.location = @location
 
+      Chef::Log.info("Creating Storage Account: [ #{storage_account_name} ] in Resource Group: #{@resource_group_name} ...")
       begin
-        Chef::Log.info("Creating Storage Account: [ #{storage_account_name} ] in Resource Group: #{@resource_group_name} ...")
         start_time = Time.now.to_i
         response =
           @storage_client.storage_accounts.create(@resource_group_name,
                                                   storage_account_name, params)
         end_time = Time.now.to_i
-
         duration = end_time - start_time
-        Chef::Log.info("Storage Account created in #{duration} seconds")
-
-        return response
       rescue MsRestAzure::AzureOperationError => e
         OOLog.fatal("Error creating storage account: #{e.body.values[0]['message']}")
       rescue => ex
         OOLog.fatal("Error creating storage account: #{ex.message}")
       end
+
+      Chef::Log.info("Storage Account created in #{duration} seconds")
+      response
     end
 
   end

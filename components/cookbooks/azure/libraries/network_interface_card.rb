@@ -59,6 +59,7 @@ module AzureNetwork
       rescue => ex
         OOLog.fatal("Error getting NIC: #{nic_name}. Excpetion: #{ex.message}")
       end
+
       OOLog.info("operation took #{duration} seconds")
       response
     end
@@ -76,6 +77,7 @@ module AzureNetwork
       rescue => ex
         OOLog.fatal("Error creating/updating NIC.  Exception: #{ex.message}")
       end
+
       puts("operation took #{duration} seconds")
       OOLog.info("NIC '#{network_interface.name}' was updated in #{duration} seconds")
       response

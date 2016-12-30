@@ -19,14 +19,14 @@ def get_vm(client, resource_group_name, vm_name)
   begin
       puts("Getting VM #{vm_name}")
       start_time = Time.now.to_i
-      promise = client.virtual_machines.get(resource_group_name, vm_name)
+      virtual_machine = client.virtual_machines.get(resource_group_name, vm_name)
       end_time = Time.now.to_i
 
       duration = end_time - start_time
 
       puts("VM fetched in #{duration} seconds")
 
-      return promise
+      virtual_machine
     rescue MsRestAzure::AzureOperationError => e
       puts 'Error fetching VM'
       puts("Error Body: #{e.body}")

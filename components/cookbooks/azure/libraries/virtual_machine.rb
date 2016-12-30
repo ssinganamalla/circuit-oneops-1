@@ -16,8 +16,6 @@ module AzureCompute
         response = @client.virtual_machines.list_all()
         end_time = Time.now.to_i
         duration = end_time - start_time
-        OOLog.info("operation took #{duration} seconds")
-        return response
       rescue MsRest::DeserializationError => de
         OOLog.info("Error getting subscription VMs")
         OOLog.info("Error: #{de.message}")
@@ -38,6 +36,9 @@ module AzureCompute
         result = Azure::ARM::Compute::Models::VirtualMachineListResult.new
         return result
       end
+
+      OOLog.info("operation took #{duration} seconds")
+      response
     end
 
     def get_resource_group_vms(resource_group_name)
@@ -47,8 +48,6 @@ module AzureCompute
         response = @client.virtual_machines.list(resource_group_name)
         end_time = Time.now.to_i
         duration = end_time - start_time
-        OOLog.info("operation took #{duration} seconds")
-        return response
       rescue  MsRestAzure::AzureOperationError =>e
         OOLog.info("Error getting resource group VM")
         OOLog.info("Error Response: #{e.response}")
@@ -56,6 +55,9 @@ module AzureCompute
         result = Azure::ARM::Compute::Models::VirtualMachineListResult.new
         return result
       end
+
+      OOLog.info("operation took #{duration} seconds")
+      response
     end
 
     def get(resource_group_name, vm_name)
@@ -65,13 +67,14 @@ module AzureCompute
         response = @client.virtual_machines.get(resource_group_name, vm_name)
         end_time = Time.now.to_i
         duration = end_time - start_time
-        OOLog.info("operation took #{duration} seconds")
-        return response
       rescue  MsRestAzure::AzureOperationError =>e
         OOLog.fatal("Error fetching VM.  #{e.body}")
       rescue => ex
         OOLog.fatal("Error fetching VM: #{ex.message}")
       end
+
+      OOLog.info("operation took #{duration} seconds")
+      response
     end
 
     def start(resource_group_name, vm_name)
@@ -81,13 +84,14 @@ module AzureCompute
         response = @client.virtual_machines.start(resource_group_name, vm_name)
         end_time = Time.now.to_i
         duration = end_time - start_time
-        OOLog.info("VM started in #{duration} seconds")
-        return response
       rescue  MsRestAzure::AzureOperationError =>e
         OOLog.fatal("Error starting VM. #{e.response}")
       rescue Exception => ex
         OOLog.fatal("Error starting VM. #{ex.message}")
       end
+
+      OOLog.info("VM started in #{duration} seconds")
+      response
     end
 
     def restart(resource_group_name, vm_name)
@@ -97,13 +101,14 @@ module AzureCompute
         response = @client.virtual_machines.restart(resource_group_name, vm_name)
         end_time = Time.now.to_i
         duration = end_time - start_time
-        OOLog.info("operation took #{duration} seconds")
-        return response
       rescue MsRestAzure::AzureOperationError => e
         OOLog.fatal("Error restarting VM.  #{e.body}")
       rescue => ex
         OOLog.fatal("Error restarting VM: #{ex.message}")
       end
+
+      OOLog.info("operation took #{duration} seconds")
+      response
     end
 
     def power_off(resource_group_name, vm_name)
@@ -113,15 +118,14 @@ module AzureCompute
         response = @client.virtual_machines.power_off(resource_group_name, vm_name)
         end_time = Time.now.to_i
         duration = end_time - start_time
-        OOLog.info("operation took #{duration} seconds")
-        return response
       rescue  MsRestAzure::AzureOperationError =>e
         OOLog.fatal("Error powering off VM. #{e.response}")
       rescue Exception => ex
         OOLog.fatal("Error powering off VM. #{ex.message}")
       end
+
+      OOLog.info("operation took #{duration} seconds")
+      response
     end
-
   end
-
 end

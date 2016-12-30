@@ -77,6 +77,7 @@ module AzureNetwork
       rescue => ex
         OOLog.fatal("Error getting all subnets for vnet. Exception: #{ex.message}")
       end
+
       OOLog("operation took #{duration} seconds")
       response
     end
@@ -94,6 +95,7 @@ module AzureNetwork
       rescue => ex
         OOLog.fatal("Error getting subnet.  Excpetion: #{ex.message}")
       end
+
       OOLog.info("operation took #{duration} seconds")
       response
     end
