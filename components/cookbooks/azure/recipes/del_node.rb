@@ -17,23 +17,21 @@ Utils.set_proxy(node.workorder.payLoad.OO_CLOUD_VARS)
 #Get the vm object from azure given a resource group and compute name
 def get_vm(client, resource_group_name, vm_name)
   begin
-      puts("Getting VM #{vm_name}")
-      start_time = Time.now.to_i
-      virtual_machine = client.virtual_machines.get(resource_group_name, vm_name)
-      end_time = Time.now.to_i
+    OOLog.info("Getting VM #{vm_name}")
+    start_time = Time.now.to_i
+    virtual_machine = client.virtual_machines.get(resource_group_name, vm_name)
+    end_time = Time.now.to_i
+    duration = end_time - start_time
+  rescue MsRestAzure::AzureOperationError => e
+    OOLog.info('Error fetching VM')
+    OOLog.info("Error Body: #{e.body}")
+    return nil
+  rescue => ex
+    OOLog.fatal("Error fetching vm: #{ex.message}")
+  end
 
-      duration = end_time - start_time
-
-      puts("VM fetched in #{duration} seconds")
-
-      virtual_machine
-    rescue MsRestAzure::AzureOperationError => e
-      puts 'Error fetching VM'
-      puts("Error Body: #{e.body}")
-      return nil
-    rescue => ex
-      OOLog.fatal("Error fetching vm: #{ex.message}")
-    end
+  OOLog.info("VM fetched in #{duration} seconds")
+  virtual_machine
 end
 
 # delete the NIC from the platform specific resource group
@@ -45,7 +43,7 @@ def delete_nic(credentials, subscription_id, resource_group_name, nic_name)
     networkclient.network_interfaces.delete(resource_group_name, nic_name)
     end_time = Time.now.to_i
     duration = end_time - start_time
-    Chef::Log.info("Deleting NIC '#{nic_name}' in #{duration} seconds")
+    OOLog.info("Deleting NIC '#{nic_name}' in #{duration} seconds")
   rescue MsRestAzure::AzureOperationError => e
     OOLog.fatal("***FAULT:FATAL=Error deleting NIC, resource group: '#{resource_group_name}', NIC name: '#{nic_name}', Error: #{e.body.values[0]['message']}")
   rescue => ex
@@ -62,17 +60,17 @@ def delete_publicip(credentials,subscription_id,resource_group_name, public_ip_n
     networkclient.public_ip_addresses.delete(resource_group_name, public_ip_name)
     end_time = Time.now.to_i
     duration = end_time - start_time
-    Chef::Log.info("Deleting public ip '#{public_ip_name}' in #{duration} seconds")
+    OOLog.info("Deleting public ip '#{public_ip_name}' in #{duration} seconds")
  end
 end
 
 cloud_name = node['workorder']['cloud']['ciName']
-Chef::Log.info('cloud_name is: ' + cloud_name)
+OOLog.info('cloud_name is: ' + cloud_name)
 compute_service = node['workorder']['services']['compute'][cloud_name]['ciAttributes']
 
 # handle token and credentials
 subscription_id = compute_service['subscription']
-Chef::Log.info('Subscription id is: ' + subscription_id)
+OOLog.info('Subscription id is: ' + subscription_id)
 
 # invoke recipe to get credentials
 include_recipe "azure::get_credentials"
@@ -84,7 +82,7 @@ include_recipe 'azure::get_platform_rg_and_as'
 
 server_name = node['server_name']
 cloud_name = node['workorder']['cloud']['ciName']
-Chef::Log.info("Cloud Name: #{cloud_name}")
+OOLog.info("Cloud Name: #{cloud_name}")
 compute_service = node['workorder']['services']['compute'][cloud_name]['ciAttributes']
 express_route_enabled = compute_service['express_route_enabled']
 if express_route_enabled == 'true'
@@ -138,7 +136,7 @@ rescue => ex
  ensure
    end_time = Time.now.to_i
    duration = end_time - start_time
-   Chef::Log.info("Deleting VM took #{duration} seconds")
+   OOLog.info("Deleting VM took #{duration} seconds")
 end
 
-Chef::Log.info("Exiting azure delete compute")
+OOLog.info("Exiting azure delete compute")

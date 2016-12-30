@@ -78,7 +78,6 @@ module AzureNetwork
         OOLog.fatal("Error creating/updating NIC.  Exception: #{ex.message}")
       end
 
-      puts("operation took #{duration} seconds")
       OOLog.info("NIC '#{network_interface.name}' was updated in #{duration} seconds")
       response
     end
