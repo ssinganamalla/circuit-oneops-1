@@ -5,7 +5,6 @@ require File.expand_path('../../libraries/application_gateway.rb', __FILE__)
 require File.expand_path('../../../azure/libraries/public_ip.rb', __FILE__)
 require File.expand_path('../../../azure/libraries/virtual_network.rb', __FILE__)
 
-gem 'azure_mgmt_network', '=0.8.0'
 require 'azure_mgmt_network'
 require 'rest-client'
 require 'chef'
@@ -223,10 +222,7 @@ begin
   sku_name = ag_service[:ciAttributes][:gateway_size]
   application_gateway.set_gateway_sku(sku_name)
 
-  # Create Gateway Object
-  gateway = application_gateway.get_gateway(location, ssl_certificate_exist)
-
-  gateway_result = application_gateway.create_or_update(gateway)
+  gateway_result = application_gateway.create_or_update(location, ssl_certificate_exist)
 
   if gateway_result.nil?
     # Application Gateway was not created.

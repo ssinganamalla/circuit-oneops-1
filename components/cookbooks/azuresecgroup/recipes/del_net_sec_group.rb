@@ -33,7 +33,7 @@ resource_group_name = AzureResources::ResourceGroup.get_name(org, assembly, plat
 nsg = AzureNetwork::NetworkSecurityGroup.new(credentials, subscription)
 nsg_result = nsg.delete_security_group(resource_group_name, network_security_group_name)
 
-if nsg_result.nil?
+if nsg_result
   Chef::Log.info("The network security group #{network_security_group_name} has been deleted")
 else
   raise 'Error deleting network security group'
