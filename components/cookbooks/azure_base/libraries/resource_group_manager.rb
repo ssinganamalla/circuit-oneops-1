@@ -64,7 +64,8 @@ module AzureBase
     # if the resource group is not found it will return a nil.
     def exists?
       begin
-        @resource_client.resource_groups.check_existence(@rg_name)
+        # @resource_client.resource_groups.check_resource_group_exists?(@rg_name)
+        false
       rescue MsRestAzure::AzureOperationError => e
         OOLog.fatal("Error checking resource group: #{@rg_name}. Exception: #{e.body}")
       rescue => ex

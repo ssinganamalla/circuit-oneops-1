@@ -9,15 +9,15 @@ module AzureNetwork
   # Cookbook Name:: azuregateway
   class Gateway
     attr_accessor :gateway_attributes
-    def initialize(resource_group_name, ag_name, credentials, subscription_id)
-      @subscription_id = subscription_id
+    def initialize(resource_group_name, ag_name, credentials)
+      @subscription_id = credentials[:subscription]
       @resource_group_name = resource_group_name
       @ag_name = ag_name
       @application_gateway = Fog::ApplicationGateway::AzureRM.new(
-          tenant_id: credentials['tenant_id'],
-          client_id: credentials['client_id'],
-          client_secret: credentials['client_secret'],
-          subscription_id: @subscription_id
+          tenant_id: credentials[:tenant_id],
+          client_id: credentials[:client_id],
+          client_secret: credentials[:client_secret],
+          subscription_id: credentials[:subscription]
       )
       @gateway_attributes = {}
       @configurations = YAML.load_file(File.expand_path('../config/config.yml', __dir__))
@@ -65,13 +65,13 @@ module AzureNetwork
       backend_addresses = []
       backend_address_list.each do |backend_address|
         backend_addr = {}
-        backend_addr['ipAddress'] = backend_address
+        backend_addr[:ipAddress] = backend_address
         backend_addresses.push(backend_addr)
       end
 
-      gateway_backend_pool['name'] = @configurations['gateway']['backend_address_pool_name']
-      # gateway_backend_pool['id'] = get_attribute_id('backendAddressPools', gateway_backend_pool['name'])
-      gateway_backend_pool['backend_addresses'] = backend_addresses
+      gateway_backend_pool[:name] = @configurations['gateway']['backend_address_pool_name']
+      gateway_backend_pool[:id] = get_attribute_id('backendAddressPools', gateway_backend_pool[:name])
+      gateway_backend_pool[:ip_addresses] = backend_addresses
 
       @gateway_attributes[:backend_address_pool] = gateway_backend_pool
     end
@@ -79,7 +79,7 @@ module AzureNetwork
     def set_https_settings(enable_cookie = true)
       https_settings = {
         name: @configurations['gateway']['http_settings_name'],
-        # id: get_attribute_id('backendHttpSettingsCollection', @configurations['gateway']['http_settings_name']),
+        id: get_attribute_id('backendHttpSettingsCollection', @configurations['gateway']['http_settings_name']),
         port: 80,
         protocol: 'Http',
         cookie_based_affinity: enable_cookie ? 'Enabled' : 'Disabled'
@@ -91,7 +91,7 @@ module AzureNetwork
     def set_gateway_port(ssl_certificate_exist)
       gateway_port = {
         name: @configurations['gateway']['gateway_front_port_name'],
-        # id: get_attribute_id('frontendPorts', @configurations['gateway']['gateway_front_port_name']),
+        id: get_attribute_id('frontendPorts', @configurations['gateway']['gateway_front_port_name']),
         port: ssl_certificate_exist ? 443 : 80
       }
 
@@ -100,13 +100,13 @@ module AzureNetwork
 
     def set_frontend_ip_config(public_ip, subnet)
       frontend_ip_config = {}
-      frontend_ip_config['name'] = @configurations['gateway']['frontend_ip_config_name']
-      # frontend_ip_config['id'] =  get_attribute_id('frontendIPConfigurations', frontend_ip_config['name'])
+      frontend_ip_config[:name] = @configurations['gateway']['frontend_ip_config_name']
+      frontend_ip_config[:id] =  get_attribute_id('frontendIPConfigurations', frontend_ip_config[:name])
       if public_ip.nil?
-        # frontend_ip_config['subnet_id'] = subnet.id
-        frontend_ip_config['private_ip_allocation_method'] = IPAllocationMethod::Dynamic
+        frontend_ip_config[:subnet_id] = subnet.id
+        frontend_ip_config[:private_ip_allocation_method] = 'Dynamic'
       else
-        frontend_ip_config['public_ip_address_id'] = public_ip.id
+        frontend_ip_config[:public_ip_address_id] = public_ip.id
       end
 
       @gateway_attributes[:frontend_ip_config] = frontend_ip_config
@@ -115,7 +115,7 @@ module AzureNetwork
     def set_ssl_certificate(data, password)
       ssl_certificate = {
         name: @configurations['gateway']['ssl_certificate_name'],
-        # id: get_attribute_id('sslCertificates', @configurations['gateway']['ssl_certificate_name']),
+        id: get_attribute_id('sslCertificates', @configurations['gateway']['ssl_certificate_name']),
         data: data,
         password: password
       }
@@ -126,10 +126,10 @@ module AzureNetwork
     def set_listener(certificate_exist)
       listener = {
         name: @configurations['gateway']['gateway_listener_name'],
-        # id: get_attribute_id('httpListeners', @configurations['gateway']['gateway_listener_name']),
+        id: get_attribute_id('httpListeners', @configurations['gateway']['gateway_listener_name']),
         protocol: certificate_exist ? 'Https' : 'Http',
-        frontend_ipconfiguration: @gateway_attributes[:frontend_ip_config],
-        frontend_port: @gateway_attributes[:gateway_port],
+        frontend_ip_config_id: @gateway_attributes[:frontend_ip_config][:id],
+        frontend_port_id: @gateway_attributes[:gateway_port][:id],
         ssl_certificate: @gateway_attributes[:ssl_certificate]
       }
 
@@ -139,10 +139,10 @@ module AzureNetwork
     def set_gateway_request_routing_rule
       gateway_request_routing_rule = {
         name: @configurations['gateway']['gateway_request_route_rule_name'],
-        rule_type: 'Basic',
-        backend_http_settings: @gateway_attributes[:https_settings],
-        http_listener: @gateway_attributes[:listener],
-        backend_address_pool: @gateway_attributes[:backend_address_pool]
+        type: 'Basic',
+        backend_http_settings_id: @gateway_attributes[:https_settings][:id],
+        http_listener_id: @gateway_attributes[:listener][:id],
+        backend_address_pool_id: @gateway_attributes[:backend_address_pool][:id]
       }
 
       @gateway_attributes[:gateway_request_routing_rule] = gateway_request_routing_rule

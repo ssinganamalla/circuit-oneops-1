@@ -130,7 +130,7 @@ OOLog.info("Application Gateway: #{ag_name}")
 
 begin
   credentials = Utils.get_credentials(tenant_id, client_id, client_secret)
-  application_gateway = AzureNetwork::Gateway.new(resource_group_name, ag_name, credentials, subscription_id)
+  application_gateway = AzureNetwork::Gateway.new(resource_group_name, ag_name, ag_service[:ciAttributes])
 
   # Determine if express route is enabled
   express_route_enabled = true
