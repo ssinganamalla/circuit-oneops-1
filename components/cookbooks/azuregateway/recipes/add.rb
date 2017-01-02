@@ -5,7 +5,6 @@ require File.expand_path('../../libraries/application_gateway.rb', __FILE__)
 require File.expand_path('../../../azure/libraries/public_ip.rb', __FILE__)
 require File.expand_path('../../../azure/libraries/virtual_network.rb', __FILE__)
 
-gem 'azure_mgmt_network', '=0.8.0'
 require 'azure_mgmt_network'
 require 'rest-client'
 require 'chef'
@@ -95,9 +94,9 @@ resource_group_name = node['platform-resource-group']
 subscription_id = ag_service[:ciAttributes]['subscription']
 location = ag_service[:ciAttributes][:location]
 
-asmb_name = assembly_name.delete(/-/, '').downcase
-plat_name = platform_name.delete(/-/, '').downcase
-env_name = environment_name.delete(/-/, '').downcase
+asmb_name = assembly_name.gsub(/-/, '').downcase
+plat_name = platform_name.gsub(/-/, '').downcase
+env_name = environment_name.gsub(/-/, '').downcase
 ag_name = "ag-#{plat_name}"
 
 tenant_id = ag_service[:ciAttributes][:tenant_id]
@@ -152,7 +151,7 @@ begin
   else
     # Create public IP
     public_ip = create_public_ip(credentials, subscription_id, location, resource_group_name)
-    vnet_name = 'vnet_' + network_address.delete('.', '_').delete('/', '_')
+    vnet_name = 'vnet_' + network_address.gsub('.', '_').gsub('/', '_')
     vnet = get_vnet(resource_group_name, vnet_name, vnet_obj)
   end
 
@@ -223,10 +222,7 @@ begin
   sku_name = ag_service[:ciAttributes][:gateway_size]
   application_gateway.set_gateway_sku(sku_name)
 
-  # Create Gateway Object
-  gateway = application_gateway.get_gateway(location, ssl_certificate_exist)
-
-  gateway_result = application_gateway.create_or_update(gateway)
+  gateway_result = application_gateway.create_or_update(location, ssl_certificate_exist)
 
   if gateway_result.nil?
     # Application Gateway was not created.
@@ -235,7 +231,7 @@ begin
     ag_ip = if express_route_enabled
               application_gateway.get_private_ip_address(token)
             else
-              public_ip.properties.ip_address
+              public_ip.ip_address
             end
 
     if ag_ip.nil? || ag_ip == ''
