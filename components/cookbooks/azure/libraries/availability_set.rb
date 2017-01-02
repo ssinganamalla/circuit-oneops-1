@@ -4,13 +4,7 @@ module AzureCompute
   # get, add, delete, etc.
   class AvailabilitySet
     def initialize(compute_service)
-      creds =
-        Utils.get_credentials(compute_service['tenant_id'],
-                              compute_service['client_id'],
-                              compute_service['client_secret']
-                             )
-
-      @resource_client = Fog::Compute::AzureRM.new(client_id: compute_service['client_id'], client_secret: compute_service['client_secret'], tenant_id: compute_service['tenant_id'], subscription_id: compute_service['subscription_id'])
+      @resource_client = Fog::Compute::AzureRM.new(client_id: compute_service[:client_id], client_secret: compute_service[:client_secret], tenant_id: compute_service[:tenant_id], subscription_id: compute_service[:subscription])
     end
 
     # method will get the availability set using the resource group and
@@ -18,8 +12,7 @@ module AzureCompute
     # will return whether or not the availability set exists.
     def get(resource_group, availability_set)
       begin
-        response = @resource_client.availability_sets.get(resource_group, availability_set)
-        response
+        @resource_client.availability_sets.get(resource_group, availability_set)
       rescue MsRestAzure::AzureOperationError => e
         # if the error is that the availability set doesn't exist,
         # just return a nil
@@ -58,22 +51,6 @@ module AzureCompute
           OOLog.fatal("Error adding an availability set: #{ex.message}")
         end
       end
-    end
-
-    private
-
-    # create the properties object for creating availability sets
-    def get_avail_set_props(location)
-      avail_set =
-          Azure::ARM::Compute::Models::AvailabilitySet.new
-      # At least two domain faults
-      avail_set.platform_fault_domain_count = 2
-      avail_set.platform_update_domain_count = 2
-      # At this point we do not have virtual machines to include
-      avail_set.virtual_machines = []
-      avail_set.statuses = []
-      avail_set.location = location
-      avail_set
     end
   end
 end
