@@ -44,8 +44,7 @@ module AzureBase
     # if not, it will create it.
     def add
       # check if it exists
-      # as = @compute_client.availability_sets.check_availability_set_exists?(@rg_name, @as_name)
-      as = nil
+      as = @compute_client.availability_sets.check_availability_set_exists?(@rg_name, @as_name)
       if !as.nil?
         OOLog.info("Availability Set #{as.name} exists in the #{as.location} region.")
       else

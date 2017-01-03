@@ -9,6 +9,7 @@ module AzureNetwork
   # Cookbook Name:: azuregateway
   class Gateway
     attr_accessor :gateway_attributes
+    attr_accessor :application_gateway
     def initialize(resource_group_name, ag_name, credentials)
       @subscription_id = credentials[:subscription]
       @resource_group_name = resource_group_name
