@@ -210,7 +210,7 @@ module AzureNetwork
 
     def delete
       begin
-        @application_gateway.gateways.get(resource_group_name, app_gateway_name).destroy
+        @application_gateway.gateways.get(@resource_group_name, @ag_name).destroy
       rescue MsRestAzure::AzureOperationError => e
         OOLog.fatal("FATAL ERROR deleting Gateway....: #{e.body}")
       rescue => e
