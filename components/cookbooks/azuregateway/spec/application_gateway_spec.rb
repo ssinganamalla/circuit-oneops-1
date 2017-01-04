@@ -3,10 +3,6 @@ require 'rest-client'
 SimpleCov.start
 require File.expand_path('../../libraries/application_gateway.rb', __FILE__)
 require 'fog/azurerm'
-require 'azure_mgmt_network'
-
-include Azure::ARM::Network
-include Azure::ARM::Network::Models
 
 describe AzureNetwork::Gateway do
   before do
@@ -231,20 +227,17 @@ describe AzureNetwork::Gateway do
       file_path = File.expand_path('gateway_response.json', __dir__)
       file = File.open(file_path)
       gateway_response = file.read
-
-      allow(@gateway.application_gateway.gateways).to receive(:create) { gateway_response }
-      create_gw = @gateway.create_or_update('east-us', false)
-
-      expect(create_gw).to_not eq(nil)
+      allow(@gateway.application_gateway).to receive_message_chain(:gateways, :create).and_return(gateway_response)
+      expect(@gateway.create_or_update('east-us', false)).to_not eq(nil)
     end
     it 'raises AzureOperationError exception while creating application gateway' do
-      allow(@gateway.application_gateway.gateways).to receive(:create_or_update)
+      allow(@gateway.application_gateway).to receive_message_chain(:gateways, :create)
         .and_raise(MsRestAzure::AzureOperationError.new('Errors'))
 
       expect { @gateway.create_or_update('east-us', true) }.to raise_error('no backtrace')
     end
     it 'raises exception while creating application gateway' do
-      allow(@gateway.application_gateway.gateways).to receive(:create_or_update)
+      allow(@gateway.application_gateway).to receive_message_chain(:gateways, :create)
         .and_raise(MsRest::HttpOperationError.new('Error'))
 
       expect { @gateway.create_or_update('east-us', true) }.to raise_error('no backtrace')
@@ -253,23 +246,19 @@ describe AzureNetwork::Gateway do
 
   describe '#delete' do
     it 'deletes application gateway successfully' do
-      promise = double
-      response = double
-      allow(@gateway.application_gateway.gateways).to receive(:get) { 'BODY' }
-      allow(promise).to receive(:value!) { response }
-      allow(@gateway.application_gateway.gateways.get).to receive(:destroy) { true }
+      allow(@gateway.application_gateway).to receive_message_chain(:gateways, :get, :destroy).and_return(true)
       delete_gw = @gateway.delete
 
-      expect(delete_gw).to_not eq(nil)
+      expect(delete_gw).to_not eq(false)
     end
     it 'raises AzureOperationError exception' do
-      allow(@gateway.application_gateway.gateways.get).to receive(:destroy)
+      allow(@gateway.application_gateway).to receive_message_chain(:gateways, :get, :destroy)
         .and_raise(MsRestAzure::AzureOperationError.new('Errors'))
 
       expect { @gateway.delete }.to raise_error('no backtrace')
     end
     it 'raises exception while deleting application gateway' do
-      allow(@gateway.application_gateway.gateways.get).to receive(:destroy)
+      allow(@gateway.application_gateway).to receive_message_chain(:gateways, :get, :destroy)
         .and_raise(MsRest::HttpOperationError.new('Error'))
 
       expect { @gateway.delete }.to raise_error('no backtrace')
