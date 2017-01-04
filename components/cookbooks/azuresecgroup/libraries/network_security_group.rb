@@ -1,5 +1,6 @@
 require 'azure_mgmt_network'
 require 'fog/azurerm'
+require 'chef'
 require File.expand_path('../../../azure_base/libraries/logger.rb', __FILE__)
 
 module AzureNetwork
@@ -7,6 +8,8 @@ module AzureNetwork
   class NetworkSecurityGroup
     include Azure::ARM::Network
     include Azure::ARM::Network::Models
+
+    attr_accessor :network_client
 
     def initialize(credentials, subscription_id)
       token = credentials.instance_variable_get(:@token_provider)
