@@ -68,12 +68,12 @@ def get_probes_from_wo
   ecvs
 end
 
-def get_probes(subscription_id, resource_group_name, lb_name)
+def get_probes
   probes = []
   ecvs = get_probes_from_wo
 
   ecvs.each do |ecv|
-    probe = AzureNetwork::LoadBalancer.create_probe(subscription_id, resource_group_name, lb_name, ecv[:probe_name], ecv[:protocol], ecv[:port], ecv[:interval_secs], ecv[:num_probes], ecv[:request_path])
+    probe = AzureNetwork::LoadBalancer.create_probe(ecv[:probe_name], ecv[:protocol], ecv[:port], ecv[:interval_secs], ecv[:num_probes], ecv[:request_path])
     OOLog.info("Probe name: #{ecv[:probe_name]}")
     OOLog.info("Probe protocol: #{ecv[:protocol]}")
     OOLog.info("Probe port: #{ecv[:port]}")
@@ -130,7 +130,7 @@ def get_listeners_from_wo
   listeners
 end
 
-def get_loadbalancer_rules(env_name, platform_name, probes, frontend_ipconfig, backend_address_pool)
+def get_loadbalancer_rules(subscription_id, resource_group_name, lb_name, env_name, platform_name, probes, frontend_ipconfig, backend_address_pool)
   lb_rules = []
 
   ci = {}
@@ -149,15 +149,16 @@ def get_loadbalancer_rules(env_name, platform_name, probes, frontend_ipconfig, b
     the_probe = nil
     probes.each do |probe|
       back_port = backend_port.to_i
-      probe_port = probe.port.to_i
+      probe_port = probe['port'].to_i
 
       if back_port == probe_port
         the_probe = probe
         break
       end
     end
-
-    lb_rule = AzureNetwork::LoadBalancer.create_lb_rule(lb_rule_name, load_distribution, protocol, frontend_port, backend_port, the_probe, frontend_ipconfig, backend_address_pool)
+    backend_address_pool_id = "/subscriptions/#{subscription_id}/resourceGroups/#{resource_group_name}/providers/Microsoft.Network/loadBalancers/#{lb_name}/backendAddressPools/#{backend_address_pool['name']}"
+    probe_id = "/subscriptions/#{subscription_id}/resourceGroups/#{resource_group_name}/providers/Microsoft.Network/loadBalancers/#{lb_name}/probes/#{the_probe['name']}"
+    lb_rule = AzureNetwork::LoadBalancer.create_lb_rule(lb_rule_name, load_distribution, protocol, frontend_port, backend_port, probe_id, frontend_ipconfig_id, backend_address_pool_id)
     OOLog.info("LB Rule: #{lb_rule_name}")
     OOLog.info("LB Rule Frontend port: #{frontend_port}")
     OOLog.info("LB Rule Backend port: #{backend_port}")
@@ -223,7 +224,7 @@ end
 # NAT Rule array
 # Compute NAT Rule.
 # The second array is used to easily get the compute info along with its associated NAT rule
-def get_compute_nat_rules(subscription_id, resource_group_name, lb_name, frontend_ipconfig, nat_rules, compute_natrules)
+def get_compute_nat_rules(frontend_ipconfig_id, nat_rules, compute_natrules)
   compute_nodes = get_compute_nodes_from_wo
   if compute_nodes.count > 0
     port_increment = 10
@@ -242,7 +243,7 @@ def get_compute_nat_rules(subscription_id, resource_group_name, lb_name, fronten
       OOLog.info("NAT Rule Front port: #{frontend_port}")
       OOLog.info("NAT Rule Back port: #{backend_port}")
 
-      nat_rule = AzureNetwork::LoadBalancer.create_inbound_nat_rule(subscription_id, resource_group_name, lb_name, nat_rule_name, idle_min, protocol, frontend_port, backend_port, frontend_ipconfig, nil)
+      nat_rule = AzureNetwork::LoadBalancer.create_inbound_nat_rule(nat_rule_name, protocol, frontend_ipconfig_id, frontend_port, backend_port)
 
       nat_rules.push(nat_rule)
 
@@ -384,38 +385,36 @@ end
 
 # Frontend IP Config
 frontend_ipconfig_name = 'LB-FrontEndIP'
-frontend_ipconfig = AzureNetwork::LoadBalancer.create_frontend_ipconfig(subscription_id, resource_group_name, lb_name, frontend_ipconfig_name, public_ip, subnet)
-
+frontend_ipconfig = AzureNetwork::LoadBalancer.create_frontend_ipconfig(frontend_ipconfig_name, public_ip, subnet)
+frontend_ipconfig_id = "/subscriptions/#{subscription_id}/resourceGroups/#{resource_group_name}/providers/Microsoft.Network/loadBalancers/#{lb_name}/frontendIPConfigurations/#{frontend_ipconfig_name}"
 frontend_ipconfigs = []
 frontend_ipconfigs.push(frontend_ipconfig)
 
 # Backend Address Pool
 backend_address_pool_name = 'LB-BackEndAddressPool'
-backend_address_pool = AzureNetwork::LoadBalancer.create_backend_address_pool(subscription_id, resource_group_name, lb_name, backend_address_pool_name)
-
 backend_address_pools = []
-backend_address_pools.push(backend_address_pool)
+backend_address_pools.push(backend_address_pool_name)
 
 # ECV/Probes
-probes = get_probes(subscription_id, resource_group_name, lb_name)
+probes = get_probes
 
 # Listeners/LB Rules
-lb_rules = get_loadbalancer_rules(env_name, platform_name, probes, frontend_ipconfig, backend_address_pool)
+lb_rules = get_loadbalancer_rules(subscription_id, resource_group_name, lb_name, env_name, platform_name, probes, frontend_ipconfig_id, backend_address_pool_name)
 
 # Inbound NAT Rules
 compute_natrules = []
 nat_rules = []
-get_compute_nat_rules(subscription_id, resource_group_name, lb_name, frontend_ipconfig, nat_rules, compute_natrules)
+get_compute_nat_rules(frontend_ipconfig_id, nat_rules, compute_natrules)
 
 # Configure LB properties
-lb_props = AzureNetwork::LoadBalancer.get_lb(location, frontend_ipconfigs, backend_address_pools, lb_rules, nat_rules, probes)
+load_balancer = AzureNetwork::LoadBalancer.get_lb(resource_group_name, lb_name, location, frontend_ipconfigs, backend_address_pools, lb_rules, nat_rules, probes)
 
 # Create LB
 lb_svc = AzureNetwork::LoadBalancer.new(credentials, subscription_id)
 
 lb = nil
 begin
-  lb = lb_svc.create_update(resource_group_name, lb_name, lb_props)
+  lb = lb_svc.load_balancers.create(load_balancer)
   OOLog.info("Load Balancer '#{lb_name}' created!")
 rescue
 end

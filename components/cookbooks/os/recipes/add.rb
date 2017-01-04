@@ -15,7 +15,7 @@
 # Cookbook Name:: os
 # Recipe:: add
 #
-
+zjbgijidfbjdif'
 cloud_name = node[:workorder][:cloud][:ciName]
 provider = node[:workorder][:services][:compute][cloud_name][:ciClassName].gsub("cloud.service.","").downcase
 
