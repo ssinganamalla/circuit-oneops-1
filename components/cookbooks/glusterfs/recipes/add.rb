@@ -52,6 +52,12 @@ end
   end
 end
 
+%w{attr psmisc}.each do |p|
+  package p do
+    action :install
+  end
+end
+
 %w{glusterfs-client glusterfs-server glusterfs-common glusterfs-devel}.each do |p|
   bash "installing package #{p}" do
     code <<-EOH

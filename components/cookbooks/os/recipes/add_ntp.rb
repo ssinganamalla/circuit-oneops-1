@@ -11,7 +11,15 @@ ntpservers = JSON.parse(ntp_service[:ciAttributes][:servers])
 
 Chef::Log.info("Configuring and enabling NTP")
 if node['platform'] == 'windows'
-  execute "w32tm /config /manualpeerlist:#{ntpservers.join(',')} /syncfromflags:MANUAL /reliable:yes" 
+
+  service 'w32time' do
+    action [ :enable, :start ] 
+  end
+  
+  execute 'set-ntp-server' do
+    command "w32tm /config /manualpeerlist:\"#{ntpservers.collect {|x| x + ",0x09" }.join(" ")}\" /syncfromflags:MANUAL /reliable:yes /update & w32tm /resync /force"
+  end
+  
 else
   template "/etc/ntp.conf" do
     source "ntp.conf.erb"
@@ -22,23 +30,17 @@ else
     user "root"
     group "root"
   end
-end
-
-service "ntpd" do
-  case node['platform']
-  when 'centos','redhat','fedora'
-    service_name 'ntpd'
-  when 'windows'
-    service_name 'w32time'
-  else
-    service_name 'ntp'
+  
+  service "ntpd" do
+    case node['platform']
+    when 'centos','redhat','fedora'
+      service_name 'ntpd'
+    else
+      service_name 'ntp'
+    end
+    action [ :enable, :start ]
   end
-  action [ :enable, :start ]
-end
 
-if node['platform'] == 'windows'
-  execute "w32tm /resync"
-else
   ruby_block "Query NTP" do
     block do
       ntpstatus = `ntpq -p`
@@ -46,3 +48,4 @@ else
     end
   end
 end
+
