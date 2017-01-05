@@ -1,4 +1,3 @@
-require 'azure_mgmt_network'
 require 'fog/azurerm'
 require 'chef'
 require File.expand_path('../../../azure_base/libraries/logger.rb', __FILE__)
@@ -6,9 +5,6 @@ require File.expand_path('../../../azure_base/libraries/logger.rb', __FILE__)
 module AzureNetwork
   # this class has all the methods in it to handle Azure's Network Security Group.
   class NetworkSecurityGroup
-    include Azure::ARM::Network
-    include Azure::ARM::Network::Models
-
     attr_accessor :network_client
 
     def initialize(credentials, subscription_id)

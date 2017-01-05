@@ -1,6 +1,3 @@
-# **Rubocop Suppression**
-# rubocop:disable LineLength
-
 require File.expand_path('../../libraries/application_gateway.rb', __FILE__)
 require File.expand_path('../../../azure/libraries/public_ip.rb', __FILE__)
 require File.expand_path('../../../azure/libraries/virtual_network.rb', __FILE__)
