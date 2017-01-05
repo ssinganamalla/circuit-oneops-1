@@ -229,10 +229,10 @@ class Datadisk < AzureBase::ResourceGroupManager
       OOLog.info("Getting storage account keys ....")
       storage_account_keys = @storage_client.storage_accounts.list_keys(@rg_name_persistent_storage,@storage_account_name)
       OOLog.info('  storage_account_keys : ' +   storage_account_keys.inspect)
-      key1 = storage_account_keys.keys[0].value
-      key2 = storage_account_keys.keys[1].value
+      key1 = storage_account_keys.keys[0]
+      key2 = storage_account_keys.keys[1]
       raise unless key2.key_name == "key2"
-      return key2
+      return key2.value
     end
     
     def delete_datadisk()
@@ -301,10 +301,10 @@ class Datadisk < AzureBase::ResourceGroupManager
         diskname = "#{component_name}-datadisk-#{dev_name}"
         #Detach a data disk
         flag = false
-        (vm.properties.storage_profile.data_disks).each do |disk|
+        (vm.storage_profile.data_disks).each do |disk|
           if disk.name == diskname
             OOLog.info("deleting disk at lun:"+(disk.lun).to_s + " dev:#{dev_name} ")
-            vm.properties.storage_profile.data_disks.delete_at(i-1)
+            vm.storage_profile.data_disks.delete_at(i-1)
           end
          end
          end
