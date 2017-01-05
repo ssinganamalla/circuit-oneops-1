@@ -61,7 +61,7 @@ module AzureNetwork
     end
 
     def delete_security_group(resource_group_name, net_sec_group_name)
-      @network_client.network_security_groups.get(resource_group_name, net_sec_group_name)
+      @network_client.network_security_groups.get(resource_group_name, net_sec_group_name).destroy
     rescue MsRestAzure::AzureOperationError => e
       OOLog.info("AzureOperationError Error deleting NSG #{net_sec_group_name}")
       OOLog.info("Error response: #{e.body}") unless e.body.nil?
@@ -69,11 +69,21 @@ module AzureNetwork
       OOLog.fatal("Exception trying to delete network security group #{net_sec_group_name} Error body: #{e.body} Exception is: #{e.message}")
     end
 
-    def create_or_update_rule(resource_group_name, network_security_group_name, security_rule_name, _security_rule_parameters = nil)
+    def create_or_update_rule(resource_group_name, network_security_group_name, security_rule_name, security_rule_parameters)
       # The Put network security rule operation creates/updates a security rule in the specified network security group group.
-      secrule = SecurityRule.new
-
-      SecurityRules.new(@network_client).create_or_update(resource_group_name, network_security_group_name, security_rule_name, secrule)
+      @network_client.network_security_rules.create(
+        name: security_rule_name,
+        resource_group: resource_group_name,
+        network_security_group_name: network_security_group_name,
+        protocol: security_rule_parameters[:protocol],
+        source_port_range: security_rule_parameters[:source_port_range],
+        destination_port_range: security_rule_parameters[:destination_port_range],
+        source_address_prefix: security_rule_parameters[:source_address_prefix],
+        destination_address_prefix: security_rule_parameters[:destination_address_prefix],
+        access: security_rule_parameters[:access],
+        priority: security_rule_parameters[:priority],
+        direction: security_rule_parameters[:direction]
+      )
     rescue MsRestAzure::AzureOperationError => e
       OOLog.fatal("AzureOperationError trying to get the '#{security_rule_name}' Security Rule Response: #{e.body}")
     rescue => e
@@ -82,7 +92,7 @@ module AzureNetwork
 
     def delete_rule(resource_group_name, network_security_group_name, security_rule_name)
       # The delete network security rule operation deletes the specified network security rule.
-      SecurityRules.new(@network_client).delete(resource_group_name, network_security_group_name, security_rule_name)
+      @network_client.network_security_rules.get(resource_group_name, network_security_group_name, security_rule_name).destroy
     rescue MsRestAzure::AzureOperationError => e
       OOLog.fatal("AzureOperationError Error trying to delete the '#{security_rule_name}' Security Rule - Response: #{e.body}")
     rescue => e
@@ -91,7 +101,7 @@ module AzureNetwork
 
     def get_rule(resource_group_name, network_security_group_name, security_rule_name)
       # The Get NetworkSecurityRule operation retreives information about the specified network security rule.
-      SecurityRules.new(@network_client).get(resource_group_name, network_security_group_name, security_rule_name)
+      @network_client.network_security_rules.get(resource_group_name, network_security_group_name, security_rule_name)
     rescue MsRestAzure::AzureOperationError => e
       OOLog.fatal("Error trying to get the '#{security_rule_name}' Security Rule - Response: #{e.body}")
     rescue => e
@@ -100,25 +110,23 @@ module AzureNetwork
 
     def list_rules(resource_group_name, network_security_group_name)
       # The List network security rule opertion retrieves all the security rules in a network security group.
-      SecurityRules.new(@network_client).list(resource_group_name, network_security_group_name)
+      @network_client.network_security_rules(resource_group: resource_group_name, network_security_group_name: network_security_group_name)
     rescue MsRestAzure::AzureOperationError => e
       OOLog.fatal("AzureOperationError Error trying to listing Security Rules in '#{resource_group_name}' Response: #{e.body}")
     rescue => e
       OOLog.fatal("Exception trying to list security rules from securtiry group: #{network_security_group_name} #{e.body} - Exception: #{e.message}")
     end
 
-    def self.create_rule_properties(security_rule_name, access, description, destination_address_prefix, destination_port_range, direction, priority, protocol, provisioning_state, source_address_prefix, source_port_range)
+    def self.create_rule_properties(security_rule_name, access, destination_address_prefix, destination_port_range, direction, priority, protocol, source_address_prefix, source_port_range)
       # 01 @security_rule_name Security group name
       # 02 @access SecurityRuleAccess allow or denied.
-      # 03 @description String to 140 chars
-      # 04 @destination_address_prefix String source IP range
-      # 05 @destination_port_range String range between 0 and 65535.
-      # 06 @direction SecurityRuleDirection rule.InBound or Outbound.
-      # 07 @priority Integer be between 100 and 4096.
-      # 08 @protocol SecurityRuleProtocol applies to.
-      # 09 @provisioning_state String resource Updating/Deleting/Failed.
-      # 10 @source_address_prefix String range.
-      # 11 @source_port_range String between 0 and 65535.
+      # 03 @destination_address_prefix String source IP range
+      # 04 @destination_port_range String range between 0 and 65535.
+      # 05 @direction SecurityRuleDirection rule.InBound or Outbound.
+      # 06 @priority Integer be between 100 and 4096.
+      # 07 @protocol SecurityRuleProtocol applies to.
+      # 08 @source_address_prefix String range.
+      # 09 @source_port_range String between 0 and 65535.
 
       {
         name: security_rule_name,
