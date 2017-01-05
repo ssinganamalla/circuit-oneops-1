@@ -229,8 +229,8 @@ class Datadisk < AzureBase::ResourceGroupManager
       OOLog.info("Getting storage account keys ....")
       storage_account_keys = @storage_client.storage_accounts.list_keys(@rg_name_persistent_storage,@storage_account_name)
       OOLog.info('  storage_account_keys : ' +   storage_account_keys.inspect)
-      key1 = storage_account_keys.keys[0]
-      key2 = storage_account_keys.keys[1]
+      key1 = storage_account_keys.keys[0].value
+      key2 = storage_account_keys.keys[1].value
       raise unless key2.key_name == "key2"
       return key2
     end
