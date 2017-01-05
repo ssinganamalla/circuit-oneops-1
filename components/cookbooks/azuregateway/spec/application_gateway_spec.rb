@@ -7,15 +7,20 @@ require 'fog/azurerm'
 describe AzureNetwork::Gateway do
   before do
     credentials = {
-        'tenant_id': '<TENANT_ID>',
-        'client_id': 'CLIENT_ID',
-        'client_secret': 'CLIENT_SECTER',
-        'subscription': 'SUBSCRIPTION_ID'
+      tenant_id: '<TENANT_ID>',
+      client_id: 'CLIENT_ID',
+      client_secret: 'CLIENT_SECTER',
+      subscription: 'SUBSCRIPTION_ID'
     }
     resource_group_name = '<RG_NAME>'
     ag_name = '<AG_NAME>'
 
     @gateway = AzureNetwork::Gateway.new(resource_group_name, ag_name, credentials)
+    @gateway_gateway = Fog::ApplicationGateway::AzureRM::Gateway.new(
+      name: 'gateway',
+      location: 'eastus',
+      resource_group: 'fogRM-rg'
+    )
   end
 
   describe '#get_private_ip_address' do
@@ -37,7 +42,7 @@ describe AzureNetwork::Gateway do
       allow(RestClient).to receive(:get)
         .and_raise(RestClient::Exception.new(nil, 404))
 
-      expect { @gateway.get_private_ip_address('<TOKEN>') }.to_not raise_error('no backtrace')
+      expect(@gateway.get_private_ip_address('<TOKEN>')).not_to eq(nil)
     end
     it 'raises exception while parsing invalid json response' do
       allow(RestClient).to receive(:get) {}
@@ -48,7 +53,7 @@ describe AzureNetwork::Gateway do
   describe '#set_gateway_configuration' do
     it 'checks gateway configuration object name' do
       subnet = double
-      allow(subnet).to receive(:id) { "SUBNET_ID" }
+      allow(subnet).to receive(:id) { 'SUBNET_ID' }
       @gateway.set_gateway_configuration(subnet)
 
       expect(@gateway.gateway_attributes[:gateway_configuration]).to_not eq(nil)
@@ -104,7 +109,7 @@ describe AzureNetwork::Gateway do
     it 'sets the subnet for frontend ip configurations if public IP is nil' do
       public_ip = nil
       subnet = double
-      allow(subnet).to receive(:id) { "SUBNET_ID" }
+      allow(subnet).to receive(:id) { 'SUBNET_ID' }
       @gateway.set_frontend_ip_config(public_ip, subnet)
       frontend_ip_config = @gateway.gateway_attributes[:frontend_ip_config]
 
@@ -116,7 +121,7 @@ describe AzureNetwork::Gateway do
     it 'sets the public IP for frontend ip configurations if public IP is not nil' do
       public_ip = double
       subnet = nil
-      allow(public_ip).to receive(:id) { "PUBLIC_IP_ID" }
+      allow(public_ip).to receive(:id) { 'PUBLIC_IP_ID' }
       @gateway.set_frontend_ip_config(public_ip, subnet)
       frontend_ip_config = @gateway.gateway_attributes[:frontend_ip_config]
 
@@ -143,7 +148,7 @@ describe AzureNetwork::Gateway do
     it 'returns application gateway listener properties with HTTPS protocol' do
       subnet = double
       public_ip = nil
-      allow(subnet).to receive(:id) { "SUBNET_ID" }
+      allow(subnet).to receive(:id) { 'SUBNET_ID' }
       @gateway.set_frontend_ip_config(public_ip, subnet)
       @gateway.set_gateway_port(true)
       @gateway.set_listener(true)
@@ -156,7 +161,7 @@ describe AzureNetwork::Gateway do
     it 'returns application gateway listener properties with HTTP protocol' do
       subnet = double
       public_ip = nil
-      allow(subnet).to receive(:id) { "SUBNET_ID" }
+      allow(subnet).to receive(:id) { 'SUBNET_ID' }
       @gateway.set_frontend_ip_config(public_ip, subnet)
       @gateway.set_gateway_port(true)
       @gateway.set_listener(false)
@@ -174,7 +179,7 @@ describe AzureNetwork::Gateway do
       public_ip = nil
       backend_address_list = ['10.0.2.5/24']
       @gateway.set_backend_address_pool(backend_address_list)
-      allow(subnet).to receive(:id) { "SUBNET_ID" }
+      allow(subnet).to receive(:id) { 'SUBNET_ID' }
       @gateway.set_frontend_ip_config(public_ip, subnet)
       @gateway.set_gateway_port(true)
       @gateway.set_listener(true)
@@ -224,10 +229,7 @@ describe AzureNetwork::Gateway do
 
   describe '#create_or_update' do
     it 'creates application gateway successfully' do
-      file_path = File.expand_path('gateway_response.json', __dir__)
-      file = File.open(file_path)
-      gateway_response = file.read
-      allow(@gateway.application_gateway).to receive_message_chain(:gateways, :create).and_return(gateway_response)
+      allow(@gateway.application_gateway).to receive_message_chain(:gateways, :create).and_return(@gateway_gateway)
       expect(@gateway.create_or_update('east-us', false)).to_not eq(nil)
     end
     it 'raises AzureOperationError exception while creating application gateway' do

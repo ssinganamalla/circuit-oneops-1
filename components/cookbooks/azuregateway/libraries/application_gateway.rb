@@ -1,5 +1,3 @@
-# **Rubocop Suppression**
-# rubocop:disable LineLength
 require 'fog/azurerm'
 require 'chef'
 require 'yaml'
@@ -15,10 +13,10 @@ module AzureNetwork
       @resource_group_name = resource_group_name
       @ag_name = ag_name
       @application_gateway = Fog::ApplicationGateway::AzureRM.new(
-          tenant_id: credentials[:tenant_id],
-          client_id: credentials[:client_id],
-          client_secret: credentials[:client_secret],
-          subscription_id: credentials[:subscription]
+        tenant_id: credentials[:tenant_id],
+        client_id: credentials[:client_id],
+        client_secret: credentials[:client_secret],
+        subscription_id: credentials[:subscription]
       )
       @gateway_attributes = {}
       @configurations = YAML.load_file(File.expand_path('../config/config.yml', __dir__))
@@ -102,7 +100,7 @@ module AzureNetwork
     def set_frontend_ip_config(public_ip, subnet)
       frontend_ip_config = {}
       frontend_ip_config[:name] = @configurations['gateway']['frontend_ip_config_name']
-      frontend_ip_config[:id] =  get_attribute_id('frontendIPConfigurations', frontend_ip_config[:name])
+      frontend_ip_config[:id] = get_attribute_id('frontendIPConfigurations', frontend_ip_config[:name])
       if public_ip.nil?
         frontend_ip_config[:subnet_id] = subnet.id
         frontend_ip_config[:private_ip_allocation_method] = 'Dynamic'
