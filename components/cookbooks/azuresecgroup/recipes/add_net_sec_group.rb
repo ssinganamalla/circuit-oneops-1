@@ -24,7 +24,7 @@ platform_ci_id = node['workorder']['box']['ciId']
 location = compute_service[:location]
 
 subscription = compute_service[:subscription]
-network_security_group_name = node.name
+network_security_group_name = node[:name]
 
 # Get resource group name
 resource_group_name = AzureResources::ResourceGroup.get_name(org, assembly, platform_ci_id, environment, location)
