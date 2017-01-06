@@ -1,12 +1,8 @@
-require 'azure_mgmt_resources'
 require 'fog/azurerm'
 require File.expand_path('../../libraries/azure_base_manager.rb', __FILE__)
 
 require File.expand_path('../../libraries/logger.rb', __FILE__)
 require File.expand_path('../../libraries/utils.rb', __FILE__)
-
-::Chef::Recipe.send(:include, Azure::ARM::Resources)
-::Chef::Recipe.send(:include, Azure::ARM::Resources::Models)
 
 module AzureBase
   # class to handle operations on the Azure Resource Group

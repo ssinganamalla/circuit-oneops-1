@@ -225,11 +225,7 @@ begin
     # Application Gateway was not created.
     OOLog.fatal("Application Gateway '#{ag_name}' could not be created")
   else
-    ag_ip = if express_route_enabled
-              application_gateway.get_private_ip_address(token)
-            else
-              public_ip.ip_address
-            end
+    ag_ip = express_route_enabled ? application_gateway.get_private_ip_address(token) : public_ip.ip_address
 
     if ag_ip.nil? || ag_ip == ''
       OOLog.fatal("Application Gateway '#{gateway_result.name}' NOT configured with IP")
