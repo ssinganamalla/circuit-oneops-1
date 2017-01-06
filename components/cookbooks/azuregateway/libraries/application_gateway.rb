@@ -165,9 +165,7 @@ module AzureNetwork
     def create_or_update(location, certificate_exist)
       begin
         ssl_certificates = nil
-        if certificate_exist
-          ssl_certificates = [@gateway_attributes[:ssl_certificate]]
-        end
+        ssl_certificates = [@gateway_attributes[:ssl_certificate]] if certificate_exist
 
         @application_gateway.gateways.create(
           name: @ag_name,

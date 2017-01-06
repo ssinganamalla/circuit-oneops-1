@@ -9,7 +9,7 @@ describe AzureNetwork::Gateway do
     credentials = {
       tenant_id: '<TENANT_ID>',
       client_id: 'CLIENT_ID',
-      client_secret: 'CLIENT_SECTER',
+      client_secret: 'CLIENT_SECRET',
       subscription: 'SUBSCRIPTION_ID'
     }
     resource_group_name = '<RG_NAME>'
