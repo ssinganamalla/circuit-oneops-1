@@ -3,6 +3,8 @@
 # rubocop:disable ClassLength
 # rubocop:disable LineLength
 require 'fog/azurerm'
+require ::File.expand_path('../../../azure_base/libraries/logger', __FILE__)
+
 
 module AzureDns
   require 'chef'
@@ -16,8 +18,10 @@ module AzureDns
   # c) remove DNS recordset
   #
   class RecordSet
+    attr_accessor :dns_client
+
     def initialize(platform_resource_group, dns_attributes)
-      @subscription = dns_attributes['subscription']
+      @subscription = dns_attributes[:subscription]
       tenant_id = dns_attributes[:tenant_id]
       client_id = dns_attributes[:client_id]
       client_secret = dns_attributes[:client_secret]
@@ -36,7 +40,7 @@ module AzureDns
       rescue MsRestAzure::AzureOperationError => e
         OOLog.fatal("Exception setting #{record_type} records for the record set: #{record_set_name}...: #{e.body}")
       rescue => e
-        Chef::Log.error("AzureDns::RecordSet - Exception is: #{e.message}")
+        OOLog.fatal("AzureDns::RecordSet - Exception is: #{e.message}")
       end
       Chef::Log.info('AzureDns::RecordSet - 404 code, record set does not exist. Returning empty array.')
       []
@@ -55,7 +59,7 @@ module AzureDns
       rescue MsRestAzure::AzureOperationError => e
         OOLog.fatal("Exception setting #{record_type} records for the record set: #{record_set_name}...: #{e.body}")
       rescue => e
-        Chef::Log.error("AzureDns::RecordSet - Exception is: #{e.message}")
+        OOLog.fatal("AzureDns::RecordSet - Exception is: #{e.message}")
       end
     end
 
@@ -67,7 +71,7 @@ module AzureDns
       rescue MsRestAzure::AzureOperationError => e
         OOLog.fatal("Exception trying to remove #{record_type} records for the record set: #{record_set_name} ...: #{e.body}")
       rescue => e
-        Chef::Log.error("AzureDns::RecordSet - Exception is: #{e.message}")
+        OOLog.fatal("AzureDns::RecordSet - Exception is: #{e.message}")
       end
     end
   end

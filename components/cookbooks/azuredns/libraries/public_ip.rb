@@ -1,5 +1,8 @@
-gem 'azure_mgmt_network', '=0.8.0'
 require 'azure_mgmt_network'
+require 'chef'
+require ::File.expand_path('../../../azure/libraries/public_ip.rb', __FILE__)
+::Chef::Recipe.send(:include, AzureNetwork)
+::Chef::Recipe.send(:include, Azure::ARM::Network)
 
 # AzureDns Module
 module AzureDns

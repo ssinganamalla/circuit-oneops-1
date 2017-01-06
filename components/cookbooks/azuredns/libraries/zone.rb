@@ -1,7 +1,9 @@
-require 'chef'
 require 'fog/azurerm'
+require 'chef'
+
 
 require ::File.expand_path('../../../azure/constants', __FILE__)
+require ::File.expand_path('../../../azure_base/libraries/logger', __FILE__)
 
 # **Rubocop Suppression**
 # rubocop:disable MethodLength
@@ -11,11 +13,14 @@ require ::File.expand_path('../../../azure/constants', __FILE__)
 module AzureDns
   # DNS Zone Class
   class Zone
+
+    attr_accessor :dns_client
+
     def initialize(dns_attributes, resource_group)
       tenant_id = dns_attributes[:tenant_id]
       client_secret = dns_attributes[:client_secret]
       client_id = dns_attributes[:client_id]
-      subscription_id = dns_attributes['subscription']
+      subscription_id = dns_attributes[:subscription]
 
       @dns_client = Fog::DNS::AzureRM.new(client_id: client_id, client_secret: client_secret, tenant_id: tenant_id, subscription_id: subscription_id)
       @resource_group = resource_group
@@ -39,9 +44,9 @@ module AzureDns
       begin
         @dns_client.zones.create(resource_group: @resource_group, name: @zone_name, location: 'global')
       rescue MsRestAzure::AzureOperationError => e
-        OOLog.fatal("FATAL ERROR creating DNS Zone....: #{e.body}")
+         OOLog.fatal("FATAL ERROR creating DNS Zone....: #{e.body}")
       rescue => e
-        Chef::Log.error("DNS Zone creation error....: #{e.message}")
+        OOLog.fatal("DNS Zone creation error....: #{e.message}")
       end
     end
   end
