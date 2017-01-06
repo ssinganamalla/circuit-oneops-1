@@ -3,6 +3,8 @@
 # rubocop:disable MethodLength
 # rubocop:disable AbcSize
 require 'chef'
+require 'fog/azurerm'
+
 require File.expand_path('../record_set.rb', __FILE__)
 module AzureDns
   # Cookbook Name:: azuredns
@@ -22,7 +24,7 @@ module AzureDns
       @platform_resource_group = platform_resource_group
       @azure_rest_token = azure_rest_token # Not being used in this class.
       @dns_attributes = dns_attributes
-      @recordset = AzureDns::RecordSet.new(@dns_attributes, @platform_resource_group)
+      @recordset = AzureDns::RecordSet.new(@platform_resource_group, @dns_attributes)
       @zone = nil
     end
 
@@ -117,12 +119,12 @@ module AzureDns
         total_record_list = @recordset.get_existing_records_for_recordset(record_type.upcase, dns_name)
 
         case record_type
-        when 'a'
-          set_a_type_records(total_record_list, dns_action, dns_values, dns_name, ttl)
-        when 'cname'
-          set_cname_type_records(total_record_list, dns_action, dns_values, dns_name, ttl)
-        when 'ptr'
-          Chef::Log.info('Record Type is PTR. PTR records are not yet supported for Azure.')
+          when 'a'
+            set_a_type_records(total_record_list, dns_action, dns_values, dns_name, ttl)
+          when 'cname'
+            set_cname_type_records(total_record_list, dns_action, dns_values, dns_name, ttl)
+          when 'ptr'
+            Chef::Log.info('Record Type is PTR. PTR records are not yet supported for Azure.')
         end
       end
     end

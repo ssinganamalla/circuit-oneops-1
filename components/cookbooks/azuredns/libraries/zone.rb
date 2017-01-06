@@ -1,4 +1,6 @@
 require 'chef'
+require 'fog/azurerm'
+
 require ::File.expand_path('../../../azure/constants', __FILE__)
 
 # **Rubocop Suppression**
@@ -17,7 +19,7 @@ module AzureDns
 
       @dns_client = Fog::DNS::AzureRM.new(client_id: client_id, client_secret: client_secret, tenant_id: tenant_id, subscription_id: subscription_id)
       @resource_group = resource_group
-      @zone_name = dns_attributes['zone']
+      @zone_name = dns_attributes[:zone]
     end
 
     def check_for_zone
@@ -26,7 +28,7 @@ module AzureDns
       rescue MsRestAzure::AzureOperationError => e
         OOLog.fatal("FATAL ERROR getting DNS Zone....: #{e.body}")
       rescue => e
-        OOLog.fatal("DNS Zone check if exist error....: #{e.message}")
+        false if e == 'ResourceNotFound'
       end
       OOLog.info("AzureDns:Zone - Zone Exists in the Resource Group: #{@resource_group}. No need to create ")
       true

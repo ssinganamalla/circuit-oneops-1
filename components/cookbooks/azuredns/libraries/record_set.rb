@@ -2,6 +2,8 @@
 # rubocop:disable AbcSize
 # rubocop:disable ClassLength
 # rubocop:disable LineLength
+require 'fog/azurerm'
+
 module AzureDns
   require 'chef'
   require 'rest-client'
@@ -15,13 +17,13 @@ module AzureDns
   #
   class RecordSet
     def initialize(platform_resource_group, dns_attributes)
-      @subscription = dns_attributes[:subscription]
+      @subscription = dns_attributes['subscription']
       tenant_id = dns_attributes[:tenant_id]
       client_id = dns_attributes[:client_id]
       client_secret = dns_attributes[:client_secret]
 
       @dns_client = Fog::DNS::AzureRM.new(client_id: client_id, client_secret: client_secret, tenant_id: tenant_id, subscription_id: @subscription)
-      @zone = dns_attributes['zone']
+      @zone = dns_attributes[:zone]
       @dns_resource_group = platform_resource_group
     end
 
