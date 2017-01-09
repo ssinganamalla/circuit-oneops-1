@@ -1,24 +1,34 @@
+require 'fog/azurerm'
+require 'chef'
+
 # TODO: add checks in each method for rg_name
 require File.expand_path('../../../azuresecgroup/libraries/network_security_group.rb', __FILE__)
+require ::File.expand_path('../../../azure_base/libraries/logger', __FILE__)
+
 # module to contain classes for dealing with the Azure Network features.
 module AzureNetwork
   # class to implement all functionality needed for an Azure NIC.
   class NetworkInterfaceCard
-    attr_accessor :location, :rg_name, :private_ip, :profile, :ci_id
+    attr_accessor :location, :rg_name, :private_ip, :profile, :ci_id, :network_client
     attr_reader :creds, :subscription
 
     def initialize(credentials, subscription_id)
       @creds = credentials
       @subscription = subscription_id
-      @client = Azure::ARM::Network::NetworkManagementClient.new(credentials)
-      @client.subscription_id = subscription_id
+
+      tenant_id = credentials[:tenant_id]
+      client_secret = credentials[:client_secret]
+      client_id = credentials[:client_id]
+
+      @network_client = Fog::Network::AzureRM.new(client_id: client_id, client_secret: client_secret, tenant_id: tenant_id, subscription_id: @subscription)
+
     end
 
     # define the NIC's IP Config
     def define_nic_ip_config(ip_type, subnet)
-      nic_ip_config = Azure::ARM::Network::Models::NetworkInterfaceIPConfiguration.new
+      nic_ip_config = Fog::Network::AzureRM::FrontendIPConfiguration.new
+      nic_ip_config.subnet_id = subnet
       nic_ip_config.private_ipallocation_method = Azure::ARM::Network::Models::IPAllocationMethod::Dynamic
-      nic_ip_config.subnet = subnet
 
       if ip_type == 'public'
         publicip = AzureNetwork::PublicIp.new(@creds, @subscription)
@@ -38,44 +48,52 @@ module AzureNetwork
 
     # define the NIC object
     def define_network_interface(nic_ip_config)
-      network_interface = Azure::ARM::Network::Models::NetworkInterface.new
+      network_interface = Fog::Network::AzureRM::NetworkInterface.new
       network_interface.location = @location
       network_interface.name = Utils.get_component_name('nic', @ci_id)
-      network_interface.ip_configurations = [nic_ip_config]
+      network_interface.ip_configuration_id = nic_ip_config.id
+      network_interface.ip_configuration_name = nic_ip_config.name
 
       OOLog.info("Network Interface name is: #{network_interface.name}")
       network_interface
     end
 
     def get(nic_name)
+      OOLog.info("Fetching NIC '#{nic_name}' ")
+      start_time = Time.now.to_i
       begin
-        OOLog.info("Fetching NIC '#{nic_name}' ")
-        start_time = Time.now.to_i
-        response = @client.network_interfaces.get(@rg_name, nic_name)
-        end_time = Time.now.to_i
-        duration = end_time - start_time
+        nic = @network_client.network_interfaces.get(@rg_name, nic_name)
       rescue MsRestAzure::AzureOperationError => e
         OOLog.fatal("Error getting NIC: #{nic_name}. Excpetion: #{e.body}")
       rescue => ex
         OOLog.fatal("Error getting NIC: #{nic_name}. Excpetion: #{ex.message}")
       end
+      end_time = Time.now.to_i
+      duration = end_time - start_time
       OOLog.info("operation took #{duration} seconds")
-      response
+      nic unless nic.nil?
     end
 
     # create or update the NIC
     def create_update(network_interface)
+
+      OOLog.info("Updating NIC '#{network_interface.name}' ")
+      start_time = Time.now.to_i
       begin
-        OOLog.info("Updating NIC '#{network_interface.name}' ")
-        start_time = Time.now.to_i
-        response = @client.network_interfaces.create_or_update(@rg_name, network_interface.name, network_interface)
-        end_time = Time.now.to_i
-        duration = end_time - start_time
+        response = @network_client.network_interfaces.create(name: network_interface.name,
+                                                             resource_group: @rg_name,
+                                                             location: network_interface.location,
+                                                             subnet_id: network_interface.subnet_id,
+                                                             public_ip_address_id: network_interface.public_ip_address_id,
+                                                             ip_configuration_name: network_interface.ip_configuration_name,
+                                                             private_ip_allocation_method: network_interface.private_ip_allocation_method)
       rescue MsRestAzure::AzureOperationError => e
         OOLog.fatal("Error creating/updating NIC.  Exception: #{e.body}")
       rescue => ex
         OOLog.fatal("Error creating/updating NIC.  Exception: #{ex.message}")
       end
+      end_time = Time.now.to_i
+      duration = end_time - start_time
       puts("operation took #{duration} seconds")
       OOLog.info("NIC '#{network_interface.name}' was updated in #{duration} seconds")
       response
