@@ -26,7 +26,7 @@ class TrafficManager
     @location = GLOBAL
   end
 
-  attr_reader :routing_method, :dns_config, :monitor_config, :profile_status, :location
+  attr_reader :routing_method, :dns_config, :monitor_config, :profile_status, :location, :endpoints
 
   def set_profile_status=(profile_status)
     @profile_status = profile_status

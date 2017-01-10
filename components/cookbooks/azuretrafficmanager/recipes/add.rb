@@ -3,14 +3,14 @@ require File.expand_path('../../libraries/model/traffic_manager.rb', __FILE__)
 require File.expand_path('../../libraries/model/dns_config.rb', __FILE__)
 require File.expand_path('../../libraries/model/monitor_config.rb', __FILE__)
 require File.expand_path('../../libraries/model/endpoint.rb', __FILE__)
-require File.expand_path('../../azure_lb/libraries/load_balancer.rb', __FILE__)
-require File.expand_path('../../azure/libraries/public_ip.rb', __FILE__)
+require File.expand_path('../../../azure_lb/libraries/load_balancer.rb', __FILE__)
+require File.expand_path('../../../azure/libraries/public_ip.rb', __FILE__)
+require File.expand_path('../../../azure_base/libraries/utils.rb', __FILE__)
 require 'azure_mgmt_network'
+require 'chef'
 
 ::Chef::Recipe.send(:include, Utils)
 ::Chef::Recipe.send(:include, AzureNetwork)
-::Chef::Recipe.send(:include, Azure::ARM::Network)
-::Chef::Recipe.send(:include, Azure::ARM::Network::Models)
 
 def get_public_ip_fqdns(dns_attributes, resource_group_names, ns_path_parts)
   platform_name = ns_path_parts[5]
@@ -48,13 +48,14 @@ end
 def display_traffic_manager_fqdn(dns_name)
   fqdn = dns_name + '.' + 'trafficmanager.net'
   ip = ''
-  entries = node.set[:entries]
+  entries = []
   entries.push({:name => fqdn, :values => ip })
   entries_hash = {}
   entries.each do |entry|
     key = entry[:name]
     entries_hash[key] = entry[:values]
   end
+  @node.set[:entries] = entries
   puts "***RESULT:entries=#{JSON.dump(entries_hash)}"
 end
 
@@ -118,8 +119,8 @@ def get_traffic_manager_resource_group(resource_group_names, profile_name, dns_a
   resource_group_names.each do |resource_group_name|
     traffic_manager_processor = TrafficManagers.new(resource_group_name, profile_name, dns_attributes)
     Chef::Log.info("Checking traffic manager FQDN set in resource group: " + resource_group_name)
-    status_code = traffic_manager_processor.get_profile
-    if status_code == 200
+    profile = traffic_manager_processor.get_profile
+    unless profile.nil?
       return resource_group_name
     end
   end

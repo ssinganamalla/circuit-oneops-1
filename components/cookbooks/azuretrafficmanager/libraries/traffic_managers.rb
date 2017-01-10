@@ -1,5 +1,5 @@
 require 'fog/azurerm'
-require ::File.expand_path('../../azure_base/libraries/logger', __FILE__)
+require ::File.expand_path('../../../azure_base/libraries/logger', __FILE__)
 
 class TrafficManagers
   attr_accessor :traffic_manager_service
@@ -34,12 +34,9 @@ class TrafficManagers
         path: traffic_manager.monitor_config.path
       )
     rescue => e
-      Chef::Log.warn("Response traffic_manager create_update_profile status code - #{e.response.code}")
-      Chef::Log.warn("Response - #{e.response}")
-      return e.response.code
+      Chef::Log.fatal("Response traffic_manager create_update_profile - #{e.message}")
     end
-    Chef::Log.info("Response traffic_manager create_update_profile status code - #{response.code}")
-    Chef::Log.info("Response - #{response}")
+    Chef::Log.info("Response traffic_manager create_update_profile - #{traffic_manager_profile}")
     traffic_manager_profile
   end
 
@@ -63,12 +60,10 @@ class TrafficManagers
     begin
       traffic_manager_profile = @traffic_manager_service.traffic_manager_profiles.get(@resource_group_name, @profile_name)
     rescue => e
-      Chef::Log.warn("Response traffic_manager get_profile status code - #{e.response.code}")
-      Chef::Log.warn("Response - #{e.response}")
-      return e.response.code
+      Chef::Log.warn("Response traffic_manager get_profile - #{e.message}")
+      return nil
     end
-    Chef::Log.info("Response traffic_manager get_profile status code - #{response.code}")
-    Chef::Log.info("Response - #{response}")
+    Chef::Log.info("Response traffic_manager get_profile - #{traffic_manager_profile}")
     traffic_manager_profile
   end
 
