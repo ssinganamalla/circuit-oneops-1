@@ -31,15 +31,13 @@ module AzureDns
         full_hostname = node['full_hostname'].split('.').reverse.join('.').partition('.').last.split('.').reverse.join('.').downcase
         Chef::Log.info('domain name label :' + full_hostname)
         full_hostname = full_hostname.tr('.', '-')
-        new_dns_settings = Azure::ARM::Network::Models::PublicIPAddressDnsSettings.new
-        new_dns_settings.domain_name_label = (full_hostname.length >= 61) ? full_hostname.slice!(0, 60) : full_hostname
-        pip.properties.dns_settings = new_dns_settings
+        pip.domain_name_label = (full_hostname.length >= 61) ? full_hostname.slice!(0, 60) : full_hostname
         @pubip.create_update(@resource_group, public_ip_name, pip)
       end
     end
 
     def update_dns_for_fqdn(node)
-      new_dns_settings = Azure::ARM::Network::Models::PublicIPAddressDnsSettings.new
+      new_dns_settings = Fog::Network::AzureRM::PublicIp.new
       short_name_available = false
       public_ip_name = nil
       # create a new dns settings object with the new values.
@@ -72,7 +70,7 @@ module AzureDns
           full_hostname = full_hostname.split('.').reverse.join('.').partition('.').last.split('.').reverse.join('.').downcase
           Chef::Log.info('domain name label :' + full_hostname)
           full_hostname = full_hostname.tr('.', '-')
-          new_dns_settings = Azure::ARM::Network::Models::PublicIPAddressDnsSettings.new
+          new_dns_settings = Fog::Network::AzureRM::PublicIp.new
           if full_hostname.length >= 61
             new_dns_settings.domain_name_label = full_hostname.slice!(0, 60)
             new_dns_settings.domain_name_label.chomp!('-') if new_dns_settings.domain_name_label[59] == '-'
@@ -84,7 +82,7 @@ module AzureDns
           Chef::Log.info('setting domain label: ' + new_dns_settings.domain_name_label)
           unless public_ip_name.nil?
             pip = @pubip.get(@resource_group, public_ip_name)
-            pip.properties.dns_settings = new_dns_settings
+            pip.domain_name_label = new_dns_settings.domain_name_label
             ## update the public ip with the new dns settings
             @pubip.create_update(@resource_group, public_ip_name, pip)
           end
@@ -115,12 +113,11 @@ module AzureDns
             ip_found = @pubip.check_existence_publicip(@resource_group, public_ip_name)
             next unless ip_found
             Chef::Log.info('found !')
-            pip_response = @pubip.get(@resource_group, public_ip_name)
-            pip = pip_response.body
+            pip = @pubip.get(@resource_group, public_ip_name)
             OOLog.info("PIP IS: #{pip.inspect}")
             OOLog.info("PIP Properties are: '#{pip.properties.inspect}'")
-            OOLog.info("PIP DNS Settings are: '#{pip.properties.dns_settings}'")
-            pip.properties.dns_settings = new_dns_settings
+            OOLog.info("PIP DNS Settings are: '#{pip.domain_name_label}'")
+            pip.domain_name_label = new_dns_settings.domain_name_label
             Chef::Log.info('updating domain label: ' + new_dns_settings.domain_name_label)
             # update the public ip with the new dns settings
             @pubip.create_update(@resource_group, public_ip_name, pip)

@@ -10,10 +10,6 @@ module AzureNetwork
     attr_accessor :sub_address, :name, :network_client
     attr_reader :creds, :subscription
 
-    # Include SDK modules to ease access to network classes.
-    include Azure::ARM::Network
-    include Azure::ARM::Network::Models
-
     def initialize(creds, subscription_id)
       @creds = creds
 
@@ -56,7 +52,7 @@ module AzureNetwork
         end
         OOLog.info("Total number of ips possible is: #{total_num_of_ips_possible}")
 
-        no_ips_inuse = subnet.ip_configurations.nil? ? 0 : subnet.ip_configurations.length
+        no_ips_inuse = subnet.ip_configurations_ids.nil? ? 0 : subnet.ip_configurations_ids.length
         OOLog.info("Num of ips in use: #{no_ips_inuse}")
 
         remaining_ips = total_num_of_ips_possible - no_ips_inuse
@@ -85,7 +81,7 @@ module AzureNetwork
       end
       end_time = Time.now.to_i
       duration = end_time - start_time
-      OOLog("operation took #{duration} seconds")
+      OOLog.info("operation took #{duration} seconds")
       response
     end
 

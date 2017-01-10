@@ -46,7 +46,6 @@ module AzureNetwork
       virtual_network.address_prefixes = [@address]
       virtual_network.dns_servers = ns_list unless ns_list.nil?
       virtual_network.subnets = sub_nets
-
       virtual_network
     end
 
@@ -132,8 +131,7 @@ module AzureNetwork
       begin
         @network_client.virtual_networks.check_virtual_network_exists?(resource_group_name, @name)
       rescue MsRestAzure::AzureOperationError => e
-        OOLog.info("Exception from Azure: #{e.body}")
-          OOLog.fatal("Error getting virtual network: #{@name} from resource group #{resource_group_name}.  Exception: #{e.body}")
+        OOLog.fatal("Error getting virtual network: #{@name} from resource group #{resource_group_name}.  Exception: #{e.body}")
       rescue => ex
         OOLog.fatal("Error getting virtual network: #{@name} from resource group #{resource_group_name}.  Exception: #{ex.message}")
       end

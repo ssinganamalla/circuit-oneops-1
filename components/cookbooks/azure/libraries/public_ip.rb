@@ -30,7 +30,7 @@ module AzureNetwork
       public_ip_address.location = @location
       public_ip_address.idle_timeout_in_minutes = 5
       public_ip_address.name = Utils.get_component_name(name, ci_id)
-      public_ip_address.public_ipallocation_method = Azure::ARM::Network::Models::IPAllocationMethod::Dynamic
+      public_ip_address.public_ip_allocation_method = Azure::ARM::Network::Models::IPAllocationMethod::Dynamic
       OOLog.info("Public IP name is: #{public_ip_address.name}")
       public_ip_address
     end
@@ -77,7 +77,7 @@ module AzureNetwork
       OOLog.info("Creating/Updating public IP '#{public_ip_name}' from '#{resource_group_name}' ")
       start_time = Time.now.to_i
       begin
-        response = @network_client.public_ips.create(name: public_ip_name, resource_group: resource_group_name, location: 'global', public_ip_allocation_method: public_ip_address.public_ipallocation_method)
+        response = @network_client.public_ips.create(name: public_ip_name, resource_group: resource_group_name, location: 'global', public_ip_allocation_method: public_ip_address.public_ip_allocation_method)
       rescue MsRestAzure::AzureOperationError => ex
         OOLog.fatal("Exception trying to create/update public ip #{public_ip_address.name} from resource group: #{resource_group_name}.  Exception: #{ex.body}")
       rescue => e
@@ -97,7 +97,7 @@ module AzureNetwork
       begin
         @network_client.public_ips.check_public_ip_exists?(resource_group_name, public_ip_name)
       rescue MsRestAzure::AzureOperationError => e
-        OOLog.info("Azure::PublicIp - Exception is: #{e.body}")
+        OOLog.fatal("Azure::PublicIp - Exception is: #{e.body}")
       rescue => e
         OOLog.fatal("Exception trying to get public ip #{public_ip_name} from resource group: #{resource_group_name}. Exception: #{e.message}")
       end
