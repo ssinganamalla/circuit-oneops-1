@@ -146,12 +146,11 @@ class Datadisk < AzureBase::ResourceGroupManager
       begin
         start_time = Time.now.to_i
         OOLog.info("Attaching Storage disk ....")
-        vm_promise = @compute_client.virtual_machines.create_or_update(@rg_name, @instance_name, vm)
-        my_vm = vm_promise.value!
+        my_vm = @compute_client.virtual_machines.create_or_update(@rg_name, @instance_name, vm)
         end_time = Time.now.to_i
         duration = end_time - start_time
         OOLog.info("Storage Disk attached #{duration} seconds")
-        OOLog.info("VM: #{my_vm.body.name} UPDATED!!!")
+        OOLog.info("VM: #{my_vm.name} UPDATED!!!")
         return true
       rescue  MsRestAzure::AzureOperationError =>e
     OOLog.debug( e.body.inspect)
@@ -169,10 +168,9 @@ class Datadisk < AzureBase::ResourceGroupManager
 
     # Get the information about the VM
     def get_vm_info()
-      promise = @compute_client.virtual_machines.get(@rg_name, @instance_name)
-      result = promise.value!
-      OOLog.info("vm info :"+result.body.inspect)
-      return result.body
+      result = @compute_client.virtual_machines.get(@rg_name, @instance_name)
+      OOLog.info("vm info :"+result.inspect)
+      return result
     end
 
     #Get storage account name to use
@@ -229,11 +227,12 @@ class Datadisk < AzureBase::ResourceGroupManager
 
     def get_storage_access_key()
       OOLog.info("Getting storage account keys ....")
-      storage_account_keys= @storage_client.storage_accounts.list_keys(@rg_name_persistent_storage,@storage_account_name).value!
-      OOLog.info('  storage_account_keys : ' +   storage_account_keys.body.inspect)
-      key1 = storage_account_keys.body.key1
-      key2 = storage_account_keys.body.key2
-      return key2
+      storage_account_keys = @storage_client.storage_accounts.list_keys(@rg_name_persistent_storage,@storage_account_name)
+      OOLog.info('  storage_account_keys : ' +   storage_account_keys.inspect)
+      key1 = storage_account_keys.keys[0]
+      key2 = storage_account_keys.keys[1]
+      raise unless key2.key_name == "key2"
+      return key2.value
     end
     
     def delete_datadisk()
@@ -302,10 +301,10 @@ class Datadisk < AzureBase::ResourceGroupManager
         diskname = "#{component_name}-datadisk-#{dev_name}"
         #Detach a data disk
         flag = false
-        (vm.properties.storage_profile.data_disks).each do |disk|
+        (vm.storage_profile.data_disks).each do |disk|
           if disk.name == diskname
             OOLog.info("deleting disk at lun:"+(disk.lun).to_s + " dev:#{dev_name} ")
-            vm.properties.storage_profile.data_disks.delete_at(i-1)
+            vm.storage_profile.data_disks.delete_at(i-1)
           end
          end
          end
@@ -320,12 +319,11 @@ class Datadisk < AzureBase::ResourceGroupManager
     def update_vm_properties(vm)
       begin
         start_time = Time.now.to_i
-        vm_promise = @compute_client.virtual_machines.create_or_update(@rg_name, @instance_name, vm)
-        my_vm = vm_promise.value!
+        my_vm = @compute_client.virtual_machines.create_or_update(@rg_name, @instance_name, vm)
         end_time = Time.now.to_i
         duration = end_time - start_time
         OOLog.info("Storage Disk detached #{duration} seconds")
-        OOLog.info("VM: #{my_vm.body.name} UPDATED!!!")
+        OOLog.info("VM: #{my_vm.name} UPDATED!!!")
         return true
       rescue  MsRestAzure::AzureOperationError =>e
           OOLog.fatal(e.body)
