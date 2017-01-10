@@ -17,7 +17,7 @@ class EndPoint
     @location = location
   end
 
-  attr_reader :name, :target, :location
+  attr_reader :name, :target, :location, :type
 
   def set_endpoint_status(endpoint_status)
     @endpoint_status = endpoint_status
