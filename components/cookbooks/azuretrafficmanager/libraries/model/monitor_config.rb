@@ -15,13 +15,4 @@ class MonitorConfig
   end
 
   attr_reader :protocol, :port, :path
-
-  def serialize_object
-    payload = {}
-    payload['protocol'] = @protocol
-    payload['port'] = @port
-    payload['path'] = @path
-
-    payload
-  end
 end

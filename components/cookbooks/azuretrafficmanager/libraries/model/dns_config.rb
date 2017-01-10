@@ -9,12 +9,4 @@ class DnsConfig
   end
 
   attr_reader :relative_name, :ttl
-
-  def serialize_object
-    payload = {}
-    payload['relativeName'] = @relative_name
-    payload['ttl'] = @ttl
-
-    payload
-  end
 end

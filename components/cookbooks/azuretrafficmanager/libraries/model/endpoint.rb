@@ -32,20 +32,4 @@ class EndPoint
   end
 
   attr_reader :endpoint_status, :weight, :priority
-
-  def serialize_object
-    endpoint_properties = {}
-    endpoint_properties['target'] = @target
-    endpoint_properties['endpointStatus'] = @endpoint_status
-    endpoint_properties['weight'] = @weight
-    endpoint_properties['priority'] = @priority
-    endpoint_properties['endpointLocation'] = @location
-
-    endpoint = {}
-    endpoint['name'] = @name
-    endpoint['type'] = @type
-    endpoint['properties'] = endpoint_properties
-    endpoint
-  end
-
 end
