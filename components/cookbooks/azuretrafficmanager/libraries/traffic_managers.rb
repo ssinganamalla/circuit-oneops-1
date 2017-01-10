@@ -23,6 +23,9 @@ class TrafficManagers
       traffic_manager_profile = @traffic_manager_service.traffic_manager_profiles.create(
         name: @profile_name,
         resource_group: @resource_group_name,
+        location: traffic_manager.location,
+        profile_status: traffic_manager.profile_status,
+        endpoints: serialize_endpoints(traffic_manager.endpoints),
         traffic_routing_method: traffic_manager.routing_method,
         relative_name: traffic_manager.dns_config.relative_name,
         ttl: traffic_manager.dns_config.ttl,
@@ -67,5 +70,30 @@ class TrafficManagers
     Chef::Log.info("Response traffic_manager get_profile status code - #{response.code}")
     Chef::Log.info("Response - #{response}")
     traffic_manager_profile
+  end
+
+  private
+
+  def serialize_endpoints(endpoints)
+    serialized_array = []
+    unless endpoints.nil?
+      endpoints.each do |endpoint|
+        unless endpoint.nil?
+          element = {
+            name: endpoint.name,
+            traffic_manager_profile_name: @profile_name,
+            resource_group: @resource_group_name,
+            type: endpoint.type,
+            target: endpoint.target,
+            endpoint_location: endpoint.location,
+            endpoint_status: endpoint.endpoint_status,
+            priority: endpoint.priority,
+            weight: endpoint.weight
+          }
+          serialized_array.push(element)
+        end
+      end
+    end
+    serialized_array
   end
 end

@@ -163,7 +163,7 @@ begin
         OOLog.fatal("ERROR recreating Traffic Manager profile #{profile_name}")
       end
     else
-      Chef::Log.error("Failed to delete traffic manager.")
+      Chef::Log.error('Failed to delete traffic manager.')
       exit 1
     end
   end

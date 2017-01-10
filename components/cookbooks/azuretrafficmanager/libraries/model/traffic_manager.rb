@@ -31,35 +31,5 @@ class TrafficManager
   def set_profile_status=(profile_status)
     @profile_status = profile_status
   end
-
-  def serialize_object
-    properties = {}
-    properties['profileStatus'] = @profile_status
-    properties['trafficRoutingMethod'] = @routing_method
-    properties['dnsConfig'] = @dns_config.serialize_object
-    properties['monitorConfig'] = @monitor_config.serialize_object
-    properties['endpoints'] = serialize_endpoints
-
-    payload = {}
-    payload['location'] = GLOBAL
-    payload['tags'] = {}
-    payload['properties'] = properties
-
-    payload
-  end
-
-  def serialize_endpoints
-    unless @endpoints.nil?
-      serializedArray = []
-      @endpoints.each do |endpoint|
-        unless endpoint.nil?
-          element = endpoint.serialize_object
-        end
-        serializedArray.push(element)
-      end
-    end
-    return serializedArray
-  end
-
 end
 
