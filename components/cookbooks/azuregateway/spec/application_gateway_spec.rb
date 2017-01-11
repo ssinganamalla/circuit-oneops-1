@@ -16,7 +16,7 @@ describe AzureNetwork::Gateway do
     ag_name = '<AG_NAME>'
 
     @gateway = AzureNetwork::Gateway.new(resource_group_name, ag_name, credentials)
-    @gateway_gateway = Fog::ApplicationGateway::AzureRM::Gateway.new(
+    @gateway_response = Fog::ApplicationGateway::AzureRM::Gateway.new(
       name: 'gateway',
       location: 'eastus',
       resource_group: 'fogRM-rg'
@@ -229,7 +229,7 @@ describe AzureNetwork::Gateway do
 
   describe '#create_or_update' do
     it 'creates application gateway successfully' do
-      allow(@gateway.application_gateway).to receive_message_chain(:gateways, :create).and_return(@gateway_gateway)
+      allow(@gateway.application_gateway).to receive_message_chain(:gateways, :create).and_return(@gateway_response)
       expect(@gateway.create_or_update('east-us', false)).to_not eq(nil)
     end
     it 'raises AzureOperationError exception while creating application gateway' do

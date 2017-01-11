@@ -1,4 +1,5 @@
 require 'fog/azurerm'
+require 'chef'
 require ::File.expand_path('../../../azure_base/libraries/logger', __FILE__)
 
 class TrafficManagers
@@ -11,10 +12,10 @@ class TrafficManagers
     @resource_group_name = resource_group
     @profile_name = profile_name
     @traffic_manager_service = Fog::TrafficManager::AzureRM.new(
-      tenant_id: dns_attributes['tenant_id'],
-      client_id: dns_attributes['client_id'],
-      client_secret: dns_attributes['client_secret'],
-      subscription_id: dns_attributes['subscription']
+      tenant_id: dns_attributes[:tenant_id],
+      client_id: dns_attributes[:client_id],
+      client_secret: dns_attributes[:client_secret],
+      subscription_id: dns_attributes[:subscription]
     )
   end
 
@@ -34,26 +35,22 @@ class TrafficManagers
         path: traffic_manager.monitor_config.path
       )
     rescue => e
-      Chef::Log.fatal("Response traffic_manager create_update_profile - #{e.message}")
+      OOLog.fatal("Response traffic_manager create_update_profile - #{e.message}")
     end
-    Chef::Log.info("Response traffic_manager create_update_profile - #{traffic_manager_profile}")
+    OOLog.info("Response traffic_manager create_update_profile - #{traffic_manager_profile}")
     traffic_manager_profile
   end
 
   def delete_profile
-    traffic_manager_profile = get_profile
-    unless traffic_manager_profile.nil?
-      begin
-        response = traffic_manager_profile.destroy
-      rescue MsRestAzure::AzureOperationError => e
-        OOLog.fatal("FATAL ERROR deleting Traffic Manager Profile....: #{e.body}")
-      rescue => e
-        OOLog.fatal("Traffic Manager deleting error....: #{e.body}")
-      end
-      OOLog.info("Traffic Manager Profile #{@profile_name} deleted successfully!")
-      return response
+    begin
+      response = get_profile.destroy
+    rescue MsRestAzure::AzureOperationError => e
+      OOLog.fatal("FATAL ERROR deleting Traffic Manager Profile....: #{e.body}")
+    rescue => e
+      OOLog.fatal("Traffic Manager deleting error....: #{e.body}")
     end
-    OOLog.fatal('Traffic Manager Profile does not exist')
+    OOLog.info("Traffic Manager Profile #{@profile_name} deleted successfully!")
+    response
   end
 
   def get_profile
