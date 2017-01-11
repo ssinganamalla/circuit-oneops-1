@@ -59,7 +59,7 @@ module AzureNetwork
       start_time = Time.now.to_i
       begin
         public_ip = @network_client.public_ips.get(resource_group_name, public_ip_name)
-        !public_ip.nil? ? public_ip.destroy : Chef::Log.info('AzureNetwork::PublicIp - 404 code, trying to delete something that is not there.')
+        result = !public_ip.nil? ? public_ip.destroy : Chef::Log.info('AzureNetwork::PublicIp - 404 code, trying to delete something that is not there.')
       rescue MsRestAzure::AzureOperationError => e
         OOLog.fatal("Error deleting PublicIP '#{public_ip_name}' in ResourceGroup '#{resource_group_name}'. Exception: #{e.body}")
       rescue => e
@@ -68,6 +68,7 @@ module AzureNetwork
       end_time = Time.now.to_i
       duration = end_time - start_time
       OOLog.info("operation took #{duration} seconds")
+      result
     end
 
     # this function creates or updates the public ip address
@@ -77,7 +78,7 @@ module AzureNetwork
       OOLog.info("Creating/Updating public IP '#{public_ip_name}' from '#{resource_group_name}' ")
       start_time = Time.now.to_i
       begin
-        response = @network_client.public_ips.create(name: public_ip_name, resource_group: resource_group_name, location: 'global', public_ip_allocation_method: public_ip_address.public_ip_allocation_method)
+        response = @network_client.public_ips.create(name: public_ip_name, resource_group: resource_group_name, location: @location, public_ip_allocation_method: public_ip_address.public_ip_allocation_method)
       rescue MsRestAzure::AzureOperationError => ex
         OOLog.fatal("Exception trying to create/update public ip #{public_ip_address.name} from resource group: #{resource_group_name}.  Exception: #{ex.body}")
       rescue => e
@@ -95,7 +96,7 @@ module AzureNetwork
       OOLog.info("Checking existance of public IP '#{public_ip_name}' in '#{resource_group_name}' ")
       start_time = Time.now.to_i
       begin
-        @network_client.public_ips.check_public_ip_exists?(resource_group_name, public_ip_name)
+        response = @network_client.public_ips.check_public_ip_exists(resource_group_name, public_ip_name)
       rescue MsRestAzure::AzureOperationError => e
         OOLog.fatal("Azure::PublicIp - Exception is: #{e.body}")
       rescue => e
@@ -104,7 +105,7 @@ module AzureNetwork
       end_time = Time.now.to_i
       duration = end_time - start_time
       OOLog.info("operation took #{duration} seconds")
-      true
+      response
     end
   end
 end

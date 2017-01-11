@@ -154,13 +154,13 @@ module AzureNetwork
       # include the network securtiry group to the network interface
 
       network_security_group = @nsg.get(@rg_name, security_group_name)
-      network_interface.network_security_group = network_security_group unless network_security_group.nil?
-
+      network_interface.network_security_group_id = network_security_group.id unless network_security_group.nil?
+      network_interface.subnet_id = subnet.id
       # create the nic
       nic = create_update(network_interface)
 
       # retrieve and set the private ip
-      @private_ip = nic.ip_configurations[0].private_ipaddress
+      @private_ip = nic.private_ip_address
       OOLog.info('Private IP is: ' + @private_ip)
 
       nic.id

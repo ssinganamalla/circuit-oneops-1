@@ -102,18 +102,18 @@ describe AzureNetwork::PublicIp do
 
   describe '#test check_existence_publicip functionality' do
     it 'successfull case of checking exist functionality' do
-      allow(@azure_client.network_client).to receive_message_chain(:public_ips, :check_public_ip_exists?).and_return(true)
+      allow(@azure_client.network_client).to receive_message_chain(:public_ips, :check_public_ip_exists).and_return(true)
       expect(@azure_client.check_existence_publicip(@platform_resource_group, @public_ip_name)).to eq(true)
     end
 
     it 'raises AzureOperationError exception' do
-      allow(@azure_client.network_client).to receive_message_chain(:public_ips, :check_public_ip_exists?)
+      allow(@azure_client.network_client).to receive_message_chain(:public_ips, :check_public_ip_exists)
                                      .and_raise(MsRestAzure::AzureOperationError.new('Errors'))
       expect { @azure_client.check_existence_publicip(@platform_resource_group, @public_ip_name)}.to raise_error('no backtrace')
     end
 
     it 'raises a generic exception' do
-      allow(@azure_client.network_client).to receive_message_chain(:public_ips, :check_public_ip_exists?)
+      allow(@azure_client.network_client).to receive_message_chain(:public_ips, :check_public_ip_exists)
                                      .and_raise(MsRest::HttpOperationError.new('Error'))
       expect { @azure_client.check_existence_publicip(@platform_resource_group, @public_ip_name) }.to raise_error('no backtrace')
     end

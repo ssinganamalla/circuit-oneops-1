@@ -53,11 +53,20 @@ module AzureNetwork
     def create_update(resource_group_name, virtual_network)
       OOLog.info("Creating Virtual Network '#{@name}' ...")
       start_time = Time.now.to_i
+
+      array_of_objs = virtual_network.subnets
+      subnets_array = Array.new
+      array_of_objs.each do |object|
+        hash = {}
+        object.instance_variables.each { |attr| hash[attr.to_s.delete('@')] = object.instance_variable_get(attr) }
+        subnets_array << hash['attributes']
+      end
+
       begin
         response = @network_client.virtual_networks.create(name: @name,
                                                            location: virtual_network.location,
                                                            resource_group: resource_group_name,
-                                                           subnets: virtual_network.subnets,
+                                                           subnets: subnets_array,
                                                            dns_servers: virtual_network.dns_servers,
                                                            address_prefixes: virtual_network.address_prefixes)
       rescue MsRestAzure::AzureOperationError => e
@@ -129,14 +138,13 @@ module AzureNetwork
       OOLog.fatal('VNET name is nil. It is required.') if @name.nil?
       OOLog.info("Checking if Virtual Network '#{@name}' Exists! ...")
       begin
-        @network_client.virtual_networks.check_virtual_network_exists?(resource_group_name, @name)
+        result = @network_client.virtual_networks.check_virtual_network_exists(resource_group_name, @name)
       rescue MsRestAzure::AzureOperationError => e
         OOLog.fatal("Error getting virtual network: #{@name} from resource group #{resource_group_name}.  Exception: #{e.body}")
       rescue => ex
         OOLog.fatal("Error getting virtual network: #{@name} from resource group #{resource_group_name}.  Exception: #{ex.message}")
       end
-      OOLog.info('VNET EXISTS!!')
-      true
+      result
     end
   end # end of class
 end
