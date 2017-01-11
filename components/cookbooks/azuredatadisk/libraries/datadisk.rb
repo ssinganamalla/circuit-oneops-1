@@ -123,7 +123,7 @@ class Datadisk < AzureBase::ResourceGroupManager
 
         #Add a data disk
          flag = false
-         (vm.properties.storage_profile.data_disks).each do |disk|
+         (vm.storage_profile.data_disks).each do |disk|
            if disk.lun == i-1
              flag = true
            end
@@ -132,7 +132,7 @@ class Datadisk < AzureBase::ResourceGroupManager
            i = i+1
            next
         end
-        vm.properties.storage_profile.data_disks.push(build_storage_profile(i,component_name,slice_size,dev_id))
+        vm.storage_profile.data_disks.push(build_storage_profile(i,component_name,slice_size,dev_id))
         attach_disk_to_vm(vm)
         OOLog.info("Adding #{dev_id} to the dev list")
         i = i+1
@@ -176,7 +176,7 @@ class Datadisk < AzureBase::ResourceGroupManager
     #Get storage account name to use
 
     def get_storage_account_name(vm)
-      storage_account_name=((vm.properties.storage_profile.os_disk.vhd.uri).split(".")[0]).split("//")[1]
+      storage_account_name=((vm.storage_profile.os_disk.vhd.uri).split(".")[0]).split("//")[1]
       OOLog.info("storage account to use:"+storage_account_name)
       storage_account_name
     end
