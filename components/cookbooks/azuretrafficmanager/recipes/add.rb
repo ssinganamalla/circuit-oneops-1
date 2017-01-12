@@ -7,6 +7,7 @@ require File.expand_path('../../../azure_lb/libraries/load_balancer.rb', __FILE_
 require File.expand_path('../../../azure/libraries/public_ip.rb', __FILE__)
 require File.expand_path('../../../azure_base/libraries/utils.rb', __FILE__)
 require 'chef'
+require 'azure_mgmt_network'
 
 ::Chef::Recipe.send(:include, Utils)
 ::Chef::Recipe.send(:include, AzureNetwork)
@@ -76,7 +77,7 @@ end
 
 def initialize_endpoints(targets)
   endpoints = []
-  targets.each do |i|
+  for i in 0..targets.length-1
     location = targets[i].split('.').reverse[3]
     endpoint_name = 'endpoint_' + location + '_' + i.to_s
     endpoint = EndPoint.new(endpoint_name, targets[i], location)
@@ -164,7 +165,7 @@ begin
       exit 1
     end
   end
-  Chef::Log.info('Exiting Traffic Manager Added')
+  Chef::Log.info('Traffic Manager created successfully')
 rescue => e
-  OOLog.fatal("Error creating Application Gateway: #{e.message}")
+  OOLog.fatal("Error creating Traffic Manager: #{e.message}")
 end
