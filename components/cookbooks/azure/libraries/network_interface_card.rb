@@ -24,7 +24,7 @@ module AzureNetwork
       }
 
       @network_client = Fog::Network::AzureRM.new(client_id: cred_hash[:client_id], client_secret: cred_hash[:client_secret], tenant_id: cred_hash[:tenant_id], subscription_id: subscription_id)
-      @publicip = AzureNetwork::PublicIp.new(cred_hash, subscription_id)
+      @publicip = AzureNetwork::PublicIp.new(credentials, subscription_id)
       @subnet_cls = AzureNetwork::Subnet.new(cred_hash, subscription_id)
       @virtual_network = AzureNetwork::VirtualNetwork.new(cred_hash, subscription_id)
       @nsg = AzureNetwork::NetworkSecurityGroup.new(credentials, subscription_id)

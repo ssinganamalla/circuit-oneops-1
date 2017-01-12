@@ -186,7 +186,14 @@ begin
     express_route_enabled = false
   end
 
-  vnet_obj = AzureNetwork::VirtualNetwork.new(credentials, subscription_id)
+  token = credentials.instance_variable_get(:@token_provider)
+  cred_hash = {
+      tenant_id: token.instance_variable_get(:@tenant_id),
+      client_secret: token.instance_variable_get(:@client_secret),
+      client_id: token.instance_variable_get(:@client_id)
+  }
+
+  vnet_obj = AzureNetwork::VirtualNetwork.new(cred_hash, subscription_id)
 
   if express_route_enabled
     vnet_name = ag_service[:ciAttributes][:network]

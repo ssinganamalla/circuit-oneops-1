@@ -59,7 +59,9 @@ module AzureNetwork
       array_of_objs.each do |object|
         hash = {}
         object.instance_variables.each { |attr| hash[attr.to_s.delete('@')] = object.instance_variable_get(attr) }
-        subnets_array << hash['attributes']
+        unless hash['attributes'].nil?
+          subnets_array << hash['attributes']
+        end
       end
 
       begin
