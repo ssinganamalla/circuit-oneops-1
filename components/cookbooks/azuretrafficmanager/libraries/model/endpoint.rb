@@ -1,15 +1,16 @@
+# Endpoint Model for Traffic Manager
 class EndPoint
   module Status
-    ENABLED = 'Enabled'
-    DISABLED = 'Disabled'
+    ENABLED = 'Enabled'.freeze
+    DISABLED = 'Disabled'.freeze
   end
 
-  TYPE = 'Microsoft.Network/trafficManagerProfiles/externalEndpoints'
+  TYPE = 'Microsoft.Network/trafficManagerProfiles/externalEndpoints'.freeze
 
   def initialize(name, target, location)
-    fail ArgumentError, 'name is nil' if name.nil?
-    fail ArgumentError, 'target is nil' if target.nil?
-    fail ArgumentError, 'location is nil' if location.nil?
+    raise ArgumentError, 'name is nil' if name.nil?
+    raise ArgumentError, 'target is nil' if target.nil?
+    raise ArgumentError, 'location is nil' if location.nil?
 
     @name = name
     @type = TYPE

@@ -1,6 +1,6 @@
 require File.expand_path('../../libraries/traffic_managers.rb', __FILE__)
 
-#set the proxy if it exists as a cloud var
+# set the proxy if it exists as a cloud var
 Utils.set_proxy(node.workorder.payLoad.OO_CLOUD_VARS)
 
 nsPathParts = node['workorder']['rfcCi']['nsPath'].split('/')

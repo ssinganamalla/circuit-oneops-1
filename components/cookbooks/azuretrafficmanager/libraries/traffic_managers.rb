@@ -2,12 +2,13 @@ require 'fog/azurerm'
 require 'chef'
 require ::File.expand_path('../../../azure_base/libraries/logger', __FILE__)
 
+# Cookbook Name:: azuretrafficmanager
 class TrafficManagers
   attr_accessor :traffic_manager_service
 
   def initialize(resource_group, profile_name, dns_attributes)
-    fail ArgumentError, 'resource_group is nil' if resource_group.nil?
-    fail ArgumentError, 'profile_name is nil' if profile_name.nil?
+    raise ArgumentError, 'resource_group is nil' if resource_group.nil?
+    raise ArgumentError, 'profile_name is nil' if profile_name.nil?
 
     @resource_group_name = resource_group
     @profile_name = profile_name
@@ -70,20 +71,19 @@ class TrafficManagers
     serialized_array = []
     unless endpoints.nil?
       endpoints.each do |endpoint|
-        unless endpoint.nil?
-          element = {
-            name: endpoint.name,
-            traffic_manager_profile_name: @profile_name,
-            resource_group: @resource_group_name,
-            type: endpoint.type,
-            target: endpoint.target,
-            endpoint_location: endpoint.location,
-            endpoint_status: endpoint.endpoint_status,
-            priority: endpoint.priority,
-            weight: endpoint.weight
-          }
-          serialized_array.push(element)
-        end
+        next if endpoint.nil?
+        element = {
+          name: endpoint.name,
+          traffic_manager_profile_name: @profile_name,
+          resource_group: @resource_group_name,
+          type: endpoint.type,
+          target: endpoint.target,
+          endpoint_location: endpoint.location,
+          endpoint_status: endpoint.endpoint_status,
+          priority: endpoint.priority,
+          weight: endpoint.weight
+        }
+        serialized_array.push(element)
       end
     end
     serialized_array

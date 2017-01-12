@@ -1,22 +1,23 @@
+# Traffic Manager Model
 class TrafficManager
   module ProfileStatus
-    ENABLED = 'Enabled'
-    DISABLED = 'Disabled'
+    ENABLED = 'Enabled'.freeze
+    DISABLED = 'Disabled'.freeze
   end
 
   module RoutingMethod
-    PERFORMANCE = 'Performance'
-    WEIGHTED = 'Weighted'
-    PRIORITY = 'Priority'
+    PERFORMANCE = 'Performance'.freeze
+    WEIGHTED = 'Weighted'.freeze
+    PRIORITY = 'Priority'.freeze
   end
 
-  GLOBAL = 'global'
+  GLOBAL = 'global'.freeze
 
   def initialize(routing_method, dns_config, monitor_config, endpoints)
-    fail ArgumentError, 'routing_method is nil' if routing_method.nil?
-    fail ArgumentError, 'dns_config is nil' if dns_config.nil?
-    fail ArgumentError, 'monitor_config is nil' if monitor_config.nil?
-    fail ArgumentError, 'endpoints is nil' if endpoints.nil?
+    raise ArgumentError, 'routing_method is nil' if routing_method.nil?
+    raise ArgumentError, 'dns_config is nil' if dns_config.nil?
+    raise ArgumentError, 'monitor_config is nil' if monitor_config.nil?
+    raise ArgumentError, 'endpoints is nil' if endpoints.nil?
 
     @routing_method = routing_method
     @dns_config = dns_config
@@ -32,4 +33,3 @@ class TrafficManager
     @profile_status = profile_status
   end
 end
-
