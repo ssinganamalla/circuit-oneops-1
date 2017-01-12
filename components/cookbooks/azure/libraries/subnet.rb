@@ -1,20 +1,24 @@
+require 'fog/azurerm'
+require 'chef'
+
+require ::File.expand_path('../../../azure_base/libraries/logger', __FILE__)
+
 # module to contain classes for dealing with the Azure Network features.
-require 'azure_mgmt_network'
 module AzureNetwork
   # thie class has all the methods in it to handle Azure's subnet.
   class Subnet
-    attr_accessor :sub_address, :name
+    attr_accessor :sub_address, :name, :network_client
     attr_reader :creds, :subscription
-
-    # Include SDK modules to ease access to network classes.
-    include Azure::ARM::Network
-    include Azure::ARM::Network::Models
 
     def initialize(creds, subscription_id)
       @creds = creds
+
+      tenant_id = creds[:tenant_id]
+      client_secret = creds[:client_secret]
+      client_id = creds[:client_id]
       @subscription = subscription_id
-      @client = Azure::ARM::Network::NetworkManagementClient.new(creds)
-      @client.subscription_id = subscription_id
+      @network_client = Fog::Network::AzureRM.new(client_id: client_id, client_secret: client_secret, tenant_id: tenant_id, subscription_id: subscription_id)
+
     end
 
     # this builds an array of subnets to be used for creating a vnet.
@@ -22,7 +26,7 @@ module AzureNetwork
       sub_nets = []
       @sub_address.each do |sub_address|
         OOLog.info('sub_address[' + @sub_address.index(sub_address).to_s + ']: ' + sub_address.strip)
-        subnet = Azure::ARM::Network::Models::Subnet.new
+        subnet = Fog::Network::AzureRM::Subnet.new
         subnet.name = 'subnet_' + @sub_address.index(sub_address).to_s + '_' + @name
         subnet.address_prefix = sub_address.strip
         sub_nets.push(subnet)
@@ -48,7 +52,7 @@ module AzureNetwork
         end
         OOLog.info("Total number of ips possible is: #{total_num_of_ips_possible}")
 
-        no_ips_inuse = subnet.ip_configurations.nil? ? 0 : subnet.ip_configurations.length
+        no_ips_inuse = subnet.ip_configurations_ids.nil? ? 0 : subnet.ip_configurations_ids.length
         OOLog.info("Num of ips in use: #{no_ips_inuse}")
 
         remaining_ips = total_num_of_ips_possible - no_ips_inuse
@@ -66,36 +70,35 @@ module AzureNetwork
 
     # this method will return all subnets in the RG and vnet.
     def list(resource_group_name, vnet_name)
+      OOLog.info("Getting all subnets from Resource Group '#{resource_group_name}'/vnet '#{vnet_name}'  ...")
+      start_time = Time.now.to_i
       begin
-        OOLog.info("Getting all subnets from Resource Group '#{resource_group_name}'/vnet '#{vnet_name}'  ...")
-        start_time = Time.now.to_i
-        response = @client.subnets.list(resource_group_name, vnet_name)
-        end_time = Time.now.to_i
-        duration = end_time - start_time
+        response = @network_client.subnets(resource_group: resource_group_name, virtual_network_name: vnet_name)
       rescue MsRestAzure::AzureOperationError => e
         OOLog.fatal("Error getting all subnets for vnet. Exception: #{e.body}")
       rescue => ex
         OOLog.fatal("Error getting all subnets for vnet. Exception: #{ex.message}")
       end
-
       OOLog("operation took #{duration} seconds")
+      end_time = Time.now.to_i
+      duration = end_time - start_time
+      OOLog.info("operation took #{duration} seconds")
       response
     end
 
     # retrieve the subnet
     def get(resource_group_name, vnet_name, subnet_name)
+      OOLog.info("Getting subnet '#{subnet_name}' from Resource Group '#{resource_group_name}'/vnet '#{vnet_name}'  ...")
+      start_time = Time.now.to_i
       begin
-        OOLog.info("Getting subnet '#{subnet_name}' from Resource Group '#{resource_group_name}'/vnet '#{vnet_name}'  ...")
-        start_time = Time.now.to_i
-        response = @client.subnets.get(resource_group_name, vnet_name, subnet_name)
-        end_time = Time.now.to_i
-        duration = end_time - start_time
+        response = @network_client.subnets.get(resource_group_name, vnet_name, subnet_name)
       rescue MsRestAzure::AzureOperationError => e
         OOLog.fatal("Error getting subnet.  Excpetion: #{e.body}")
       rescue => ex
         OOLog.fatal("Error getting subnet.  Excpetion: #{ex.message}")
       end
-
+      end_time = Time.now.to_i
+      duration = end_time - start_time
       OOLog.info("operation took #{duration} seconds")
       response
     end
