@@ -1,7 +1,7 @@
 require 'json'
+
 require 'fog/azurerm'
 require 'simplecov'
-require 'rest-client'
 SimpleCov.start
 
 require File.expand_path('../../libraries/public_ip', __FILE__)
@@ -30,6 +30,20 @@ describe AzureNetwork::NetworkInterfaceCard do
       location: "location"
     )
 
+    @virtual_network_response = Fog::Network::AzureRM::VirtualNetwork.new(
+        subnets: [],
+        address_prefixes: "10.1.57.12"
+    )
+
+    @nsg_response = Fog::Network::AzureRM::NetworkSecurityGroup.new(
+        id: "/subscriptions/########-####-####-####-############/resourceGroups/{resource_group}/providers/Microsoft.Network/networkSecurityGroup/{name}",
+        address_prefixes: "10.1.57.12"
+    )
+    @subnet_response = Fog::Network::AzureRM::Subnet.new(
+        id: "/subscriptions/########-####-####-####-############/resourceGroups/{resource_group}/providers/Microsoft.Network/subnet/{name}",
+        address_prefixes: "10.1.57.12"
+    )
+
   end
 
   describe '# test define_nic_ip_config functionality' do
@@ -46,13 +60,12 @@ describe AzureNetwork::NetworkInterfaceCard do
 
   describe '#test build_network_profile functionality' do
     it ' build network profile when express route is not enabled' do
-
-      # allow(@azure_client.virtual_network).to receive(:get).and_return('some-response')
+      # allow(@azure_client.virtual_network).to receive(:get).and_return(@virtual_network_response)
       # allow(@azure_client.virtual_network).to receive(:exists?).and_return(true)
       # allow(@azure_client.virtual_network).to receive(:exists?).and_return(false)
-      # allow(@azure_client.virtual_network).to receive(:create_update).and_return('some-response')
-      # allow(@azure_client.subnet_cls).to receive(:get_subnet_with_available_ips).and_return('some-response')
-      # allow(@azure_client.nsg).to receive(:get).and_return('some-response')
+      # allow(@azure_client.virtual_network).to receive(:create_update).and_return(@virtual_network_response)
+      # allow(@azure_client.subnet_cls).to receive(:get_subnet_with_available_ips).and_return(@subnet_response)
+      # allow(@azure_client.nsg).to receive(:get).and_return(@nsg_response)
       #
       # expect(@azure_client.build_network_profile(false,
       #                                            @platform_resource_group,
@@ -62,7 +75,7 @@ describe AzureNetwork::NetworkInterfaceCard do
       #                                            ["1", "2", "5", "7"],
       #                                            'publicip',
       #                                            'sec-group')
-      # ).not_to
+      # ).not_to eq(nil)
     end
 
   end
