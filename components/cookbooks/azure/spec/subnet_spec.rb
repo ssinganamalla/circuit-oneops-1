@@ -42,19 +42,22 @@ describe AzureNetwork::Subnet do
     it 'builds desired object successfully with express_route disabled' do
       subnet1 = Fog::Network::AzureRM::Subnet.new
       subnet1.name = 'gatewaysubnet'
-      subnet1.ip_configurations_ids = ['id-1']
-      subnet1.address_prefix = '19.0.0.0/32'
+      subnet1.address_prefix = '19.16.14.16/32'
 
       subnet2 = Fog::Network::AzureRM::Subnet.new
       subnet2.name = 'gatewaysubnet1'
-      subnet2.ip_configurations_ids = ['id-1']
-      subnet2.address_prefix = '195.16.14.16/32'
+      subnet2.address_prefix = '19.16.14.16/16'
 
       expect(@azure_client.get_subnet_with_available_ips([subnet1, subnet2], 'false')).to be_a Fog::Network::AzureRM::Subnet
     end
 
     it 'builds desired object successfully with no subnet' do
-     # expect(@azure_client.get_subnet_with_available_ips([], 'false')).to_not eq(nil)
+      subnet2 = Fog::Network::AzureRM::Subnet.new
+      subnet2.name = 'gatewaysubnet1'
+      subnet2.ip_configurations_ids = ['id-1', 'id-3','id-1', 'id-3','id-1', 'id-3','id-1', 'id-3','id-1','id-1','id-1','id-1','id-1','id-1']
+      subnet2.address_prefix = '15.0.0.0/28'
+
+      expect(@azure_client.get_subnet_with_available_ips([subnet2], 'false')).not_to eq(nil)
     end
   end
 

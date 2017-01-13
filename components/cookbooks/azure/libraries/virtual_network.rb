@@ -142,11 +142,11 @@ module AzureNetwork
 
     private
 
-    def get_array_of_subnet_hashes(array_of_objs)
-      subnets_array = Array.new
-      array_of_objs.each do |object|
+    def get_array_of_subnet_hashes(array_of_subnet_objs)
+      subnets_array = []
+      array_of_subnet_objs.each do |subnet|
         hash = {}
-        object.instance_variables.each { |attr| hash[attr.to_s.delete('@')] = object.instance_variable_get(attr) }
+        subnet.instance_variables.each { |attr| hash[attr.to_s.delete('@')] = subnet.instance_variable_get(attr) }
         unless hash['attributes'].nil?
           subnets_array << hash['attributes']
         end

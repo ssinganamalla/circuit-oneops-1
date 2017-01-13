@@ -1,11 +1,13 @@
 # rubocop:disable LineLength
-require File.expand_path('../../libraries/record_set.rb', __FILE__)
-require ::File.expand_path('../../../azure_base/libraries/logger', __FILE__)
+
 require 'json'
 require 'rest-client'
 
 require 'simplecov'
 SimpleCov.start
+
+require File.expand_path('../../libraries/record_set.rb', __FILE__)
+require ::File.expand_path('../../../azure_base/libraries/logger', __FILE__)
 
 describe AzureDns::RecordSet do
   before do
