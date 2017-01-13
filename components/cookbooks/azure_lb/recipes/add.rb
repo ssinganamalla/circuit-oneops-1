@@ -365,7 +365,13 @@ if xpress_route_enabled
   vnet_name = lb_service[:ciAttributes][:network]
   master_rg = lb_service[:ciAttributes][:resource_group]
 
-  vnet_svc = AzureNetwork::VirtualNetwork.new(credentials, subscription_id)
+  token = credentials.instance_variable_get(:@token_provider)
+  cred_hash = {
+      tenant_id: token.instance_variable_get(:@tenant_id),
+      client_secret: token.instance_variable_get(:@client_secret),
+      client_id: token.instance_variable_get(:@client_id)
+  }
+  vnet_svc = AzureNetwork::VirtualNetwork.new(cred_hash, subscription_id)
   vnet_svc.name = vnet_name
   vnet = vnet_svc.get(master_rg)
 
