@@ -113,7 +113,6 @@ module AzureDns
             Chef::Log.info('found !')
             pip = @pubip.get(@resource_group, public_ip_name)
             OOLog.info("PIP IS: #{pip.inspect}")
-            OOLog.info("PIP Properties are: '#{pip.properties.inspect}'")
             OOLog.info("PIP DNS Settings are: '#{pip.domain_name_label}'")
             pip.domain_name_label = new_dns_settings.domain_name_label
             Chef::Log.info('updating domain label: ' + new_dns_settings.domain_name_label)
