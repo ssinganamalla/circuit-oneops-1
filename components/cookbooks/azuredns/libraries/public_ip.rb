@@ -1,8 +1,6 @@
-require 'azure_mgmt_network'
 require 'chef'
 require ::File.expand_path('../../../azure/libraries/public_ip.rb', __FILE__)
 ::Chef::Recipe.send(:include, AzureNetwork)
-::Chef::Recipe.send(:include, Azure::ARM::Network)
 
 # AzureDns Module
 module AzureDns
@@ -115,7 +113,6 @@ module AzureDns
             Chef::Log.info('found !')
             pip = @pubip.get(@resource_group, public_ip_name)
             OOLog.info("PIP IS: #{pip.inspect}")
-            OOLog.info("PIP Properties are: '#{pip.properties.inspect}'")
             OOLog.info("PIP DNS Settings are: '#{pip.domain_name_label}'")
             pip.domain_name_label = new_dns_settings.domain_name_label
             Chef::Log.info('updating domain label: ' + new_dns_settings.domain_name_label)

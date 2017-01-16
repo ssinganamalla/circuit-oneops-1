@@ -2,7 +2,7 @@ module AzureCompute
   class StorageProfile
 
     attr_accessor :location,
-                  :resource_group_name]
+                  :resource_group_name
 
     def initialize(creds, resource_group_name, location, size_id, ci_id)
       @resource_group_name = resource_group_name
@@ -274,7 +274,5 @@ module AzureCompute
 
       response.provisioning_state == 'Succeeded'
     end
-  end
-
   end
 end

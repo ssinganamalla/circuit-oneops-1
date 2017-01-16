@@ -14,12 +14,14 @@ module AzureNetwork
 
     def initialize(credentials, subscription_id)
       @creds = credentials
-
-      tenant_id = credentials[:tenant_id]
-      client_secret = credentials[:client_secret]
-      client_id = credentials[:client_id]
+      token = credentials.instance_variable_get(:@token_provider)
+      cred_hash = {
+        tenant_id: token.instance_variable_get(:@tenant_id),
+        client_secret: token.instance_variable_get(:@client_secret),
+        client_id: token.instance_variable_get(:@client_id)
+      }
       @subscription = subscription_id
-      @network_client = Fog::Network::AzureRM.new(client_id: client_id, client_secret: client_secret, tenant_id: tenant_id, subscription_id: subscription_id)
+      @network_client = Fog::Network::AzureRM.new(client_id: cred_hash[:client_id], client_secret: cred_hash[:client_secret], tenant_id: cred_hash[:tenant_id], subscription_id: subscription_id)
 
     end
 
@@ -90,7 +92,7 @@ module AzureNetwork
       response
     end
 
-    # this fuction checks whether the public ip belongs to the given
+    # this function checks whether the public ip belongs to the given
     # resource group
     def check_existence_publicip(resource_group_name, public_ip_name)
       OOLog.info("Checking existance of public IP '#{public_ip_name}' in '#{resource_group_name}' ")

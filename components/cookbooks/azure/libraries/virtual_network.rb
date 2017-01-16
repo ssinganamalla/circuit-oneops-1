@@ -53,20 +53,13 @@ module AzureNetwork
     def create_update(resource_group_name, virtual_network)
       OOLog.info("Creating Virtual Network '#{@name}' ...")
       start_time = Time.now.to_i
-
-      array_of_objs = virtual_network.subnets
-      subnets_array = Array.new
-      array_of_objs.each do |object|
-        hash = {}
-        object.instance_variables.each { |attr| hash[attr.to_s.delete('@')] = object.instance_variable_get(attr) }
-        subnets_array << hash['attributes']
-      end
+      array_of_subnets = get_array_of_subnet_hashes(virtual_network.subnets)
 
       begin
         response = @network_client.virtual_networks.create(name: @name,
                                                            location: virtual_network.location,
                                                            resource_group: resource_group_name,
-                                                           subnets: subnets_array,
+                                                           subnets: array_of_subnets,
                                                            dns_servers: virtual_network.dns_servers,
                                                            address_prefixes: virtual_network.address_prefixes)
       rescue MsRestAzure::AzureOperationError => e
@@ -92,7 +85,6 @@ module AzureNetwork
       rescue => ex
         OOLog.fatal("Error getting virtual network: #{@name} from resource group #{resource_group_name}.  Exception: #{ex.message}")
       end
-
       end_time = Time.now.to_i
       duration = end_time - start_time
       OOLog.info("operation took #{duration} seconds")
@@ -145,6 +137,20 @@ module AzureNetwork
         OOLog.fatal("Error getting virtual network: #{@name} from resource group #{resource_group_name}.  Exception: #{ex.message}")
       end
       result
+    end
+
+    private
+
+    def get_array_of_subnet_hashes(array_of_subnet_objs)
+      subnets_array = []
+      array_of_subnet_objs.each do |subnet|
+        hash = {}
+        subnet.instance_variables.each { |attr| hash[attr.to_s.delete('@')] = subnet.instance_variable_get(attr) }
+        unless hash['attributes'].nil?
+          subnets_array << hash['attributes']
+        end
+      end
+      subnets_array
     end
   end # end of class
 end

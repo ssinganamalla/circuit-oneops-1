@@ -160,15 +160,18 @@ module AzureDns
       types.each do |type|
         node_ciBaseAttributes = node_workorder_rfcci_json['ciBaseAttributes']
         node_ciAttributes = node_workorder_rfcci_json['ciAttributes']
-        if type == 'aliases'
+
+        case type
+        when'aliases'
           node_attributes = node_ciBaseAttributes['aliases']
-        elsif type == 'full_aliases'
+        when 'full_aliases'
           node_attributes = node_ciBaseAttributes['full_aliases']
-        elsif type == 'current_aliases'
+        when 'current_aliases'
           node_attributes = node_ciAttributes['aliases']
-        elsif type == 'current_full_aliases'
+        when 'current_full_aliases'
           node_attributes = node_ciAttributes['full_aliases']
         end
+
         if node_ciBaseAttributes.key?('aliases') && node_ciBaseAttributes.key?('full_aliases') && node_ciAttributes.key?('aliases') && node_ciAttributes.key?('full_aliases') && !is_hostname_entry
           begin
             json_parse_result = JSON.parse(node_attributes)

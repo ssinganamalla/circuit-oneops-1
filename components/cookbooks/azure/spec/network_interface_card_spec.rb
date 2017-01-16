@@ -1,7 +1,8 @@
 require 'json'
+
+require 'ms_rest'
 require 'fog/azurerm'
 require 'simplecov'
-require 'rest-client'
 SimpleCov.start
 
 require File.expand_path('../../libraries/public_ip', __FILE__)
@@ -15,12 +16,13 @@ describe AzureNetwork::NetworkInterfaceCard do
   before :each do
     token_provider = MsRestAzure::ApplicationTokenProvider.new('<TENANT_ID>', '<CLIENT_ID>', 'CLIENT_SECRET')
     credentials = MsRest::TokenCredentials.new(token_provider)
+
     subscription = '<SUBSCRIPTION-ID>'
     @azure_client = AzureNetwork::NetworkInterfaceCard.new(credentials, subscription)
-    @azure_client.rg_name = @platform_resource_group
+    @azure_client.rg_name = 'Resource-group'
     @azure_client.ci_id = 'ci-id'
 
-    @nic = Fog::Network::AzureRM::NetworkInterface.new
+
     @frntend_ip_config = Fog::Network::AzureRM::FrontendIPConfiguration.new
 
     @public_ip_response = Fog::Network::AzureRM::PublicIp.new(
@@ -28,6 +30,23 @@ describe AzureNetwork::NetworkInterfaceCard do
       name: "name",
       type: "Microsoft.Network/publicIPAddresses",
       location: "location"
+    )
+    @nic = Fog::Network::AzureRM::NetworkInterface.new(
+        subnet_id:'some-id',
+        private_ip_address: '1.1.1.1'
+    )
+    @virtual_network_response = Fog::Network::AzureRM::VirtualNetwork.new(
+      subnets: [],
+      address_prefixes: "10.1.57.12"
+    )
+
+    @nsg_response = Fog::Network::AzureRM::NetworkSecurityGroup.new(
+      id: "/subscriptions/########-####-####-####-############/resourceGroups/{resource_group}/providers/Microsoft.Network/networkSecurityGroup/{name}",
+      address_prefixes: "10.1.57.12"
+    )
+    @subnet_response = Fog::Network::AzureRM::Subnet.new(
+      id: "/subscriptions/########-####-####-####-############/resourceGroups/{resource_group}/providers/Microsoft.Network/subnet/{name}",
+      address_prefixes: "10.1.57.12"
     )
 
   end
@@ -45,26 +64,68 @@ describe AzureNetwork::NetworkInterfaceCard do
 
 
   describe '#test build_network_profile functionality' do
-    it ' build network profile when express route is not enabled' do
+    it ' build network profile when express route is enabled' do
+      allow(@azure_client.virtual_network).to receive(:get).and_return(@virtual_network_response)
+      allow(@azure_client.virtual_network).to receive(:exists?).and_return(false)
+      allow(@azure_client.virtual_network).to receive(:create_update).and_return(@virtual_network_response)
+      allow(@azure_client.network_client).to receive_message_chain(:network_interfaces, :create).and_return(@nic)
+      allow(@azure_client.subnet_cls).to receive(:get_subnet_with_available_ips).and_return(@subnet_response)
+      allow(@azure_client.nsg).to receive(:get).and_return(@nsg_response)
+      @azure_client.location = 'eastus'
+      @azure_client.rg_name = '<RESOURCE-GROUP>'
 
-      # allow(@azure_client.virtual_network).to receive(:get).and_return('some-response')
-      # allow(@azure_client.virtual_network).to receive(:exists?).and_return(true)
-      # allow(@azure_client.virtual_network).to receive(:exists?).and_return(false)
-      # allow(@azure_client.virtual_network).to receive(:create_update).and_return('some-response')
-      # allow(@azure_client.subnet_cls).to receive(:get_subnet_with_available_ips).and_return('some-response')
-      # allow(@azure_client.nsg).to receive(:get).and_return('some-response')
-      #
-      # expect(@azure_client.build_network_profile(false,
-      #                                            @platform_resource_group,
-      #                                            'pre_vnet',
-      #                                            'network-address',
-      #                                            ["1", "2", "5", "7"],
-      #                                            ["1", "2", "5", "7"],
-      #                                            'publicip',
-      #                                            'sec-group')
-      # ).not_to
+      expect(@azure_client.build_network_profile('true',
+                                                 '<RESOURCE-GROUP>',
+                                                 'pre_vnet',
+                                                 'network-address',
+                                                 ["1", "2", "5", "7"],
+                                                 ["1", "2", "5", "7"],
+                                                 'publicip',
+                                                 'sec-group')
+      ).to eq(nil)
     end
 
+    it ' build network profile when express route is disabled' do
+      allow(@azure_client.virtual_network).to receive(:get).and_return(@virtual_network_response)
+      allow(@azure_client.virtual_network).to receive(:exists?).and_return(false)
+      allow(@azure_client.virtual_network).to receive(:create_update).and_return(@virtual_network_response)
+      allow(@azure_client.network_client).to receive_message_chain(:network_interfaces, :create).and_return(@nic)
+      allow(@azure_client.subnet_cls).to receive(:get_subnet_with_available_ips).and_return(@subnet_response)
+      allow(@azure_client.nsg).to receive(:get).and_return(@nsg_response)
+      @azure_client.location = 'eastus'
+      @azure_client.rg_name = '<RESOURCE-GROUP>'
+
+      expect(@azure_client.build_network_profile('false',
+                                                 '<RESOURCE-GROUP>',
+                                                 'pre_vnet',
+                                                 'network-address',
+                                                 ["1", "2", "5", "7"],
+                                                 ["1", "2", "5", "7"],
+                                                 'publicip',
+                                                 'sec-group')
+      ).to eq(nil)
+    end
+
+      it ' build network profile when express route is disabled' do
+        allow(@azure_client.virtual_network).to receive(:get).and_return(@virtual_network_response)
+        allow(@azure_client.virtual_network).to receive(:exists?).and_return(true)
+        allow(@azure_client.virtual_network).to receive(:create_update).and_return(@virtual_network_response)
+        allow(@azure_client.network_client).to receive_message_chain(:network_interfaces, :create).and_return(@nic)
+        allow(@azure_client.subnet_cls).to receive(:get_subnet_with_available_ips).and_return(@subnet_response)
+        allow(@azure_client.nsg).to receive(:get).and_return(@nsg_response)
+        @azure_client.location = 'eastus'
+        @azure_client.rg_name = '<RESOURCE-GROUP>'
+
+        expect(@azure_client.build_network_profile('false',
+                                                   '<RESOURCE-GROUP>',
+                                                   'pre_vnet',
+                                                   'network-address',
+                                                   ["1", "2", "5", "7"],
+                                                   ["1", "2", "5", "7"],
+                                                   'publicip',
+                                                   'sec-group')
+        ).to eq(nil)
+    end
   end
 
 

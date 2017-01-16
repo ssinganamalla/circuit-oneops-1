@@ -6,7 +6,7 @@ module AzureCompute
     def initialize(node)
       @cloud_name = node['workorder']['cloud']['ciName']
       @compute_service =
-          node['workorder']['services']['compute'][cloud_name]['ciAttributes']
+          node['workorder']['services']['compute'][@cloud_name]['ciAttributes']
       @keypair_service = node['workorder']['payLoad']['SecuredBy'].first
       @server_name = node['server_name']
       @resource_group_name = node['platform-resource-group']
@@ -21,6 +21,7 @@ module AzureCompute
 
       @compute_client = Fog::Compute::AzureRM.new(@creds)
       @storage_profile = AzureCompute::StorageProfile.new(@creds, @resource_group_name, @location, @size_id, @ci_id)
+      @network_profile = AzureNetwork::NetworkInterfaceCard.new(nil, )
     end
 
     def check_vm_exists?

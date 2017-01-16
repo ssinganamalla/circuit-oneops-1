@@ -21,28 +21,27 @@ describe AzureNetwork::VirtualNetwork do
     @azure_client.name = '<VNET-NAME>'
 
     @fog_vnetwork = Fog::Network::AzureRM::VirtualNetwork.new
+    @fog_vnetwork.subnets = []
   end
 
   describe '# test build_network_object functionality' do
     it 'builds desired object successfully' do
-      # @azure_client.dns_list = ['10.15.18.16', '10.15.18.76', '10.15.18.46']
-      # @azure_client.sub_address = ['10.15.1.16']
-      # @azure_client.name = 'vnet-name'
-      # @azure_client.location = 'eastus'
-      # @fog_vnetwork.location = 'eastus'
-      # subnet = Fog::Network::AzureRM::Subnet.new
-      # subnet.name = 'subnet_0_vnet-name'
-      # subnet.address_prefix = '10.15.1.16'
-      # @fog_vnetwork.subnets = [subnet]
-      # @fog_vnetwork.dns_servers = ['10.15.18.16', '10.15.18.76', '10.15.18.46']
-      #
-      # expect(@azure_client.build_network_object).to be_a @fog_vnetwork
+      @azure_client.dns_list = ['10.10.1.12']
+      @azure_client.sub_address = ['12.11.1.1']
+      @azure_client.name = 'vnet-name'
+      @azure_client.location = 'eastus'
+      @fog_vnetwork.location = 'eastus'
+
+      subnet = Fog::Network::AzureRM::Subnet.new
+      subnet.name = 'subnet_0_vnet-name'
+      subnet.address_prefix = '10.15.1.16'
+
+      @fog_vnetwork.subnets = [subnet]
+      @fog_vnetwork.dns_servers = ['1.1.1.1']
+
+      expect(@azure_client.build_network_object).to be_a Fog::Network::AzureRM::VirtualNetwork
     end
 
-    # it 'checks output from given input in build desired object' do
-    #   @fog_vnetwork.location = 'eastus'
-    #   expect(@azure_client.build_network_object).to eq(@fog_vnetwork)
-    # end
   end
 
   describe '# test create_update functionality' do
@@ -52,6 +51,9 @@ describe AzureNetwork::VirtualNetwork do
       vnet_response = file.read
 
       allow(@azure_client.network_client).to receive_message_chain(:virtual_networks, :create).and_return(vnet_response)
+      subnet = Fog::Network::AzureRM::Subnet.new
+      subnet.name = 'subnet_0_vnet-name'
+      @fog_vnetwork.subnets = [subnet]
       expect(@azure_client.create_update(@platform_resource_group, @fog_vnetwork)).to_not eq(nil)
     end
 
