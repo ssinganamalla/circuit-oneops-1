@@ -1,6 +1,3 @@
-require 'azure_mgmt_compute'
-require 'azure_mgmt_network'
-
 # set the proxy if it exists as a cloud var
 Utils.set_proxy(node.workorder.payLoad.OO_CLOUD_VARS)
 
@@ -48,10 +45,10 @@ def get_probes_from_wo
       end
 
       if the_listener && (the_listener[:iprotocol].upcase == 'TCP' || the_listener[:iprotocol].upcase == 'HTTPS')
-        protocol = Azure::ARM::Network::Models::ProbeProtocol::Tcp
+        protocol = 'Tcp'
         request_path = nil # If Protocol is set to TCP, this value MUST BE NULL.
       else
-        protocol = Azure::ARM::Network::Models::ProbeProtocol::Http
+        protocol = 'Http'
       end
 
       ecvs.push(
@@ -142,8 +139,8 @@ def get_loadbalancer_rules(subscription_id, resource_group_name, lb_name, env_na
     lb_rule_name = "#{env_name}.#{platform_name}-#{listener[:vport]}_#{listener[:iport]}tcp-#{ci[:ciId]}-lbrule"
     frontend_port = listener[:vport]
     backend_port = listener[:iport]
-    protocol = Azure::ARM::Network::Models::TransportProtocol::Tcp
-    load_distribution = Azure::ARM::Network::Models::LoadDistribution::Default
+    protocol = 'Tcp'
+    load_distribution = 'Default'
 
     ### Select the right probe for the lb rule. Ports must match
     probe_port = nil
@@ -236,7 +233,7 @@ def get_compute_nat_rules(frontend_ipconfig_id, nat_rules, compute_natrules)
       front_port = (compute_node[:allow_port].to_i * port_increment) + port_counter
       frontend_port = front_port
       backend_port = compute_node[:allow_port].to_i
-      protocol = Azure::ARM::Network::Models::TransportProtocol::Tcp
+      protocol = 'Tcp'
 
       OOLog.info("NAT Rule Name: #{nat_rule_name}")
       OOLog.info("NAT Rule Front port: #{frontend_port}")
@@ -451,7 +448,7 @@ else
       else
         # Update the NIC with LB info - Associate VM with LB
         nic.load_balancer_backend_address_pools_ids = backend_address_pool_ids
-        compute_nat_rules_id = "/subscriptions/#{subscription_id}/resourceGroups/#{resource_group_name}/providers/Microsoft.Network/loadBalancers/#{lb_name}/inboundNatRules/#{compute[:nat_rule]}"
+        compute_nat_rules_id = "/subscriptions/#{subscription_id}/resourceGroups/#{resource_group_name}/providers/Microsoft.Network/loadBalancers/#{lb_name}/inboundNatRules/#{compute[:nat_rule][:name]}"
         nic.load_balancer_inbound_nat_rules_ids = [compute_nat_rules_id]
         nic_svc.create_update(nic)
       end
