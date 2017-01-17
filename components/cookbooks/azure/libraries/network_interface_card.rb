@@ -91,7 +91,9 @@ module AzureNetwork
                                                              subnet_id: network_interface.subnet_id,
                                                              public_ip_address_id: network_interface.public_ip_address_id,
                                                              ip_configuration_name: network_interface.ip_configuration_name,
-                                                             private_ip_allocation_method: network_interface.private_ip_allocation_method)
+                                                             private_ip_allocation_method: network_interface.private_ip_allocation_method,
+                                                             load_balancer_backend_address_pools_ids: network_interface.load_balancer_backend_address_pools_ids,
+                                                             load_balancer_inbound_nat_rules_ids: network_interface.load_balancer_inbound_nat_rules_ids)
       rescue MsRestAzure::AzureOperationError => e
         OOLog.fatal("Error creating/updating NIC.  Exception: #{e.body}")
       rescue => ex
