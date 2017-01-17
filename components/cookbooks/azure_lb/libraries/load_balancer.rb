@@ -1,60 +1,63 @@
 require 'fog/azurerm'
+require 'chef'
+require File.expand_path('../../../azure_base/libraries/logger.rb', __FILE__)
+
 module AzureNetwork
   # Operations of Load Balancer Class
   class LoadBalancer
     # include Azure::ARM::Network
     # include Azure::ARM::Network::Models
 
-    attr_reader :client, :subscription_id
+    attr_accessor :azure_network_service
 
-    def initialize(credentials, subscription_id)
-      Fog::Network::AzureRM.new(
-          tenant_id: credentials[:tenant_id],
-          client_id: credentials[:client_id],
-          client_secret: credentials[:client_secret],
+    def initialize(tenant_id, client_id, client_secret, subscription_id)
+      @azure_network_service = Fog::Network::AzureRM.new(
+          tenant_id: tenant_id,
+          client_id: client_id,
+          client_secret: client_secret,
           subscription_id: subscription_id
       )
     end
 
     def get_subscription_load_balancers
       begin
-        puts('Fetching load balancers from subscription')
+        OOLog.info('Fetching load balancers from subscription')
         start_time = Time.now.to_i
         result = @azure_network_service.load_balancers
         end_time = Time.now.to_i
         duration = end_time - start_time
       rescue MsRestAzure::AzureOperationError => e
-        puts('Error fetching load balancers from subscription')
-        puts("Error response: #{e.response}")
-        puts("Error body: #{e.body}")
-        result = Azure::ARM::Network::Models::LoadBalancerListResult.new
+        OOLog.info('Error fetching load balancers from subscription')
+        OOLog.info("Error response: #{e.response}")
+        OOLog.info("Error body: #{e.body}")
+        result = [Fog::Network::AzureRM::LoadBalancer.new(service: @azure_network_service)]
         return result
       end
-      puts("operation took #{duration} seconds")
-      return result
+      OOLog.info("operation took #{duration} seconds")
+      result
     end
 
     def get_resource_group_load_balancers(resource_group_name)
       begin
-        puts("Fetching load balancers from '#{resource_group_name}'")
+        OOLog.info("Fetching load balancers from '#{resource_group_name}'")
         start_time = Time.now.to_i
         result = @azure_network_service.load_balancers(resource_group: resource_group_name)
         end_time = Time.now.to_i
         duration = end_time - start_time
       rescue MsRestAzure::AzureOperationError => e
-        puts("Error fetching load balancers from '#{resource_group_name}'")
-        puts("Error Response: #{e.response}")
-        puts("Error Body: #{e.body}")
-        result = Azure::ARM::Network::Models::LoadBalancerListResult.new
+        OOLog.info("Error fetching load balancers from '#{resource_group_name}'")
+        OOLog.info("Error Response: #{e.response}")
+        OOLog.info("Error Body: #{e.body}")
+        result = [Fog::Network::AzureRM::LoadBalancer.new(service: @azure_network_service)]
         return result
       end
-      puts("operation took #{duration} seconds")
-      return result
+      OOLog.info("operation took #{duration} seconds")
+      result
     end
 
     def get(resource_group_name, load_balancer_name)
       begin
-        puts("Fetching load balancer '#{load_balancer_name}' from '#{resource_group_name}' ")
+        OOLog.info("Fetching load balancer '#{load_balancer_name}' from '#{resource_group_name}' ")
         start_time = Time.now.to_i
         result = @azure_network_service.load_balancers.get(resource_group_name, load_balancer_name)
         end_time = Time.now.to_i
@@ -64,36 +67,36 @@ module AzureNetwork
         OOLog.info("Error Code: #{e.body['error']['code']}")
         OOLog.info("Error Message: #{e.body['error']['message']}")
 
-        result = Azure::ARM::Network::Models::LoadBalancer.new
+        result = Fog::Network::AzureRM::LoadBalancer.new(service: @azure_network_service)
         return result
       end
-      puts("operation took #{duration} seconds")
-      return result
+      OOLog.info("operation took #{duration} seconds")
+      result
     end
 
-    def create_update(resource_group_name, load_balancer_name, lb)
+    def create_update(load_balancer)
       begin
-        puts("Creating/Updating load balancer '#{load_balancer_name}' in '#{resource_group_name}' ")
+        OOLog.info("Creating/Updating load balancer '#{load_balancer[:name]}' in '#{load_balancer[:resource_group]}' ")
         start_time = Time.now.to_i
-        result = @client.load_balancers.create_or_update(resource_group_name, load_balancer_name, lb)
+        result = @azure_network_service.load_balancers.create(load_balancer)
         end_time = Time.now.to_i
         duration = end_time - start_time
       rescue  MsRestAzure::AzureOperationError => e
         msg = "Error Code: #{e.body['error']['code']}"
         msg += "Error Message: #{e.body['error']['message']}"
-        OOLog.fatal("Error creating/updating load balancer '#{load_balancer_name}'. #{msg} ")
+        OOLog.fatal("Error creating/updating load balancer '#{load_balancer[:name]}'. #{msg} ")
       rescue => ex
-        OOLog.fatal("Error creating/updating load balancer '#{load_balancer_name}'. #{ex.message} ")
+        OOLog.fatal("Error creating/updating load balancer '#{load_balancer[:name]}'. #{ex.message} ")
       end
-      puts("operation took #{duration} seconds")
-      return result
+      OOLog.info("operation took #{duration} seconds")
+      result
     end
 
     def delete(resource_group_name, load_balancer_name)
       begin
-        puts("Deleting load balancer '#{load_balancer_name}' from '#{resource_group_name}' ")
+        OOLog.info("Deleting load balancer '#{load_balancer_name}' from '#{resource_group_name}' ")
         start_time = Time.now.to_i
-        result = @client.load_balancers.delete(resource_group_name, load_balancer_name)
+        result = @azure_network_service.load_balancers.delete(resource_group_name, load_balancer_name)
         end_time = Time.now.to_i
         duration = end_time - start_time
       rescue  MsRestAzure::AzureOperationError => e
@@ -103,8 +106,8 @@ module AzureNetwork
       rescue => ex
         OOLog.fatal("Error deleting load balancer '#{load_balancer_name}'. #{ex.message} ")
       end
-      puts("operation took #{duration} seconds")
-      return result
+      OOLog.info("operation took #{duration} seconds")
+      result
     end
 
     # ===== Static Methods =====
@@ -127,12 +130,6 @@ module AzureNetwork
         }
       end
       frontend_ipconfig
-    end
-
-    def self.create_backend_address_pool(backend_address_pool_name)
-      # Backend address pool, these are IP addresses associated with the
-      # virtual machine Network Interface Card (NIC) to which load will be distributed.
-      backend_address_pool_name
     end
 
     def self.create_probe(probe_name, protocol, port, interval_secs, num_probes, request_path)

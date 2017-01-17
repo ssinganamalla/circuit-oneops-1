@@ -28,7 +28,7 @@ public_ip_name = Utils.get_component_name('lb_publicip', node.workorder.rfcCi.ci
 
 credentials = Utils.get_credentials(tenant_id, client_id, client_secret)
 
-lb_svc = AzureNetwork::LoadBalancer.new(credentials, subscription_id)
+lb_svc = AzureNetwork::LoadBalancer.new(tenant_id, client_id, client_secret, subscription_id)
 begin
   lb_svc.delete(resource_group_name, lb_name)
 rescue => e
