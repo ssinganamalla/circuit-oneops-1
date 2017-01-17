@@ -1,11 +1,8 @@
-require 'azure_mgmt_resources'
+require 'fog/azurerm'
 require File.expand_path('../../libraries/azure_base_manager.rb', __FILE__)
 
 require File.expand_path('../../libraries/logger.rb', __FILE__)
 require File.expand_path('../../libraries/utils.rb', __FILE__)
-
-::Chef::Recipe.send(:include, Azure::ARM::Resources)
-::Chef::Recipe.send(:include, Azure::ARM::Resources::Models)
 
 module AzureBase
   # class to handle operations on the Azure Resource Group
@@ -36,8 +33,7 @@ module AzureBase
       @subscription = @service[:subscription]
 
       @rg_name = get_name
-      @client = Azure::ARM::Resources::ResourceManagementClient.new(@creds)
-      @client.subscription_id = @subscription
+      @resource_client = Fog::Resources::AzureRM.new(client_id: @client, client_secret: @client_secret, tenant_id: @tenant, subscription_id: @subscription)
     end
 
     # this method will create/update the resource group with the info passed in
@@ -49,11 +45,7 @@ module AzureBase
         # check if the rg is there
         if !exists?
           OOLog.info('RG does NOT exists.  Creating...')
-          # create it if it isn't.
-          resource_group = Azure::ARM::Resources::Models::ResourceGroup.new
-          resource_group.location = @location
-          @client.resource_groups.create_or_update(@rg_name,
-                                                   resource_group)
+          @resource_client.resource_groups.create(name: @rg_name, location: @location)
         else
           OOLog.info("Resource Group, #{@rg_name} already exists.  Moving on...")
         end
@@ -68,7 +60,7 @@ module AzureBase
     # if the resource group is not found it will return a nil.
     def exists?
       begin
-        @client.resource_groups.check_existence(@rg_name)
+        @resource_client.resource_groups.check_resource_group_exists(@rg_name)
       rescue MsRestAzure::AzureOperationError => e
         OOLog.fatal("Error checking resource group: #{@rg_name}. Exception: #{e.body}")
       rescue => ex
@@ -79,7 +71,7 @@ module AzureBase
     # This method will delete the resource group
     def delete
       begin
-        @client.resource_groups.delete(@rg_name)
+        @resource_client.resource_groups.get(@rg_name).destroy
       rescue MsRestAzure::AzureOperationError => e
         OOLog.fatal("Error deleting resource group: #{e.body}")
       rescue => ex

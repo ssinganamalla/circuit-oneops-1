@@ -1,11 +1,7 @@
-# **Rubocop Suppression**
-# rubocop:disable LineLength
-
 require File.expand_path('../../libraries/application_gateway.rb', __FILE__)
 require File.expand_path('../../../azure/libraries/public_ip.rb', __FILE__)
 require File.expand_path('../../../azure/libraries/virtual_network.rb', __FILE__)
 
-gem 'azure_mgmt_network', '=0.8.0'
 require 'azure_mgmt_network'
 require 'rest-client'
 require 'chef'
@@ -46,7 +42,7 @@ def add_gateway_subnet_to_vnet(virtual_network, gateway_subnet_address, gateway_
     end
   end
 
-  subnet = Azure::ARM::Network::Models::Subnet.new
+  subnet = Fog::Network::AzureRM::Subnet.new
   subnet.name = gateway_subnet_name
   subnet.address_prefix = gateway_subnet_address
 
@@ -131,7 +127,7 @@ OOLog.info("Application Gateway: #{ag_name}")
 
 begin
   credentials = Utils.get_credentials(tenant_id, client_id, client_secret)
-  application_gateway = AzureNetwork::Gateway.new(resource_group_name, ag_name, credentials, subscription_id)
+  application_gateway = AzureNetwork::Gateway.new(resource_group_name, ag_name, ag_service[:ciAttributes])
 
   # Determine if express route is enabled
   express_route_enabled = true
@@ -139,7 +135,13 @@ begin
     express_route_enabled = false
   end
 
-  vnet_obj = AzureNetwork::VirtualNetwork.new(credentials, subscription_id)
+  token = credentials.instance_variable_get(:@token_provider)
+  cred_hash = {
+      tenant_id: token.instance_variable_get(:@tenant_id),
+      client_secret: token.instance_variable_get(:@client_secret),
+      client_id: token.instance_variable_get(:@client_id)
+  }
+  vnet_obj = AzureNetwork::VirtualNetwork.new(cred_hash, subscription_id)
 
   if express_route_enabled
     vnet_name = ag_service[:ciAttributes][:network]
@@ -223,10 +225,7 @@ begin
   sku_name = ag_service[:ciAttributes][:gateway_size]
   application_gateway.set_gateway_sku(sku_name)
 
-  # Create Gateway Object
-  gateway = application_gateway.get_gateway(location, ssl_certificate_exist)
-
-  gateway_result = application_gateway.create_or_update(gateway)
+  gateway_result = application_gateway.create_or_update(location, ssl_certificate_exist)
 
   if gateway_result.nil?
     # Application Gateway was not created.

@@ -56,7 +56,7 @@ rules.each do |item|
   security_rule_destination_addres_prefix = '0.0.0.0/0'
   security_rule_source_port_range = item2[0].to_s
   security_rule_name = network_security_group_name + '-' + priority.to_s
-  sec_rules << AzureNetwork::NetworkSecurityGroup.create_rule_properties(security_rule_name, security_rule_access, security_rule_description, security_rule_destination_addres_prefix, security_rule_destination_port_range, security_rule_direction, security_rule_priority, security_rule_protocol, security_rule_provisioning_state, security_rule_source_addres_prefix, security_rule_source_port_range)
+  sec_rules << { name: security_rule_name, resource_group: resource_group_name, protocol: security_rule_protocol, network_security_group_name: network_security_group_name, source_port_range: security_rule_source_port_range, destination_port_range: security_rule_destination_port_range, source_address_prefix: security_rule_source_addres_prefix, destination_address_prefix: security_rule_destination_addres_prefix, access: security_rule_access, priority: security_rule_priority, direction: security_rule_direction }
   priority += 100
 end
 
@@ -67,7 +67,7 @@ parameters.security_rules = sec_rules
 nsg_result = nsg.create_update(resource_group_name, network_security_group_name, parameters)
 
 if !nsg_result.nil?
-  Chef::Log.info("The network security group has been created\n\rid: '#{nsg_result.id}'\n\r'#{nsg_result.location}'\n\r'#{nsg_result.name}'\n\r'#{nsg_result.type}'")
+  Chef::Log.info("The network security group has been created\n\rid: '#{nsg_result.id}'\n\r'#{nsg_result.location}'\n\r'#{nsg_result.name}'\n\r")
 else
   raise 'Error creating network security group'
 end
