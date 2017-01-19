@@ -12,68 +12,71 @@ class Datadisk < AzureBase::ResourceGroupManager
                 :instance_name,
                 :compute_client,
                 :storage_client
-             
-                
-      def initialize(node)
+                :credentials
+    def initialize(node)
       super(node)
-          
-          OOLog.info("App Name is: #{node[:app_name]}")
-          case node[:app_name]
-            when /storage/
-             
-            if node['device_map'] != nil 
-              @device_maps = node['device_map'].split(" ")
-              @device_maps.each do |dev|
-                @rg_name_persistent_storage = dev.split(":")[0]
-                @storage_account_name = dev.split(":")[1]
-                break
-              end
-            elsif !node.workorder.rfcCi.ciAttributes["device_map"].empty?
-              @device_maps = node.workorder.rfcCi.ciAttributes["device_map"].split(" ")
-              @device_maps.each do |dev|
-                @rg_name_persistent_storage = dev.split(":")[0]
-                @storage_account_name = dev.split(":")[1]
-                break
-              end
-            end 
-            
-             node.workorder.payLoad[:DependsOn].each do |dep|
-              if dep["ciClassName"] =~ /Compute/ 
-                 @instance_name = dep[:ciAttributes][:instance_name]
-                end
-              end       
-            when /volume/
-              
-              node.workorder.payLoad[:DependsOn].each do |dep|
-              if dep["ciClassName"] =~ /Storage/
-                storage = dep
-                 OOLog.info("storage dependson found")
-                 OOLog.info("storage not NIL")
-                attr = storage[:ciAttributes]
-                OOLog.info("attr"+attr.inspect())
-                @device_maps = attr['device_map'].split(" ")
-                @device_maps.each do |dev|
-                  @rg_name_persistent_storage = dev.split(":")[0]
-                  @storage_account_name = dev.split(":")[1]
-                  break
-                end
-                break
-               end  
-              end
-            
-              if node.workorder.payLoad.has_key?("ManagedVia")
-                @instance_name = node.workorder.payLoad.ManagedVia[0]["ciAttributes"]["instance_name"]
-              end
-            when /compute/
-              @rg_name_persistent_storage = node['platform-resource-group']
-              @storage_account_name = node['storage_account']                          
+
+      OOLog.info("App Name is: #{node[:app_name]}")
+      case node[:app_name]
+        when /storage/
+
+        if node['device_map'] != nil
+          @device_maps = node['device_map'].split(" ")
+          @device_maps.each do |dev|
+            @rg_name_persistent_storage = dev.split(":")[0]
+            @storage_account_name = dev.split(":")[1]
+            break
           end
-          @compute_client = Azure::ARM::Compute::ComputeManagementClient.new(@creds)
-          @compute_client.subscription_id = @subscription
-          @storage_client = Azure::ARM::Storage::StorageManagementClient.new(@creds)
-          @storage_client.subscription_id = @subscription         
-          @storage_account_access_key1= get_storage_access_key()                             
+        elsif !node.workorder.rfcCi.ciAttributes["device_map"].empty?
+          @device_maps = node.workorder.rfcCi.ciAttributes["device_map"].split(" ")
+          @device_maps.each do |dev|
+            @rg_name_persistent_storage = dev.split(":")[0]
+            @storage_account_name = dev.split(":")[1]
+            break
+          end
+        end
+
+         node.workorder.payLoad[:DependsOn].each do |dep|
+          if dep["ciClassName"] =~ /Compute/
+             @instance_name = dep[:ciAttributes][:instance_name]
+            end
+          end
+        when /volume/
+
+          node.workorder.payLoad[:DependsOn].each do |dep|
+          if dep["ciClassName"] =~ /Storage/
+            storage = dep
+             OOLog.info("storage dependson found")
+             OOLog.info("storage not NIL")
+            attr = storage[:ciAttributes]
+            OOLog.info("attr"+attr.inspect())
+            @device_maps = attr['device_map'].split(" ")
+            @device_maps.each do |dev|
+              @rg_name_persistent_storage = dev.split(":")[0]
+              @storage_account_name = dev.split(":")[1]
+              break
+            end
+            break
+           end
+          end
+
+          if node.workorder.payLoad.has_key?("ManagedVia")
+            @instance_name = node.workorder.payLoad.ManagedVia[0]["ciAttributes"]["instance_name"]
+          end
+        when /compute/
+          @rg_name_persistent_storage = node['platform-resource-group']
+          @storage_account_name = node['storage_account']
       end
+      @credentials = {
+        tenant_id: @tenant,
+        client_id: @client,
+        client_secret: @client_secret,
+        subscription_id: @subscription
+      }
+      @compute_client = Fog::Compute::AzureRM.new(@credentials)
+      @storage_client = Fog::Storage::AzureRM.new(@credentials)
+      @storage_account_access_key1= get_storage_access_key()
+    end
 
     def create()
       begin
@@ -193,13 +196,13 @@ class Datadisk < AzureBase::ResourceGroupManager
       data_disk2.vhd = Azure::ARM::Compute::Models::VirtualHardDisk.new
       data_disk2.vhd.uri = "https://#{@storage_account_name}.blob.core.windows.net/vhds/#{@storage_account_name}-#{component_name}-datadisk-#{dev_name}.vhd"
       OOLog.info("data_disk uri:"+data_disk2.vhd.uri)
-      data_disk2.caching = Azure::ARM::Compute::Models::CachingTypes::ReadWrite
+      data_disk2.caching = Fog::Compute::AzureRM::CachingTypes::ReadWrite
       blob_name = "#{@storage_account_name}-#{component_name}-datadisk-#{dev_name}.vhd"
       is_new_disk_or_old = check_blob_exist(blob_name)
       if is_new_disk_or_old == true
-        data_disk2.create_option = Azure::ARM::Compute::Models::DiskCreateOptionTypes::Attach
+        data_disk2.create_option = Fog::Compute::AzureRM::DiskCreateOptionTypes::Attach
       else
-        data_disk2.create_option = Azure::ARM::Compute::Models::DiskCreateOptionTypes::Empty
+        data_disk2.create_option = Fog::Compute::AzureRM::DiskCreateOptionTypes::Empty
       end
       data_disk2
     end
