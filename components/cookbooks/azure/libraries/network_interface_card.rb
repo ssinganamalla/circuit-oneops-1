@@ -34,7 +34,7 @@ module AzureNetwork
     def define_nic_ip_config(ip_type, subnet)
       nic_ip_config = Fog::Network::AzureRM::FrontendIPConfiguration.new
       nic_ip_config.subnet_id = subnet
-      nic_ip_config.private_ipallocation_method = Azure::ARM::Network::Models::IPAllocationMethod::Dynamic
+      nic_ip_config.private_ipallocation_method = Fog::ARM::Network::Models::IPAllocationMethod::Dynamic
 
       if ip_type == 'public'
         @publicip.location = @location

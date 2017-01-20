@@ -32,7 +32,7 @@ module AzureNetwork
       public_ip_address.location = @location
       public_ip_address.idle_timeout_in_minutes = 5
       public_ip_address.name = Utils.get_component_name(name, ci_id)
-      public_ip_address.public_ip_allocation_method = Azure::ARM::Network::Models::IPAllocationMethod::Dynamic
+      public_ip_address.public_ip_allocation_method = Fog::ARM::Network::Models::IPAllocationMethod::Dynamic
       OOLog.info("Public IP name is: #{public_ip_address.name}")
       public_ip_address
     end

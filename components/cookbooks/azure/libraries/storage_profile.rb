@@ -64,11 +64,11 @@ module AzureCompute
         #Select the storage according to VM size
         account_type = Azure::ARM::Storage::Models::Sku.new
         if node[:size_id] =~ /(.*)GS(.*)|(.*)DS(.*)/
-          account_type.name = Azure::ARM::Storage::Models::SkuName::PremiumLRS
-          account_type.tier = Azure::ARM::Storage::Models::SkuTier::Premium
+          account_type.name = Fog::ARM::Storage::Models::SkuName::PremiumLRS
+          account_type.tier = Fog::ARM::Storage::Models::SkuTier::Premium
         else
-          account_type.name = Azure::ARM::Storage::Models::SkuName::StandardLRS
-          account_type.tier = Azure::ARM::Storage::Models::SkuTier::Standard
+          account_type.name = Fog::ARM::Storage::Models::SkuName::StandardLRS
+          account_type.tier = Fog::ARM::Storage::Models::SkuTier::Standard
         end
 
         OOLog.info("VM size: #{node[:size_id]}")
@@ -123,8 +123,8 @@ module AzureCompute
       storage_profile.os_disk.vhd = Azure::ARM::Compute::Models::VirtualHardDisk.new
       storage_profile.os_disk.vhd.uri = "https://#{storage_account_name}.blob.core.windows.net/vhds/#{storage_account_name}-#{server_name}.vhd"
       OOLog.info("VHD URI is: #{storage_profile.os_disk.vhd.uri}")
-      storage_profile.os_disk.caching = Azure::ARM::Compute::Models::CachingTypes::ReadWrite
-      storage_profile.os_disk.create_option = Azure::ARM::Compute::Models::DiskCreateOptionTypes::FromImage
+      storage_profile.os_disk.caching = Fog::ARM::Compute::Models::CachingTypes::ReadWrite
+      storage_profile.os_disk.create_option = Fog::ARM::Compute::Models::DiskCreateOptionTypes::FromImage
 
 
       storage_profile
@@ -222,7 +222,7 @@ private
       # Create a model for new storage account.
 
       params = Azure::ARM::Storage::Models::StorageAccountCreateParameters.new
-      params.kind = Azure::ARM::Storage::Models::Kind::Storage
+      params.kind = Fog::ARM::Storage::Models::Kind::Storage
       params.sku = account_type
       params.location = @location
 
