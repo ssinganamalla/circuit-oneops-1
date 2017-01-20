@@ -2,14 +2,11 @@ module AzureCompute
   class StorageProfile
 
     attr_accessor :location,
-                  :resource_group_name
+                  :resource_group_name,
+                  :size_id,
+                  :ci_id
 
-    def initialize(creds, resource_group_name, location, size_id, ci_id)
-      @resource_group_name = resource_group_name
-      @location = location
-      @size_id = size_id
-      @ci_id = ci_id
-
+    def initialize(creds)
       @storage_client =
         Fog::Storage::AzureRM.new(creds)
 
@@ -142,8 +139,8 @@ module AzureCompute
         OOLog.info("Storage Type: #{sku_name}_#{replication}")
 
         storage_account =
-            @storage_client.create_storage_account({ name: storage_account_name,
-                                             resource_groupe: @resource_group_name,
+            @storage_client.storage_accounts.create({ name: storage_account_name,
+                                             resource_group: @resource_group_name,
                                              location: @location,
                                              sku_name: sku_name,
                                              replication: replication })
@@ -234,7 +231,7 @@ module AzureCompute
 
     def get_resource_group_vm_count
       vm_count = 0
-      vm_list = @compute_client.list_virtual_machines(@resource_group_name)
+      vm_list = @compute_client.servers(resource_group: @resource_group_name)
       if !vm_list.nil? and !vm_list.empty?
         vm_count = vm_list.size
       else
@@ -245,11 +242,8 @@ module AzureCompute
 
     def storage_name_avail?(storage_account_name)
       begin
-        params = Azure::ARM::Storage::Models::StorageAccountCheckNameAvailabilityParameters.new
-        params.name = storage_account_name
-        params.type = 'Microsoft.Storage/storageAccounts'
         response =
-            @client.check_storage_account_name_availability(params)
+            @storage_client.storage_accounts.check_name_availability(storage_account_name, 'Microsoft.Storage/storageAccounts')
         OOLog.info("Storage Name Available: #{response}")
       rescue  MsRestAzure::AzureOperationError => e
         OOLog.info("ERROR checking availability of #{storage_account_name}")
@@ -263,16 +257,14 @@ module AzureCompute
     def storage_account_created?(storage_account_name)
       begin
         response =
-            @client.get_storage_account(@resource_group_name, storage_account_name)
-        OOLog.info("Storage Account Provisioning State: #{response.provisioning_state}")
+            @storage_client.storage_accounts.check_storage_account_exists(@resource_group_name, storage_account_name)
+        OOLog.info("Storage Account Exists: #{response}")
       rescue  MsRestAzure::AzureOperationError => e
         OOLog.info("#ERROR Body: #{e.body}")
         return false
       rescue => ex
         OOLog.fatal("Error getting properties of #{storage_account_name}: #{ex.message}")
       end
-
-      response.provisioning_state == 'Succeeded'
     end
   end
 end
