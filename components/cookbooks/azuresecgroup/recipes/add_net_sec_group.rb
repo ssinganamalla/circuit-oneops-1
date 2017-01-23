@@ -3,10 +3,6 @@ require File.expand_path('../../../azure_base/libraries/logger.rb', __FILE__)
 require File.expand_path('../../../azure_base/libraries/utils.rb', __FILE__)
 require File.expand_path('../../../azure/libraries/resource_group.rb', __FILE__)
 
-::Chef::Recipe.send(:include, AzureNetwork)
-::Chef::Recipe.send(:include, Azure::ARM::Network)
-::Chef::Recipe.send(:include, Azure::ARM::Network::Models)
-
 # set the proxy if it exists as a cloud var
 Utils.set_proxy(node['workorder']['payLoad']['OO_CLOUD_VARS'])
 
@@ -38,19 +34,19 @@ reg_ex = /(\d+|\*|\d+-\d+)\s(\d+|\*|\d+-\d+)\s([A-Za-z]+|\*)\s\S+/
 rules.each do |item|
   raise "#{item} is not a valid security rule" unless reg_ex.match(item)
   item2 = item.split(' ')
-  security_rule_access = SecurityRuleAccess::Allow
+  security_rule_access = Fog::ARM::Network::Models::SecurityRuleAccess::Allow
   security_rule_description = node['secgroup']['description']
   security_rule_source_addres_prefix = item2[3]
   security_rule_destination_port_range = item2[1].to_s
-  security_rule_direction = SecurityRuleDirection::Inbound
+  security_rule_direction = Fog::ARM::Network::Models::SecurityRuleDirection::Inbound
   security_rule_priority = priority
   security_rule_protocol = case item2[2].downcase
                            when 'tcp'
-                             SecurityRuleProtocol::Tcp
+                             Fog::ARM::Network::Models::SecurityRuleProtocol::Tcp
                            when 'udp'
-                             SecurityRuleProtocol::Udp
+                             Fog::ARM::Network::Models::SecurityRuleProtocol::Udp
                            else
-                             SecurityRuleProtocol::Asterisk
+                             Fog::ARM::Network::Models::SecurityRuleProtocol::Asterisk
                            end
   security_rule_provisioning_state = nil
   security_rule_destination_addres_prefix = '0.0.0.0/0'
@@ -60,7 +56,7 @@ rules.each do |item|
   priority += 100
 end
 
-parameters = NetworkSecurityGroup.new
+parameters = Fog::Network::AzureRM::NetworkSecurityGroup.new
 parameters.location = location
 parameters.security_rules = sec_rules
 
