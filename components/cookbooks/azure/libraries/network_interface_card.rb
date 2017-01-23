@@ -1,6 +1,6 @@
 require 'fog/azurerm'
 require 'chef'
-
+require File.expand_path('../../../azure/libraries/subnet.rb', __FILE__)
 # TODO: add checks in each method for rg_name
 require File.expand_path('../../../azuresecgroup/libraries/network_security_group.rb', __FILE__)
 require ::File.expand_path('../../../azure_base/libraries/logger', __FILE__)
@@ -155,9 +155,7 @@ module AzureNetwork
       network_interface = define_network_interface(nic_ip_config)
 
       # include the network securtiry group to the network interface
-      puts "Network Interface object: #{network_interface.inspect}"
       network_security_group = @nsg.get(@rg_name, security_group_name)
-      puts "Network security group: #{network_security_group.inspect}"
       network_interface.network_security_group_id = network_security_group.id unless network_security_group.nil?
       network_interface.subnet_id = subnet.id
       # create the nic

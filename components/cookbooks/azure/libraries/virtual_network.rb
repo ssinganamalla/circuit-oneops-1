@@ -132,7 +132,6 @@ module AzureNetwork
       OOLog.info("Checking if Virtual Network '#{@name}' Exists! ...")
       begin
         result = @network_client.virtual_networks.check_virtual_network_exists(resource_group_name, @name)
-        puts "Result of vnet: #{result}"
       rescue MsRestAzure::AzureOperationError => e
         OOLog.fatal("Error getting virtual network: #{@name} from resource group #{resource_group_name}.  Exception: #{e.body}")
       rescue => ex
@@ -142,7 +141,6 @@ module AzureNetwork
     end
 
     def get_subnet_with_available_ips(subnets, express_route_enabled)
-      puts "Subnets: #{subnets.inspect}"
       subnets.each do |subnet|
         Chef::Log.info('checking for ip availability in ' + subnet.name)
         address_prefix = subnet.address_prefix
@@ -154,7 +152,7 @@ module AzureNetwork
         end
         Chef::Log.info("Total number of ips possible is: #{total_num_of_ips_possible}")
 
-        no_ips_inuse = subnet.ip_configurations.nil? ? 0 : subnet.ip_configurations.length
+        no_ips_inuse = subnet.ip_configurations_ids.nil? ? 0 : subnet.ip_configurations_ids.length
         Chef::Log.info("Num of ips in use: #{no_ips_inuse}")
 
         remaining_ips = total_num_of_ips_possible - no_ips_inuse
