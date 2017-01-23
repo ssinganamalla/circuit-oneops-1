@@ -155,8 +155,9 @@ module AzureNetwork
       network_interface = define_network_interface(nic_ip_config)
 
       # include the network securtiry group to the network interface
-
+      puts "Network Interface object: #{network_interface.inspect}"
       network_security_group = @nsg.get(@rg_name, security_group_name)
+      puts "Network security group: #{network_security_group.inspect}"
       network_interface.network_security_group_id = network_security_group.id unless network_security_group.nil?
       network_interface.subnet_id = subnet.id
       # create the nic
@@ -167,6 +168,15 @@ module AzureNetwork
       OOLog.info('Private IP is: ' + @private_ip)
 
       nic.id
+    end
+
+    def get_nic_name(raw_nic_id)
+      # /subscriptions/subscription_id/resourceGroups/vnet_name/providers/Microsoft.Network/networkInterfaces/nic_name
+      nicnameParts = raw_nic_id.split('/')
+      # retrieve the last part
+      nic_name = nicnameParts.last
+
+      nic_name
     end
   end
 end

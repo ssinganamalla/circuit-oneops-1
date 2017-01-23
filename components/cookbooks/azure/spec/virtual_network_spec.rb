@@ -160,4 +160,9 @@ describe AzureNetwork::VirtualNetwork do
       expect { @azure_client.exists?(@platform_resource_group) }.to raise_error('no backtrace')
     end
   end
+
+  # describe '#test get subnet with available ips functionality' do
+  #   @azure_client.get_subnet_with_available_ips([], true)
+  # end
+
 end

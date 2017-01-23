@@ -190,5 +190,10 @@ describe AzureNetwork::NetworkInterfaceCard do
     end
   end
 
-
+  describe '#test get nic name' do
+    it 'creates nic name' do
+      nic_id = "/subscriptions/########-####-####-####-############/resourceGroups/Test-RG-NIC/providers/Microsoft.Network/networkInterfaces/Test-NIC"
+      expect(@azure_client.get_nic_name(nic_id)).to eq('Test-NIC')
+    end
+  end
 end
