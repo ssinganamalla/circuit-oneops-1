@@ -10,8 +10,19 @@ require File.expand_path('../../../azure/libraries/resource_group.rb', __FILE__)
 # set the proxy if it exists as a cloud var
 Utils.set_proxy(node['workorder']['payLoad']['OO_CLOUD_VARS'])
 
-include_recipe 'azure::get_credentials'
-credentials = node['azureCredentials']
+# include_recipe 'azure::get_credentials'
+# credentials = node['azureCredentials']
+
+cloud_name = node['workorder']['cloud']['ciName']
+cloud_service =
+    node['workorder']['services']['compute'][cloud_name]['ciAttributes']
+cred_hash = {
+    tenant_id: cloud_service['tenant_id'],
+    client_secret: cloud_service['client_secret'],
+    client_id: cloud_service['client_id'],
+    subscription_id: cloud_service['subscription']
+}
+
 
 # get all necessary info from node
 cloud_name = node['workorder']['cloud']['ciName']
@@ -30,7 +41,7 @@ network_security_group_name = node[:name]
 resource_group_name = AzureResources::ResourceGroup.get_name(org, assembly, platform_ci_id, environment, location)
 
 # Creating security rules objects
-nsg = AzureNetwork::NetworkSecurityGroup.new(credentials, subscription)
+nsg = AzureNetwork::NetworkSecurityGroup.new(cred_hash)
 nsg_result = nsg.delete_security_group(resource_group_name, network_security_group_name)
 
 if nsg_result

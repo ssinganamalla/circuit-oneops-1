@@ -16,13 +16,9 @@ module AzureNetwork
                   :network_client
     attr_reader :creds, :subscription
 
-    def initialize(creds, subscription)
+    def initialize(creds)
       @creds = creds
-      tenant_id = creds[:tenant_id]
-      client_secret = creds[:client_secret]
-      client_id = creds[:client_id]
-      @subscription = subscription
-      @network_client = Fog::Network::AzureRM.new(client_id: client_id, client_secret: client_secret, tenant_id: tenant_id, subscription_id: subscription)
+      @network_client = Fog::Network::AzureRM.new(creds)
     end
 
     # this method creates the vnet object that is later passed in to create
@@ -36,7 +32,7 @@ module AzureNetwork
         ns_list.push(dns_list.strip)
       end
 
-      subnet = AzureNetwork::Subnet.new(@creds, @subscription)
+      subnet = AzureNetwork::Subnet.new(@creds)
       subnet.sub_address = @sub_address
       subnet.name = @name
       sub_nets = subnet.build_subnet_object

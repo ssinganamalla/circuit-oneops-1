@@ -12,22 +12,12 @@ module AzureNetwork
     attr_accessor :location, :rg_name, :private_ip, :profile, :ci_id, :network_client, :publicip, :subnet_cls, :virtual_network, :nsg
     attr_reader :creds, :subscription
 
-    def initialize(credentials, subscription_id)
-      @creds = credentials
-      @subscription = subscription_id
-
-      token = credentials.instance_variable_get(:@token_provider)
-      cred_hash = {
-        tenant_id: token.instance_variable_get(:@tenant_id),
-        client_secret: token.instance_variable_get(:@client_secret),
-        client_id: token.instance_variable_get(:@client_id)
-      }
-
-      @network_client = Fog::Network::AzureRM.new(client_id: cred_hash[:client_id], client_secret: cred_hash[:client_secret], tenant_id: cred_hash[:tenant_id], subscription_id: subscription_id)
-      @publicip = AzureNetwork::PublicIp.new(credentials, subscription_id)
-      @subnet_cls = AzureNetwork::Subnet.new(cred_hash, subscription_id)
-      @virtual_network = AzureNetwork::VirtualNetwork.new(cred_hash, subscription_id)
-      @nsg = AzureNetwork::NetworkSecurityGroup.new(credentials, subscription_id)
+    def initialize(creds)
+      @network_client = Fog::Network::AzureRM.new(creds)
+      @publicip = AzureNetwork::PublicIp.new(creds)
+      @subnet_cls = AzureNetwork::Subnet.new(creds)
+      @virtual_network = AzureNetwork::VirtualNetwork.new(creds)
+      @nsg = AzureNetwork::NetworkSecurityGroup.new(creds)
     end
 
     # define the NIC's IP Config

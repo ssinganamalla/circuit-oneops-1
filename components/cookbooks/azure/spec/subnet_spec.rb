@@ -9,13 +9,13 @@ require ::File.expand_path('../../../azure_base/libraries/utils', __FILE__)
 
 describe AzureNetwork::Subnet do
   before :each do
-    credentials = {
-      'tenant_id': '<TENANT_ID>',
-      'client_id': '<CLIENT_ID>',
-      'client_secret': '<CLIENT_SECRET>',
-      'subscription': '<SUBSCRIPTION_ID>',
+    cred_hash = {
+        tenant_id: '<TENANT_ID>',
+        client_secret: '<CLIENT_SECRET>',
+        client_id: '<CLIENT_ID>',
+        subscription_id: '<SUBSCRIPTION>'
     }
-    @azure_client = AzureNetwork::Subnet.new(credentials, credentials[:subscription])
+    @azure_client = AzureNetwork::Subnet.new(cred_hash)
     @azure_client.sub_address = ['10.12.15.19', '10.12.15.19']
     @azure_client.name = 'subnet-name'
   end

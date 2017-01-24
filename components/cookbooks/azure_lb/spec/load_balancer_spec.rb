@@ -7,7 +7,13 @@ require 'fog/azurerm'
 
 describe AzureNetwork::LoadBalancer do
   before do
-    @load_balancer = AzureNetwork::LoadBalancer.new('<TENANT_ID>', '<CLIENT_ID>', '<CLIENT_SECRET>', '<SUBSCRIPTION_ID>')
+    cred_hash = {
+        tenant_id: '<TENANT_ID>',
+        client_secret: '<CLIENT_SECRET>',
+        client_id: '<CLIENT_ID>',
+        subscription_id: '<SUBSCRIPTION>'
+    }
+    @load_balancer = AzureNetwork::LoadBalancer.new(cred_hash)
     @mock_load_balancer =  Fog::Network::AzureRM::LoadBalancer.new(
       name: 'Test-LB',
       resource_group: 'Test-LB-RG'

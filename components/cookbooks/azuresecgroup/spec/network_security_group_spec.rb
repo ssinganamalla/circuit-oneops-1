@@ -6,10 +6,13 @@ require 'fog/azurerm'
 
 describe AzureNetwork::NetworkSecurityGroup do
   before do
-    token_provider = MsRestAzure::ApplicationTokenProvider.new('<TENANT_ID>', '<CLIENT_ID>', 'CLIENT_SECRET')
-    credentials = MsRest::TokenCredentials.new(token_provider)
-    subscription = '<SUBSCRIPTION>'
-    @network_security_group = AzureNetwork::NetworkSecurityGroup.new(credentials, subscription)
+    cred_hash = {
+        tenant_id: '<TENANT_ID>',
+        client_secret: '<CLIENT_SECRET>',
+        client_id: '<CLIENT_ID>',
+        subscription_id: '<SUBSCRIPTION>'
+    }
+    @network_security_group = AzureNetwork::NetworkSecurityGroup.new(cred_hash)
     @nsg_response = Fog::Network::AzureRM::NetworkSecurityGroup.new(
       name: 'fog-test-nsg',
       resource_group: 'fog-test-rg'

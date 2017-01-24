@@ -7,12 +7,8 @@ module AzureNetwork
   class NetworkSecurityGroup
     attr_accessor :network_client
 
-    def initialize(credentials, subscription_id)
-      token = credentials.instance_variable_get(:@token_provider)
-      client_id = token.instance_variable_get(:@client_id)
-      client_secret = token.instance_variable_get(:@client_secret)
-      tenant_id = token.instance_variable_get(:@tenant_id)
-      @network_client = Fog::Network::AzureRM.new(client_id: client_id, client_secret: client_secret, tenant_id: tenant_id, subscription_id: subscription_id)
+    def initialize(creds)
+      @network_client = Fog::Network::AzureRM.new(creds)
     end
 
     def get(resource_group_name, network_security_group_name)

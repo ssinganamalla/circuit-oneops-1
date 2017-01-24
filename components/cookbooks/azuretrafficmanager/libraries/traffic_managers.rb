@@ -6,18 +6,13 @@ require ::File.expand_path('../../../azure_base/libraries/logger', __FILE__)
 class TrafficManagers
   attr_accessor :traffic_manager_service
 
-  def initialize(resource_group, profile_name, dns_attributes)
+  def initialize(resource_group, profile_name, cred_hash)
     raise ArgumentError, 'resource_group is nil' if resource_group.nil?
     raise ArgumentError, 'profile_name is nil' if profile_name.nil?
 
     @resource_group_name = resource_group
     @profile_name = profile_name
-    @traffic_manager_service = Fog::TrafficManager::AzureRM.new(
-      tenant_id: dns_attributes[:tenant_id],
-      client_id: dns_attributes[:client_id],
-      client_secret: dns_attributes[:client_secret],
-      subscription_id: dns_attributes[:subscription]
-    )
+    @traffic_manager_service = Fog::TrafficManager::AzureRM.new(cred_hash)
   end
 
   def create_update_profile(traffic_manager)

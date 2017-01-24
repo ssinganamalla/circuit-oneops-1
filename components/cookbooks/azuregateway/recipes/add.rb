@@ -50,8 +50,8 @@ def add_gateway_subnet_to_vnet(virtual_network, gateway_subnet_address, gateway_
   virtual_network
 end
 
-def create_public_ip(credentials, subscription_id, location, resource_group_name)
-  public_ip_obj = AzureNetwork::PublicIp.new(credentials, subscription_id)
+def create_public_ip(cred_hash, location, resource_group_name)
+  public_ip_obj = AzureNetwork::PublicIp.new(cred_hash)
   public_ip_obj.location = location
   public_ip_address = public_ip_obj.build_public_ip_object(node['workorder']['rfcCi']['ciId'], 'ag_publicip')
   public_ip_obj.create_update(resource_group_name, public_ip_address.name, public_ip_address)
@@ -95,7 +95,12 @@ asmb_name = assembly_name.gsub(/-/, '').downcase
 plat_name = platform_name.gsub(/-/, '').downcase
 env_name = environment_name.gsub(/-/, '').downcase
 ag_name = "ag-#{plat_name}"
-
+cred_hash = {
+    tenant_id: ag_service[:ciAttributes][:tenant_id],
+    client_secret: ag_service[:ciAttributes][:client_secret],
+    client_id: ag_service[:ciAttributes][:client_id],
+    subscription_id: subscription_id
+}
 tenant_id = ag_service[:ciAttributes][:tenant_id]
 client_id = ag_service[:ciAttributes][:client_id]
 client_secret = ag_service[:ciAttributes][:client_secret]
@@ -127,7 +132,7 @@ OOLog.info("Application Gateway: #{ag_name}")
 
 begin
   credentials = Utils.get_credentials(tenant_id, client_id, client_secret)
-  application_gateway = AzureNetwork::Gateway.new(resource_group_name, ag_name, ag_service[:ciAttributes])
+  application_gateway = AzureNetwork::Gateway.new(resource_group_name, ag_name, cred_hash)
 
   # Determine if express route is enabled
   express_route_enabled = true
@@ -136,12 +141,8 @@ begin
   end
 
   token = credentials.instance_variable_get(:@token_provider)
-  cred_hash = {
-      tenant_id: token.instance_variable_get(:@tenant_id),
-      client_secret: token.instance_variable_get(:@client_secret),
-      client_id: token.instance_variable_get(:@client_id)
-  }
-  vnet_obj = AzureNetwork::VirtualNetwork.new(cred_hash, subscription_id)
+
+  vnet_obj = AzureNetwork::VirtualNetwork.new(cred_hash)
 
   if express_route_enabled
     vnet_name = ag_service[:ciAttributes][:network]
@@ -153,7 +154,7 @@ begin
     end
   else
     # Create public IP
-    public_ip = create_public_ip(credentials, subscription_id, location, resource_group_name)
+    public_ip = create_public_ip(cred_hash, location, resource_group_name)
     vnet_name = 'vnet_' + network_address.gsub('.', '_').gsub('/', '_')
     vnet = get_vnet(resource_group_name, vnet_name, vnet_obj)
   end

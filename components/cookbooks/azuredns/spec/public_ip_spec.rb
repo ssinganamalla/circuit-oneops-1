@@ -12,7 +12,12 @@ describe 'Azuredns::public_ip' do
   file = File.open(file_path)
   contents = file.read
   node = JSON.parse(contents)
-
+  cred_hash = {
+      tenant_id: '<TENANT_ID>',
+      client_secret: '<CLIENT_SECRET>',
+      client_id: '<CLIENT_ID>',
+      subscription_id: '<SUBSCRIPTION>'
+  }
   cloud_name = node['workorder']['cloud']['ciName']
   dns_attributes = node['workorder']['services']['dns'][cloud_name]['ciAttributes']
   subscription = '<SUBSCRIPTION-ID>'
@@ -23,7 +28,7 @@ describe 'Azuredns::public_ip' do
   credentials = MsRest::TokenCredentials.new(MsRestAzure::ApplicationTokenProvider.new(tenant_id, client_id, client_secret))
   zone_name = dns_attributes['zone'].split('.').reverse.join('.').partition('.').last.split('.').reverse.join('.').tr('.', '-')
 
-  dns_public_ip = AzureDns::PublicIp.new(resource_group, credentials , subscription, zone_name)
+  dns_public_ip = AzureDns::PublicIp.new(resource_group, cred_hash, zone_name)
 
   describe 'PublicIp::update_dns' do
     it 'returns nil if node.app_name is "os"' do

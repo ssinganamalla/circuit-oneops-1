@@ -14,7 +14,7 @@ describe TrafficManagers do
       tenant_id: '<TENANT_ID>',
       client_id: 'CLIENT_ID',
       client_secret: 'CLIENT_SECRET',
-      subscription: 'SUBSCRIPTION_ID'
+      subscription_id: 'SUBSCRIPTION_ID'
     }
     resource_group_name = '<RG_NAME>'
     profile_name = '<PROFILE_NAME>'

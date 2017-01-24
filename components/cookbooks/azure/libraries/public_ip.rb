@@ -12,17 +12,8 @@ module AzureNetwork
     attr_reader :creds, :subspriction
 
 
-    def initialize(credentials, subscription_id)
-      @creds = credentials
-      token = credentials.instance_variable_get(:@token_provider)
-      cred_hash = {
-        tenant_id: token.instance_variable_get(:@tenant_id),
-        client_secret: token.instance_variable_get(:@client_secret),
-        client_id: token.instance_variable_get(:@client_id)
-      }
-      @subscription = subscription_id
-      @network_client = Fog::Network::AzureRM.new(client_id: cred_hash[:client_id], client_secret: cred_hash[:client_secret], tenant_id: cred_hash[:tenant_id], subscription_id: subscription_id)
-
+    def initialize(creds)
+      @network_client = Fog::Network::AzureRM.new(creds)
     end
 
     # this will build the public_ip object to be used for creating a public

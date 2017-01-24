@@ -6,8 +6,8 @@ include_recipe 'azure::get_platform_rg_and_as'
 
 # ==============================================================
 
-def create_publicip(credentials, subscription_id, location, resource_group_name)
-  pip_svc = AzureNetwork::PublicIp.new(credentials, subscription_id)
+def create_publicip(cred_hash, location, resource_group_name)
+  pip_svc = AzureNetwork::PublicIp.new(cred_hash)
   pip_svc.location = location
   public_ip_address = pip_svc.build_public_ip_object(node.workorder.rfcCi.ciId, 'lb_publicip')
   pip = pip_svc.create_update(resource_group_name, public_ip_address.name, public_ip_address)
@@ -363,11 +363,12 @@ if xpress_route_enabled
 
   token = credentials.instance_variable_get(:@token_provider)
   cred_hash = {
-      tenant_id: token.instance_variable_get(:@tenant_id),
-      client_secret: token.instance_variable_get(:@client_secret),
-      client_id: token.instance_variable_get(:@client_id)
+      tenant_id: tenant_id,
+      client_secret: client_secret,
+      client_id: client_id,
+      subscription_id: subscription_id
   }
-  vnet_svc = AzureNetwork::VirtualNetwork.new(cred_hash, subscription_id)
+  vnet_svc = AzureNetwork::VirtualNetwork.new(cred_hash)
   vnet_svc.name = vnet_name
   vnet = vnet_svc.get(master_rg)
 
@@ -380,7 +381,7 @@ if xpress_route_enabled
 
 else
   # Public IP Config
-  public_ip = create_publicip(credentials, subscription_id, location, resource_group_name)
+  public_ip = create_publicip(cred_hash, location, resource_group_name)
   OOLog.info("PublicIP created. PIP: #{public_ip.name}")
 end
 
@@ -415,7 +416,7 @@ get_compute_nat_rules(frontend_ipconfig_id, nat_rules, compute_natrules)
 load_balancer = AzureNetwork::LoadBalancer.get_lb(resource_group_name, lb_name, location, frontend_ipconfigs, backend_address_pools, lb_rules, nat_rules, probes)
 
 # Create LB
-lb_svc = AzureNetwork::LoadBalancer.new(tenant_id, client_id, client_secret, subscription_id)
+lb_svc = AzureNetwork::LoadBalancer.new(cred_hash)
 
 lb = nil
 begin
@@ -429,8 +430,8 @@ if lb.nil?
 elsif compute_natrules.empty?
   OOLog.info('No computes found for load balanced')
 else
-  vm_svc = AzureCompute::VirtualMachine.new(credentials, subscription_id)
-  nic_svc = AzureNetwork::NetworkInterfaceCard.new(credentials, subscription_id)
+  vm_svc = AzureCompute::VirtualMachine.new(cred_hash)
+  nic_svc = AzureNetwork::NetworkInterfaceCard.new(cred_hash)
   nic_svc.rg_name = resource_group_name
   nic_svc.location = location
 
@@ -466,7 +467,7 @@ lbip = nil
 if xpress_route_enabled
   lbip = lb.frontend_ipconfigurations[0].private_ipaddress
 else
-  pip_svc = AzureNetwork::PublicIp.new(credentials, subscription_id)
+  pip_svc = AzureNetwork::PublicIp.new(cred_hash)
   public_ip = pip_svc.get(resource_group_name, public_ip.name)
   lbip = public_ip.ip_address unless public_ip.nil?
 end

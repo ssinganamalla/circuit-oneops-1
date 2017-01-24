@@ -14,11 +14,13 @@ require ::File.expand_path('../../../azure_base/libraries/utils', __FILE__)
 
 describe AzureNetwork::NetworkInterfaceCard do
   before :each do
-    token_provider = MsRestAzure::ApplicationTokenProvider.new('<TENANT_ID>', '<CLIENT_ID>', 'CLIENT_SECRET')
-    credentials = MsRest::TokenCredentials.new(token_provider)
-
-    subscription = '<SUBSCRIPTION-ID>'
-    @azure_client = AzureNetwork::NetworkInterfaceCard.new(credentials, subscription)
+    cred_hash = {
+        tenant_id: '<TENANT_ID>',
+        client_secret: '<CLIENT_SECRET>',
+        client_id: '<CLIENT_ID>',
+        subscription_id: '<SUBSCRIPTION>'
+    }
+    @azure_client = AzureNetwork::NetworkInterfaceCard.new(cred_hash)
     @azure_client.rg_name = 'Resource-group'
     @azure_client.ci_id = 'ci-id'
 

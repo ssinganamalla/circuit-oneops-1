@@ -9,13 +9,15 @@ require ::File.expand_path('../../../azure_base/libraries/utils', __FILE__)
 
 describe AzureNetwork::PublicIp do
   before :each do
-    token_provider = MsRestAzure::ApplicationTokenProvider.new('<TENANT_ID>', '<CLIENT_ID>', 'CLIENT_SECRET')
-    credentials = MsRest::TokenCredentials.new(token_provider)
-
-    subscription_id =  '<SUBSCRIPTION_ID>',
+    cred_hash = {
+        tenant_id: '<TENANT_ID>',
+        client_secret: '<CLIENT_SECRET>',
+        client_id: '<CLIENT_ID>',
+        subscription_id: '<SUBSCRIPTION>'
+    }
     @platform_resource_group = '<RESOURCE-GROUP-NAME>'
     @public_ip_name = '<PUBLIC-IP-NAME>'
-    @azure_client = AzureNetwork::PublicIp.new(credentials, subscription_id)
+    @azure_client = AzureNetwork::PublicIp.new(cred_hash)
     @public_ip = Fog::Network::AzureRM::PublicIp.new
   end
 
