@@ -1,81 +1,25 @@
-require File.expand_path('../../../azure_base/libraries/azure_base_manager.rb', __FILE__)
-require 'azure_mgmt_compute'
-require 'azure_mgmt_storage'
-require 'azure'
-
+require File.expand_path('../../../azure_base/libraries/resource_group_manager.rb', __FILE__)
+require 'chef'
 require 'fog/azurerm'
 
-class Datadisk < AzureBase::ResourceGroupManager
+class Datadisk
   attr_accessor :device_maps,
                 :rg_name_persistent_storage,
                 :storage_account_name,
-                :storage_account_access_key1,
                 :instance_name,
                 :compute_client,
                 :storage_client,
                 :credentials
 
-  def initialize(node)
-    super(node)
-    OOLog.info("App Name is: #{node[:app_name]}")
-    case node[:app_name]
-      when /storage/
-        if node['device_map'] != nil
-          @device_maps = node['device_map'].split(' ')
-          @device_maps.each do |dev|
-            @rg_name_persistent_storage = dev.split(':')[0]
-            @storage_account_name = dev.split(':')[1]
-            break
-          end
-        elsif !node.workorder.rfcCi.ciAttributes['device_map'].empty?
-          @device_maps = node.workorder.rfcCi.ciAttributes['device_map'].split(' ')
-          @device_maps.each do |dev|
-            @rg_name_persistent_storage = dev.split(':')[0]
-            @storage_account_name = dev.split(':')[1]
-            break
-          end
-        end
+  def initialize(creds, storage_account_name, rg_name_persistent_storage, instance_name, device_maps)
+    @credentials = creds
+    @storage_account_name = storage_account_name
+    @rg_name_persistent_storage = rg_name_persistent_storage
+    @instance_name = instance_name
+    @device_maps = device_maps
 
-        node.workorder.payLoad[:DependsOn].each do |dep|
-          if dep['ciClassName'] =~ /Compute/
-            @instance_name = dep[:ciAttributes][:instance_name]
-          end
-        end
-      when /volume/
-
-        node.workorder.payLoad[:DependsOn].each do |dep|
-          if dep['ciClassName'] =~ /Storage/
-            storage = dep
-            OOLog.info('storage dependson found')
-            OOLog.info('storage not NIL')
-            attr = storage[:ciAttributes]
-            OOLog.info('attr' + attr.inspect)
-            @device_maps = attr['device_map'].split(' ')
-            @device_maps.each do |dev|
-              @rg_name_persistent_storage = dev.split(':')[0]
-              @storage_account_name = dev.split(':')[1]
-              break
-            end
-            break
-          end
-        end
-
-        if node.workorder.payLoad.has_key?('ManagedVia')
-          @instance_name = node.workorder.payLoad.ManagedVia[0]['ciAttributes']['instance_name']
-        end
-      when /compute/
-        @rg_name_persistent_storage = node['platform-resource-group']
-        @storage_account_name = node['storage_account']
-    end
-    @credentials = {
-        tenant_id: @tenant,
-        client_id: @client,
-        client_secret: @client_secret,
-        subscription_id: @subscription
-    }
     @compute_client = Fog::Compute::AzureRM.new(@credentials)
     @storage_client = Fog::Storage::AzureRM.new(@credentials)
-    @storage_account_access_key1= get_storage_access_key
   end
 
   def create
@@ -91,7 +35,7 @@ class Datadisk < AzureBase::ResourceGroupManager
           OOLog.fatal('disk name exists already')
         else
           container = 'vhds'
-          @storage_client.create_page_blob(container, vhd_blobname, slice_size)
+          return @storage_client.create_page_blob(container, vhd_blobname, slice_size)
         end
       end
     rescue MsRestAzure::AzureOperationError => e
@@ -105,7 +49,7 @@ class Datadisk < AzureBase::ResourceGroupManager
   def attach
     i = 1
     dev_id = ''
-    OOLog.info('Subscription id is: ' + @subscription)
+    OOLog.info("Subscription id is: #{@subscription}")
     @device_maps.each do |dev_vol|
       slice_size = dev_vol.split(':')[3]
       dev_id = dev_vol.split(':')[4]
@@ -115,6 +59,7 @@ class Datadisk < AzureBase::ResourceGroupManager
 
       #Add a data disk
       flag = false
+      puts vm.data_disks
       (vm.data_disks).each do |disk|
         if disk.lun == i - 1
           flag = true
@@ -158,7 +103,7 @@ class Datadisk < AzureBase::ResourceGroupManager
   end
 
   # Get the information about the VM
-  def get_vm_info()
+  def get_vm_info
     result = @compute_client.servers.get(@rg_name, @instance_name)
     OOLog.info('vm info :' + result.inspect)
     result
@@ -234,9 +179,10 @@ class Datadisk < AzureBase::ResourceGroupManager
       status = delete_disk_by_name(blob_name)
       if status == 'DiskUnderLease'
         detach
-        delete_disk_by_name(blob_name)
+        status = delete_disk_by_name(blob_name)
       end
     end
+    true
   end
 
   def delete_disk_by_name(blob_name)
@@ -256,6 +202,10 @@ class Datadisk < AzureBase::ResourceGroupManager
         OOLog.debug("Error in deleting the disk (page blob):#{blob_name}")
       end
     rescue MsRestAzure::AzureOperationError => e
+      if e.type == "LeaseIdMissing"
+        OOLog.debug("Failed to delete the disk because there is currently a lease on the blob. Make sure to delete all volumes on the disk attached before detaching disk from VM")
+        return "DiskUnderLease"
+      end
       OOLog.fatal("Failed to delete the disk: #{e.body}")
     rescue Exception => ex
       OOLog.fatal("Failed to delete the disk: #{ex.message}")
@@ -264,7 +214,7 @@ class Datadisk < AzureBase::ResourceGroupManager
     'success'
   end
 
-  def detach()
+  def detach
     i=1
     vm = get_vm_info
     @device_maps.each do |dev_vol|
