@@ -88,4 +88,76 @@ class TrafficManagers
     end
     serialized_array
   end
+
+  def initialize_traffic_manager(public_ip_fqdns, dns_attributes, gdns_attributes)
+    endpoints = initialize_endpoints(public_ip_fqdns)
+    dns_config = initialize_dns_config(dns_attributes, gdns_attributes)
+    monitor_config = initialize_monitor_config
+    traffic_routing_method = gdns_attributes['traffic-routing-method']
+    TrafficManager.new(traffic_routing_method, dns_config, monitor_config, endpoints)
+  end
+
+  def initialize_endpoints(targets)
+    endpoints = []
+    for i in 0..targets.length-1
+      location = targets[i].split('.').reverse[3]
+      endpoint_name = 'endpoint_' + location + '_' + i.to_s
+      endpoint = EndPoint.new(endpoint_name, targets[i], location)
+      endpoint.set_endpoint_status(EndPoint::Status::ENABLED)
+      endpoint.set_weight(1)
+      endpoint.set_priority(i + 1)
+      endpoints.push(endpoint)
+    end
+    endpoints
+  end
+
+  def initialize_dns_config(dns_attributes, gdns_attributes)
+    domain = dns_attributes['zone']
+    domain_without_root = domain.split('.').reverse.join('.').partition('.').last.split('.').reverse.join('.')
+    subdomain = node['workorder']['payLoad']['Environment'][0]['ciAttributes']['subdomain']
+    dns_name = if !subdomain.empty?
+                 subdomain + '.' + domain_without_root
+               else
+                 domain_without_root
+               end
+    relative_dns_name = dns_name.tr('.', '-').slice!(0, 60)
+    Chef::Log.info('The Traffic Manager FQDN is ' + relative_dns_name)
+    display_traffic_manager_fqdn(relative_dns_name)
+
+    dns_ttl = gdns_attributes['ttl']
+    DnsConfig.new(relative_dns_name, dns_ttl)
+  end
+
+  def initialize_monitor_config
+    listeners = node.workorder.payLoad.lb[0][:ciAttributes][:listeners]
+    protocol = listeners.tr('[]"', '').split(' ')[0].upcase
+
+    monitor_port = listeners.tr('[]"', '').split(' ')[1]
+    monitor_path = '/'
+    MonitorConfig.new(protocol, monitor_port, monitor_path)
+  end
+
+  def display_traffic_manager_fqdn(dns_name)
+    fqdn = dns_name + '.' + 'trafficmanager.net'
+    ip = ''
+    entries = []
+    entries.push(name: fqdn, values: ip)
+    entries_hash = {}
+    entries.each do |entry|
+      key = entry[:name]
+      entries_hash[key] = entry[:values]
+    end
+    node.set[:entries] = entries
+    puts "***RESULT:entries=#{JSON.dump(entries_hash)}"
+  end
+
+  def get_traffic_manager_resource_group(resource_group_names, profile_name, dns_attributes)
+    resource_group_names.each do |resource_group_name|
+      traffic_manager_processor = TrafficManagers.new(resource_group_name, profile_name, dns_attributes)
+      Chef::Log.info('Checking traffic manager FQDN set in resource group: ' + resource_group_name)
+      profile = traffic_manager_processor.get_profile
+      return resource_group_name unless profile.nil?
+    end
+    nil
+  end
 end
