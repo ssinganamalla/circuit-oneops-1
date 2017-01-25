@@ -160,4 +160,30 @@ describe AzureNetwork::VirtualNetwork do
       expect { @azure_client.exists?(@platform_resource_group) }.to raise_error('no backtrace')
     end
   end
+
+  describe '#test get subnet with available ips functionality' do
+    it 'successfull return subnet' do
+
+      subnet = Fog::Network::AzureRM::Subnet.new
+      subnet.name = 'subnet_0_vnet-name'
+      subnet.address_prefix = '10.15.1.16'
+      subnet.ip_configurations_ids = nil
+
+      @fog_vnetwork.subnets = [subnet]
+      expect(@azure_client.get_subnet_with_available_ips(@fog_vnetwork.subnets, true)).to be_an_instance_of(Fog::Network::AzureRM::Subnet)
+      expect(@azure_client.get_subnet_with_available_ips(@fog_vnetwork.subnets, false)).to be_an_instance_of(Fog::Network::AzureRM::Subnet)
+    end
+
+    it 'checks if remaining ips are zero in subnet' do
+      subnet = Fog::Network::AzureRM::Subnet.new
+      subnet.name = 'subnet_0_vnet-name'
+      subnet.address_prefix = '10.15.1.16/30'
+      subnet.ip_configurations_ids = ['id1', 'id2']
+
+      @fog_vnetwork.subnets = [subnet]
+      expect(@azure_client.get_subnet_with_available_ips(@fog_vnetwork.subnets, false)).to eq(nil)
+    end
+
+  end
+
 end

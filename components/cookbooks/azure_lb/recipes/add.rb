@@ -269,45 +269,6 @@ def get_allow_rule_port(allow_rules)
   port
 end
 
-def get_nic_name(raw_nic_id)
-  # /subscriptions/subscription_id/resourceGroups/vnet_name/providers/Microsoft.Network/networkInterfaces/nic_name
-  nicnameParts = raw_nic_id.split('/')
-  # retrieve the last part
-  nic_name = nicnameParts.last
-
-  nic_name
-end
-
-def get_subnet_with_available_ips(subnets, express_route_enabled)
-  subnets.each do |subnet|
-    Chef::Log.info('checking for ip availability in ' + subnet.name)
-    address_prefix = subnet.address_prefix
-
-    if express_route_enabled == true
-      total_num_of_ips_possible = (2**(32 - address_prefix.split('/').last.to_i)) - 5 # Broadcast(1)+Gateway(1)+azure express routes(3) = 5
-    else
-      total_num_of_ips_possible = (2**(32 - address_prefix.split('/').last.to_i)) - 2 # Broadcast(1)+Gateway(1)
-    end
-    Chef::Log.info("Total number of ips possible is: #{total_num_of_ips_possible}")
-
-    no_ips_inuse = subnet.ip_configurations.nil? ? 0 : subnet.ip_configurations.length
-    Chef::Log.info("Num of ips in use: #{no_ips_inuse}")
-
-    remaining_ips = total_num_of_ips_possible - no_ips_inuse
-    if remaining_ips.zero?
-      Chef::Log.info("No IP address remaining in the Subnet '#{subnet.name}'")
-      Chef::Log.info("Total number of subnets(subnet_name_list.count) = #{subnets.count}")
-      Chef::Log.info('checking the next subnet')
-      next # check the next subnet
-    else
-      return subnet
-    end
-  end
-
-  Chef::Log.error('***FAULT:FATAL=- No IP address available in any of the Subnets allocated. limit exceeded')
-  exit 1
-end
-
 # ==============================================================
 # Variables
 
@@ -376,7 +337,7 @@ if xpress_route_enabled
   OOLog.fatal("VNET '#{vnet_name}' does not have subnets") if vnet.subnets.count < 1
 
   subnets = vnet.subnets
-  subnet = get_subnet_with_available_ips(subnets, xpress_route_enabled)
+  subnet = vnet_svc.get_subnet_with_available_ips(subnets, xpress_route_enabled)
 
 else
   # Public IP Config
@@ -445,7 +406,7 @@ else
     else
       # the asumption is that each VM will have only one NIC
       nic = vm.network_profile.network_interfaces[0]
-      nic_name = get_nic_name(nic.id)
+      nic_name = nic_svc.get_nic_name(nic.id)
       # nic = nic_svc.get(resource_group_name, nic_name)
       nic = nic_svc.get(nic_name)
 
