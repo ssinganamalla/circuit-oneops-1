@@ -39,8 +39,7 @@ class Datadisk
         end
       end
     rescue MsRestAzure::AzureOperationError => e
-      OOLog.info("error type: #{e.type}")
-      OOLog.fatal("Failed to create the disk: #{e.description}")
+      OOLog.fatal("Failed to create the disk: #{e.message}")
     rescue Exception => ex
       OOLog.fatal("Failed to create the disk: #{ex.message}")
     end
@@ -90,15 +89,13 @@ class Datadisk
       else
         OOLog.fatal(e.body)
       end
-    rescue MsRestAzure::CloudErrorData => e
-      OOLog.fatal("Error Attaching Storage disk: #{e.body.message}")
     rescue Exception => ex
       OOLog.fatal("Error Attaching Storage disk: #{ex.message}")
     end
     end_time = Time.now.to_i
     duration = end_time - start_time
     OOLog.info("Storage Disk attached #{duration} seconds")
-    OOLog.info("VM: #{my_vm.name} UPDATED!!!")
+    OOLog.info("VM: #{vm.name} UPDATED!!!")
     true
   end
 
@@ -127,13 +124,13 @@ class Datadisk
     data_disk.disk_size_gb = slice_size
     data_disk.vhd_uri = "https://#{@storage_account_name}.blob.core.windows.net/vhds/#{@storage_account_name}-#{component_name}-datadisk-#{dev_name}.vhd"
     OOLog.info('data_disk uri:'+data_disk.vhd_uri)
-    data_disk.caching = Fog::Compute::AzureRM::CachingTypes::ReadWrite
+    data_disk.caching = Fog::ARM::Compute::Models::CachingTypes::ReadWrite
     blob_name = "#{@storage_account_name}-#{component_name}-datadisk-#{dev_name}.vhd"
     is_new_disk_or_old = check_blob_exist(blob_name)
     if is_new_disk_or_old
-      data_disk.create_option = Fog::Compute::AzureRM::DiskCreateOptionTypes::Attach
+      data_disk.create_option = Fog::ARM::Compute::Models::DiskCreateOptionTypes::Attach
     else
-      data_disk.create_option = Fog::Compute::AzureRM::DiskCreateOptionTypes::Empty
+      data_disk.create_option = Fog::ARM::Compute::Models::DiskCreateOptionTypes::Empty
     end
     data_disk
   end
@@ -179,7 +176,7 @@ class Datadisk
       status = delete_disk_by_name(blob_name)
       if status == 'DiskUnderLease'
         detach
-        status = delete_disk_by_name(blob_name)
+        delete_disk_by_name(blob_name)
       end
     end
     true
@@ -189,7 +186,7 @@ class Datadisk
     container = 'vhds'
     # Delete a Blob
     begin
-      delete_result = 'success'
+      delete_result = false
       retry_count = 20
       begin
         if retry_count > 0
@@ -197,14 +194,15 @@ class Datadisk
           delete_result = @storage_client.delete_blob(container, blob_name)
         end
         retry_count = retry_count-1
-      end until delete_result == nil
-      if delete_result != nil && retry_count == 0
+      end until delete_result || retry_count == 0
+      if delete_result != true && retry_count == 0
         OOLog.debug("Error in deleting the disk (page blob):#{blob_name}")
+        return 'failure'
       end
     rescue MsRestAzure::AzureOperationError => e
-      if e.type == "LeaseIdMissing"
+      if e.type == 'LeaseIdMissing'
         OOLog.debug("Failed to delete the disk because there is currently a lease on the blob. Make sure to delete all volumes on the disk attached before detaching disk from VM")
-        return "DiskUnderLease"
+        return 'DiskUnderLease'
       end
       OOLog.fatal("Failed to delete the disk: #{e.body}")
     rescue Exception => ex
