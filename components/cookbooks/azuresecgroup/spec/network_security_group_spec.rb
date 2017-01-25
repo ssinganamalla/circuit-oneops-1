@@ -6,13 +6,13 @@ require 'fog/azurerm'
 
 describe AzureNetwork::NetworkSecurityGroup do
   before do
-    cred_hash = {
+    credentials = {
         tenant_id: '<TENANT_ID>',
         client_secret: '<CLIENT_SECRET>',
         client_id: '<CLIENT_ID>',
         subscription_id: '<SUBSCRIPTION>'
     }
-    @network_security_group = AzureNetwork::NetworkSecurityGroup.new(cred_hash)
+    @network_security_group = AzureNetwork::NetworkSecurityGroup.new(credentials)
     @nsg_response = Fog::Network::AzureRM::NetworkSecurityGroup.new(
       name: 'fog-test-nsg',
       resource_group: 'fog-test-rg'

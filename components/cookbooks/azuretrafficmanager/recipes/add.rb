@@ -135,7 +135,7 @@ cloud_name = node['workorder']['cloud']['ciName']
 dns_attributes = node['workorder']['services']['dns'][cloud_name]['ciAttributes']
 gdns_attributes = node['workorder']['services']['gdns'][cloud_name]['ciAttributes']
 
-cred_hash = {
+credentials = {
     tenant_id: dns_attributes['tenant_id'],
     client_secret: dns_attributes['client_secret'],
     client_id: dns_attributes['client_id'],
@@ -144,7 +144,7 @@ cred_hash = {
 
 begin
   resource_group_names = get_resource_group_names
-  public_ip_fqdns = get_public_ip_fqdns(cred_hash, resource_group_names, ns_path_parts)
+  public_ip_fqdns = get_public_ip_fqdns(credentials, resource_group_names, ns_path_parts)
   traffic_manager = initialize_traffic_manager(public_ip_fqdns, dns_attributes, gdns_attributes)
 
   platform_name = ns_path_parts[5]
@@ -154,13 +154,13 @@ begin
   if resource_group_name.nil?
     include_recipe 'azure::get_platform_rg_and_as'
     resource_group_name = node['platform-resource-group']
-    traffic_manager_processor = TrafficManagers.new(resource_group_name, profile_name, cred_hash)
+    traffic_manager_processor = TrafficManagers.new(resource_group_name, profile_name, credentials)
     traffic_manager_profile_result = traffic_manager_processor.create_update_profile(traffic_manager)
     if traffic_manager_profile_result.nil?
       OOLog.fatal("Traffic Manager profile #{profile_name} could not be created")
     end
   else
-    traffic_manager_processor = TrafficManagers.new(resource_group_name, profile_name, cred_hash)
+    traffic_manager_processor = TrafficManagers.new(resource_group_name, profile_name, credentials)
     profile_deleted = traffic_manager_processor.delete_profile
     if profile_deleted
       traffic_manager_profile_result = traffic_manager_processor.create_update_profile(traffic_manager)

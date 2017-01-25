@@ -14,13 +14,13 @@ require ::File.expand_path('../../../azure_base/libraries/utils', __FILE__)
 
 describe AzureNetwork::NetworkInterfaceCard do
   before :each do
-    cred_hash = {
+    credentials = {
         tenant_id: '<TENANT_ID>',
         client_secret: '<CLIENT_SECRET>',
         client_id: '<CLIENT_ID>',
         subscription_id: '<SUBSCRIPTION>'
     }
-    @azure_client = AzureNetwork::NetworkInterfaceCard.new(cred_hash)
+    @azure_client = AzureNetwork::NetworkInterfaceCard.new(credentials)
     @azure_client.rg_name = 'Resource-group'
     @azure_client.ci_id = 'ci-id'
 

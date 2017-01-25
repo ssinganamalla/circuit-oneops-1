@@ -362,13 +362,13 @@ if xpress_route_enabled
   master_rg = lb_service[:ciAttributes][:resource_group]
 
   token = credentials.instance_variable_get(:@token_provider)
-  cred_hash = {
+  creds = {
       tenant_id: tenant_id,
       client_secret: client_secret,
       client_id: client_id,
       subscription_id: subscription_id
   }
-  vnet_svc = AzureNetwork::VirtualNetwork.new(cred_hash)
+  vnet_svc = AzureNetwork::VirtualNetwork.new(creds)
   vnet_svc.name = vnet_name
   vnet = vnet_svc.get(master_rg)
 
@@ -381,7 +381,7 @@ if xpress_route_enabled
 
 else
   # Public IP Config
-  public_ip = create_publicip(cred_hash, location, resource_group_name)
+  public_ip = create_publicip(creds, location, resource_group_name)
   OOLog.info("PublicIP created. PIP: #{public_ip.name}")
 end
 
@@ -416,7 +416,7 @@ get_compute_nat_rules(frontend_ipconfig_id, nat_rules, compute_natrules)
 load_balancer = AzureNetwork::LoadBalancer.get_lb(resource_group_name, lb_name, location, frontend_ipconfigs, backend_address_pools, lb_rules, nat_rules, probes)
 
 # Create LB
-lb_svc = AzureNetwork::LoadBalancer.new(cred_hash)
+lb_svc = AzureNetwork::LoadBalancer.new(creds)
 
 lb = nil
 begin
@@ -430,8 +430,8 @@ if lb.nil?
 elsif compute_natrules.empty?
   OOLog.info('No computes found for load balanced')
 else
-  vm_svc = AzureCompute::VirtualMachine.new(cred_hash)
-  nic_svc = AzureNetwork::NetworkInterfaceCard.new(cred_hash)
+  vm_svc = AzureCompute::VirtualMachine.new(credentials, subscription_id)
+  nic_svc = AzureNetwork::NetworkInterfaceCard.new(creds)
   nic_svc.rg_name = resource_group_name
   nic_svc.location = location
 
@@ -467,7 +467,7 @@ lbip = nil
 if xpress_route_enabled
   lbip = lb.frontend_ipconfigurations[0].private_ipaddress
 else
-  pip_svc = AzureNetwork::PublicIp.new(cred_hash)
+  pip_svc = AzureNetwork::PublicIp.new(creds)
   public_ip = pip_svc.get(resource_group_name, public_ip.name)
   lbip = public_ip.ip_address unless public_ip.nil?
 end

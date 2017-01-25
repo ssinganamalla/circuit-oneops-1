@@ -14,16 +14,12 @@ end
 
 OOLog.fatal('Missing lb service! Cannot continue.') if lb_service.nil?
 
-cred_hash = {
+credentials = {
     tenant_id: lb_service[:ciAttributes][:tenant_id],
     client_secret: lb_service[:ciAttributes][:client_secret],
     client_id: lb_service[:ciAttributes][:client_id],
     subscription_id: lb_service[:ciAttributes][:subscription]
 }
-tenant_id = lb_service[:ciAttributes][:tenant_id]
-client_id = lb_service[:ciAttributes][:client_id]
-client_secret = lb_service[:ciAttributes][:client_secret]
-subscription_id = lb_service[:ciAttributes][:subscription]
 
 platform_name = node.workorder.box.ciName
 resource_group_name = node['platform-resource-group']
@@ -32,16 +28,14 @@ lb_name = "lb-#{plat_name}"
 
 public_ip_name = Utils.get_component_name('lb_publicip', node.workorder.rfcCi.ciId)
 
-credentials = Utils.get_credentials(tenant_id, client_id, client_secret)
-
-lb_svc = AzureNetwork::LoadBalancer.new(cred_hash)
+lb_svc = AzureNetwork::LoadBalancer.new(credentials)
 begin
   lb_svc.delete(resource_group_name, lb_name)
 rescue => e
   OOLog.fatal(e.message)
 end
 
-pip_svc = AzureNetwork::PublicIp.new(cred_hash)
+pip_svc = AzureNetwork::PublicIp.new(credentials)
 begin
   pip_svc.delete(resource_group_name, public_ip_name)
 rescue => e

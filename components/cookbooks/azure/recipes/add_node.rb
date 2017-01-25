@@ -61,7 +61,7 @@ OOLog.info('ip_type: ' + ip_type)
 # get the credentials needed to call Azure SDK
 creds = Utils.get_credentials(compute_service[:tenant_id], compute_service[:client_id], compute_service[:client_secret])
 
-cred_hash = {
+credentials = {
     tenant_id: compute_service[:tenant_id],
     client_secret: compute_service[:client_secret],
     client_id: compute_service[:client_id],
@@ -118,7 +118,7 @@ secgroup_name = node['workorder']['payLoad']['DependsOn'][0]['ciName']
 
 # invoke class to build the network profile
 begin
-  network_interface_cls = AzureNetwork::NetworkInterfaceCard.new(cred_hash)
+  network_interface_cls = AzureNetwork::NetworkInterfaceCard.new(credentials)
   network_interface_cls.location = location
   network_interface_cls.rg_name = resource_group_name
   network_interface_cls.ci_id = ci_id
@@ -185,7 +185,7 @@ if ip_type == 'public'
     public_ip_name = Utils.get_component_name('publicip', ci_id)
     OOLog.info("public ip name: #{public_ip_name }")
 
-    pip = AzureNetwork::PublicIp.new(cred_hash)
+    pip = AzureNetwork::PublicIp.new(credentials)
     publicip_details = pip.get(resource_group_name, public_ip_name)
     pubip_address = publicip_details.ip_address
     OOLog.info("public ip found: #{pubip_address}")

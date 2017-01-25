@@ -9,7 +9,7 @@ require ::File.expand_path('../../../azure_base/libraries/utils', __FILE__)
 
 describe AzureNetwork::PublicIp do
   before :each do
-    cred_hash = {
+    credentials = {
         tenant_id: '<TENANT_ID>',
         client_secret: '<CLIENT_SECRET>',
         client_id: '<CLIENT_ID>',
@@ -17,7 +17,7 @@ describe AzureNetwork::PublicIp do
     }
     @platform_resource_group = '<RESOURCE-GROUP-NAME>'
     @public_ip_name = '<PUBLIC-IP-NAME>'
-    @azure_client = AzureNetwork::PublicIp.new(cred_hash)
+    @azure_client = AzureNetwork::PublicIp.new(credentials)
     @public_ip = Fog::Network::AzureRM::PublicIp.new
   end
 

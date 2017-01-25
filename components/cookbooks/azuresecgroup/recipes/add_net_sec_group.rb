@@ -10,19 +10,15 @@ require File.expand_path('../../../azure/libraries/resource_group.rb', __FILE__)
 # set the proxy if it exists as a cloud var
 Utils.set_proxy(node['workorder']['payLoad']['OO_CLOUD_VARS'])
 
-cloud_name = node['workorder']['cloud']['ciName']
-cloud_service =
-    node['workorder']['services']['compute'][cloud_name]['ciAttributes']
-cred_hash = {
-    tenant_id: cloud_service['tenant_id'],
-    client_secret: cloud_service['client_secret'],
-    client_id: cloud_service['client_id'],
-    subscription_id: cloud_service['subscription']
-}
-
 # get all necessary info from node
 cloud_name = node['workorder']['cloud']['ciName']
 compute_service = node['workorder']['services']['compute'][cloud_name]['ciAttributes']
+credentials = {
+    tenant_id: compute_service['tenant_id'],
+    client_secret: compute_service['client_secret'],
+    client_id: compute_service['client_id'],
+    subscription_id: compute_service['subscription']
+}
 ns_path_parts = node['workorder']['rfcCi']['nsPath'].split('/')
 org = ns_path_parts[1]
 assembly = ns_path_parts[2]
@@ -30,14 +26,13 @@ environment = ns_path_parts[3]
 platform_ci_id = node['workorder']['box']['ciId']
 location = compute_service[:location]
 
-subscription = compute_service[:subscription]
 network_security_group_name = node[:name]
 
 # Get resource group name
 resource_group_name = AzureResources::ResourceGroup.get_name(org, assembly, platform_ci_id, environment, location)
 
 # Creating security rules objects
-nsg = AzureNetwork::NetworkSecurityGroup.new(cred_hash)
+nsg = AzureNetwork::NetworkSecurityGroup.new(credentials)
 rules = node['secgroup']['inbound'].tr('"[]\\', '').split(',')
 sec_rules = []
 priority = 100
