@@ -1,6 +1,5 @@
 require 'fog/azurerm'
 require 'chef'
-require File.expand_path('../../../azure/libraries/subnet.rb', __FILE__)
 # TODO: add checks in each method for rg_name
 require File.expand_path('../../../azuresecgroup/libraries/network_security_group.rb', __FILE__)
 require ::File.expand_path('../../../azure_base/libraries/logger', __FILE__)
@@ -169,7 +168,6 @@ module AzureNetwork
     end
 
     def get_nic_name(raw_nic_id)
-      # /subscriptions/subscription_id/resourceGroups/vnet_name/providers/Microsoft.Network/networkInterfaces/nic_name
       nicnameParts = raw_nic_id.split('/')
       # retrieve the last part
       nic_name = nicnameParts.last
