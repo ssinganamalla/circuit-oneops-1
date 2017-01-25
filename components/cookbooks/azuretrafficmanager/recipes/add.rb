@@ -48,6 +48,16 @@ def get_resource_group_names
   resource_group_names
 end
 
+def get_traffic_manager_resource_group(resource_group_names, profile_name, dns_attributes)
+  resource_group_names.each do |resource_group_name|
+    traffic_manager_processor = TrafficManagers.new(resource_group_name, profile_name, dns_attributes)
+    Chef::Log.info('Checking traffic manager FQDN set in resource group: ' + resource_group_name)
+    profile = traffic_manager_processor.get_profile
+    return resource_group_name unless profile.nil?
+  end
+  nil
+end
+
 # set the proxy if it exists as a cloud var
 Utils.set_proxy(node.workorder.payLoad.OO_CLOUD_VARS)
 
@@ -57,15 +67,14 @@ dns_attributes = node['workorder']['services']['dns'][cloud_name]['ciAttributes'
 gdns_attributes = node['workorder']['services']['gdns'][cloud_name]['ciAttributes']
 
 begin
-  traffic_manager_processor = TrafficManagers.new(resource_group_name, profile_name, dns_attributes)
-
   resource_group_names = get_resource_group_names
   public_ip_fqdns = get_public_ip_fqdns(dns_attributes, resource_group_names, ns_path_parts)
-  traffic_manager = traffic_manager_processor.initialize_traffic_manager(public_ip_fqdns, dns_attributes, gdns_attributes)
 
   profile_name = 'trafficmanager-' + ns_path_parts[5]
 
-  resource_group_name = traffic_manager_processor.get_traffic_manager_resource_group(resource_group_names, profile_name, dns_attributes)
+  resource_group_name = get_traffic_manager_resource_group(resource_group_names, profile_name, dns_attributes)
+  traffic_manager_processor = TrafficManagers.new(resource_group_name, profile_name, dns_attributes)
+  traffic_manager = traffic_manager_processor.initialize_traffic_manager(public_ip_fqdns, dns_attributes, gdns_attributes)
 
   if resource_group_name.nil?
     include_recipe 'azure::get_platform_rg_and_as'
