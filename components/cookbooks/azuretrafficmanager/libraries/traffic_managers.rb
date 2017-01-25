@@ -6,6 +6,8 @@ require ::File.expand_path('../../../azure_base/libraries/logger', __FILE__)
 class TrafficManagers
   attr_accessor :traffic_manager_service
 
+  attr_accessor :entries
+
   def initialize(resource_group, profile_name, dns_attributes)
     raise ArgumentError, 'resource_group is nil' if resource_group.nil?
     raise ArgumentError, 'profile_name is nil' if profile_name.nil?
@@ -65,6 +67,14 @@ class TrafficManagers
     traffic_manager_profile
   end
 
+  def initialize_traffic_manager(dns_attributes, resource_group_names, ns_path_parts, gdns_attributes, listeners, subdomain)
+    endpoints = initialize_endpoints(get_public_ip_fqdns(dns_attributes, resource_group_names, ns_path_parts))
+    dns_config = initialize_dns_config(dns_attributes, gdns_attributes, subdomain)
+    monitor_config = initialize_monitor_config(listeners)
+    traffic_routing_method = gdns_attributes['traffic-routing-method']
+    TrafficManager.new(traffic_routing_method, dns_config, monitor_config, endpoints)
+  end
+
   private
 
   def serialize_endpoints(endpoints)
@@ -89,17 +99,9 @@ class TrafficManagers
     serialized_array
   end
 
-  def initialize_traffic_manager(public_ip_fqdns, dns_attributes, gdns_attributes)
-    endpoints = initialize_endpoints(public_ip_fqdns)
-    dns_config = initialize_dns_config(dns_attributes, gdns_attributes)
-    monitor_config = initialize_monitor_config
-    traffic_routing_method = gdns_attributes['traffic-routing-method']
-    TrafficManager.new(traffic_routing_method, dns_config, monitor_config, endpoints)
-  end
-
   def initialize_endpoints(targets)
     endpoints = []
-    for i in 0..targets.length-1
+    for i in 0..targets.length - 1
       location = targets[i].split('.').reverse[3]
       endpoint_name = 'endpoint_' + location + '_' + i.to_s
       endpoint = EndPoint.new(endpoint_name, targets[i], location)
@@ -111,10 +113,9 @@ class TrafficManagers
     endpoints
   end
 
-  def initialize_dns_config(dns_attributes, gdns_attributes)
+  def initialize_dns_config(dns_attributes, gdns_attributes, subdomain)
     domain = dns_attributes['zone']
     domain_without_root = domain.split('.').reverse.join('.').partition('.').last.split('.').reverse.join('.')
-    subdomain = node['workorder']['payLoad']['Environment'][0]['ciAttributes']['subdomain']
     dns_name = if !subdomain.empty?
                  subdomain + '.' + domain_without_root
                else
@@ -128,13 +129,35 @@ class TrafficManagers
     DnsConfig.new(relative_dns_name, dns_ttl)
   end
 
-  def initialize_monitor_config
-    listeners = node.workorder.payLoad.lb[0][:ciAttributes][:listeners]
+  def initialize_monitor_config(listeners)
     protocol = listeners.tr('[]"', '').split(' ')[0].upcase
 
     monitor_port = listeners.tr('[]"', '').split(' ')[1]
     monitor_path = '/'
     MonitorConfig.new(protocol, monitor_port, monitor_path)
+  end
+
+  def get_public_ip_fqdns(dns_attributes, resource_group_names, ns_path_parts)
+    platform_name = ns_path_parts[5]
+    plat_name = platform_name.gsub(/-/, '').downcase
+    load_balancer_name = "lb-#{plat_name}"
+    public_ip_fqdns = []
+    credentials = Utils.get_credentials(dns_attributes['tenant_id'], dns_attributes['client_id'], dns_attributes['client_secret'])
+    lb = AzureNetwork::LoadBalancer.new(dns_attributes['tenant_id'], dns_attributes['client_id'], dns_attributes['client_secret'], dns_attributes['subscription'])
+    pip = AzureNetwork::PublicIp.new(credentials, dns_attributes['subscription'])
+
+    resource_group_names.each do |resource_group_name|
+      load_balancer = lb.get(resource_group_name, load_balancer_name)
+      next if load_balancer.nil?
+
+      public_ip_id = load_balancer.frontend_ip_configurations[0].public_ipaddress_id
+      public_ip_name = public_ip_id.split('/')[8]
+      public_ip = pip.get(resource_group_name, public_ip_name)
+      public_ip_fqdn = public_ip.fqdn
+      Chef::Log.info('Obtained public ip fqdn ' + public_ip_fqdn + ' to be used as endpoint for traffic manager')
+      public_ip_fqdns.push(public_ip_fqdn)
+    end
+    public_ip_fqdns
   end
 
   def display_traffic_manager_fqdn(dns_name)
@@ -147,17 +170,7 @@ class TrafficManagers
       key = entry[:name]
       entries_hash[key] = entry[:values]
     end
-    node.set[:entries] = entries
+    @entries = entries
     puts "***RESULT:entries=#{JSON.dump(entries_hash)}"
-  end
-
-  def get_traffic_manager_resource_group(resource_group_names, profile_name, dns_attributes)
-    resource_group_names.each do |resource_group_name|
-      traffic_manager_processor = TrafficManagers.new(resource_group_name, profile_name, dns_attributes)
-      Chef::Log.info('Checking traffic manager FQDN set in resource group: ' + resource_group_name)
-      profile = traffic_manager_processor.get_profile
-      return resource_group_name unless profile.nil?
-    end
-    nil
   end
 end

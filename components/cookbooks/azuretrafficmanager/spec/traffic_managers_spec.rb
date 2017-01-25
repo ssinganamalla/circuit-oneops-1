@@ -86,4 +86,17 @@ describe TrafficManagers do
       expect(@traffic_manager.get_profile).to eq(nil)
     end
   end
+
+  # describe '#initialize_traffic_manager' do
+  #   it 'initializes traffic manager successfully' do
+  #     monitor_config = MonitorConfig.new('http', 80, '/')
+  #     dns_config = DnsConfig.new('relative_dns_name', 300)
+  #     endpoint = EndPoint.new('endpoint_name', 'target', 'eastus')
+  #     endpoint.set_endpoint_status(200)
+  #     endpoint.set_weight(20)
+  #     endpoint.set_priority(1)
+  #     traffic_manager_obj = TrafficManager.new('Performance', dns_config, monitor_config, [endpoint])
+  #     expect(@traffic_manager.initialize_traffic_manager('','','', '', '', '')).to eq(traffic_manager_obj)
+  #   end
+  # end
 end
