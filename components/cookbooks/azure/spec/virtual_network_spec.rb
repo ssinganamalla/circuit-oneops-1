@@ -181,9 +181,27 @@ describe AzureNetwork::VirtualNetwork do
       subnet.ip_configurations_ids = ['id1', 'id2']
 
       @fog_vnetwork.subnets = [subnet]
-      expect(@azure_client.get_subnet_with_available_ips(@fog_vnetwork.subnets, false)).to eq(nil)
+      expect { @azure_client.get_subnet_with_available_ips(@fog_vnetwork.subnets, false) }.to raise_error('no backtrace')
     end
-
   end
 
+  describe '# test add gateway subnet to vnet' do
+    it 'successfuly returns the vnet with gateway subnet' do
+      @fog_vnetwork.name = 'TestVnet'
+      expect(@azure_client.add_gateway_subnet_to_vnet(@fog_vnetwork, '12.11.1.1', 'GatewaySubnet').name).to eq('TestVnet')
+    end
+
+    it 'already has a subnet' do
+      subnet = Fog::Network::AzureRM::Subnet.new
+      subnet.name = 'GatewaySubnet'
+      @fog_vnetwork.subnets.push(subnet)
+
+      subnet = Fog::Network::AzureRM::Subnet.new
+      subnet.name = 'subnet_0_vnet-name'
+
+      @fog_vnetwork.subnets.push(subnet)
+      @fog_vnetwork.name = 'TestVnet'
+      expect(@azure_client.add_gateway_subnet_to_vnet(@fog_vnetwork, '12.11.1.1', 'GatewaySubnet').name).to eq('TestVnet')
+    end
+  end
 end
