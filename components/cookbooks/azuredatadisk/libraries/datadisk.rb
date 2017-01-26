@@ -193,13 +193,13 @@ class Datadisk < AzureBase::ResourceGroupManager
       data_disk2.vhd = Azure::ARM::Compute::Models::VirtualHardDisk.new
       data_disk2.vhd.uri = "https://#{@storage_account_name}.blob.core.windows.net/vhds/#{@storage_account_name}-#{component_name}-datadisk-#{dev_name}.vhd"
       OOLog.info("data_disk uri:"+data_disk2.vhd.uri)
-      data_disk2.caching = Azure::ARM::Compute::Models::CachingTypes::ReadWrite
+      data_disk2.caching = Fog::ARM::Compute::Models::CachingTypes::ReadWrite
       blob_name = "#{@storage_account_name}-#{component_name}-datadisk-#{dev_name}.vhd"
       is_new_disk_or_old = check_blob_exist(blob_name)
       if is_new_disk_or_old == true
-        data_disk2.create_option = Azure::ARM::Compute::Models::DiskCreateOptionTypes::Attach
+        data_disk2.create_option = Fog::ARM::Compute::Models::DiskCreateOptionTypes::Attach
       else
-        data_disk2.create_option = Azure::ARM::Compute::Models::DiskCreateOptionTypes::Empty
+        data_disk2.create_option = Fog::ARM::Compute::Models::DiskCreateOptionTypes::Empty
       end
       data_disk2
     end
