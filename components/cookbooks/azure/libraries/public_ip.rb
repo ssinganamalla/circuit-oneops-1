@@ -69,6 +69,7 @@ module AzureNetwork
     # to already be created.
     def create_update(resource_group_name, public_ip_name, public_ip_address)
       OOLog.info("Creating/Updating public IP '#{public_ip_name}' from '#{resource_group_name}' ")
+      @location = public_ip_address.location
       start_time = Time.now.to_i
       begin
         response = @network_client.public_ips.create(name: public_ip_name, resource_group: resource_group_name, location: @location, public_ip_allocation_method: public_ip_address.public_ip_allocation_method)
