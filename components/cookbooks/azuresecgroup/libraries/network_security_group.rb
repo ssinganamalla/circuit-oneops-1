@@ -7,16 +7,12 @@ module AzureNetwork
   class NetworkSecurityGroup
     attr_accessor :network_client
 
-    def initialize(credentials, subscription_id)
-      token = credentials.instance_variable_get(:@token_provider)
-      client_id = token.instance_variable_get(:@client_id)
-      client_secret = token.instance_variable_get(:@client_secret)
-      tenant_id = token.instance_variable_get(:@tenant_id)
-      @network_client = Fog::Network::AzureRM.new(client_id: client_id, client_secret: client_secret, tenant_id: tenant_id, subscription_id: subscription_id)
+    def initialize(creds)
+      @network_service = Fog::Network::AzureRM.new(creds)
     end
 
     def get(resource_group_name, network_security_group_name)
-      @network_client.network_security_groups.get(resource_group_name, network_security_group_name)
+      @network_service.network_security_groups.get(resource_group_name, network_security_group_name)
     rescue MsRestAzure::AzureOperationError => e
       # If the error is that it doesn't exist, return nil
       OOLog.info("Error of Exception is: '#{e.body.values[0]}'")
@@ -33,7 +29,7 @@ module AzureNetwork
 
     def create(resource_group_name, net_sec_group_name, location)
       # Creates an empty network security group
-      @network_client.network_security_groups.create(name: net_sec_group_name, resource_group: resource_group_name, location: location, security_rules: [])
+      @network_service.network_security_groups.create(name: net_sec_group_name, resource_group: resource_group_name, location: location, security_rules: [])
     rescue MsRestAzure::AzureOperationError => e
       OOLog.fatal("AzureOperationError Exception trying to create network security group #{net_sec_group_name} response: #{e.body}")
     rescue => e
@@ -41,7 +37,7 @@ module AzureNetwork
     end
 
     def create_update(resource_group_name, net_sec_group_name, parameters)
-      @network_client.network_security_groups.create(name: net_sec_group_name, resource_group: resource_group_name, location: parameters.location, security_rules: parameters.security_rules)
+      @network_service.network_security_groups.create(name: net_sec_group_name, resource_group: resource_group_name, location: parameters.location, security_rules: parameters.security_rules)
     rescue MsRestAzure::AzureOperationError => e
       OOLog.fatal("AzureOperationError exception trying to create/update network security group #{net_sec_group_name} Error response: #{e.body}")
     rescue => e
@@ -49,7 +45,7 @@ module AzureNetwork
     end
 
     def list_security_groups(resource_group_name)
-      @network_client.network_security_groups(resource_group: resource_group_name)
+      @network_service.network_security_groups(resource_group: resource_group_name)
     rescue MsRestAzure::AzureOperationError => e
       OOLog.fatal("AzureOperationError exception trying to list network security groups from #{resource_group_name} resource group Response: #{e.body}")
     rescue => e
@@ -57,7 +53,7 @@ module AzureNetwork
     end
 
     def delete_security_group(resource_group_name, net_sec_group_name)
-      @network_client.network_security_groups.get(resource_group_name, net_sec_group_name).destroy
+      @network_service.network_security_groups.get(resource_group_name, net_sec_group_name).destroy
     rescue MsRestAzure::AzureOperationError => e
       OOLog.info("AzureOperationError Error deleting NSG #{net_sec_group_name}")
       OOLog.info("Error response: #{e.body}") unless e.body.nil?
@@ -67,7 +63,7 @@ module AzureNetwork
 
     def create_or_update_rule(resource_group_name, network_security_group_name, security_rule_name, security_rule_parameters)
       # The Put network security rule operation creates/updates a security rule in the specified network security group group.
-      @network_client.network_security_rules.create(
+      @network_service.network_security_rules.create(
         name: security_rule_name,
         resource_group: resource_group_name,
         network_security_group_name: network_security_group_name,
@@ -88,7 +84,7 @@ module AzureNetwork
 
     def delete_rule(resource_group_name, network_security_group_name, security_rule_name)
       # The delete network security rule operation deletes the specified network security rule.
-      @network_client.network_security_rules.get(resource_group_name, network_security_group_name, security_rule_name).destroy
+      @network_service.network_security_rules.get(resource_group_name, network_security_group_name, security_rule_name).destroy
     rescue MsRestAzure::AzureOperationError => e
       OOLog.fatal("AzureOperationError Error trying to delete the '#{security_rule_name}' Security Rule - Response: #{e.body}")
     rescue => e
@@ -97,7 +93,7 @@ module AzureNetwork
 
     def get_rule(resource_group_name, network_security_group_name, security_rule_name)
       # The Get NetworkSecurityRule operation retreives information about the specified network security rule.
-      @network_client.network_security_rules.get(resource_group_name, network_security_group_name, security_rule_name)
+      @network_service.network_security_rules.get(resource_group_name, network_security_group_name, security_rule_name)
     rescue MsRestAzure::AzureOperationError => e
       OOLog.fatal("Error trying to get the '#{security_rule_name}' Security Rule - Response: #{e.body}")
     rescue => e
@@ -106,7 +102,7 @@ module AzureNetwork
 
     def list_rules(resource_group_name, network_security_group_name)
       # The List network security rule opertion retrieves all the security rules in a network security group.
-      @network_client.network_security_rules(resource_group: resource_group_name, network_security_group_name: network_security_group_name)
+      @network_service.network_security_rules(resource_group: resource_group_name, network_security_group_name: network_security_group_name)
     rescue MsRestAzure::AzureOperationError => e
       OOLog.fatal("AzureOperationError Error trying to listing Security Rules in '#{resource_group_name}' Response: #{e.body}")
     rescue => e

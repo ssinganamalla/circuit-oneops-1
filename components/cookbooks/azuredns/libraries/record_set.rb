@@ -21,12 +21,13 @@ module AzureDns
     attr_accessor :dns_client
 
     def initialize(platform_resource_group, dns_attributes)
-      @subscription = dns_attributes[:subscription]
-      tenant_id = dns_attributes[:tenant_id]
-      client_id = dns_attributes[:client_id]
-      client_secret = dns_attributes[:client_secret]
-
-      @dns_client = Fog::DNS::AzureRM.new(client_id: client_id, client_secret: client_secret, tenant_id: tenant_id, subscription_id: @subscription)
+      credentials = {
+          tenant_id: dns_attributes[:tenant_id],
+          client_secret: dns_attributes[:client_secret],
+          client_id: dns_attributes[:client_id],
+          subscription_id: dns_attributes[:subscription]
+      }
+      @dns_client = Fog::DNS::AzureRM.new(credentials)
       @zone = dns_attributes[:zone]
       @dns_resource_group = platform_resource_group
     end

@@ -8,16 +8,11 @@ module AzureNetwork
   class Gateway
     attr_accessor :gateway_attributes
     attr_accessor :application_gateway
-    def initialize(resource_group_name, ag_name, credentials)
-      @subscription_id = credentials[:subscription]
+    def initialize(resource_group_name, ag_name, creds)
+      @subscription_id = creds[:subscription_id]
       @resource_group_name = resource_group_name
       @ag_name = ag_name
-      @application_gateway = Fog::ApplicationGateway::AzureRM.new(
-        tenant_id: credentials[:tenant_id],
-        client_id: credentials[:client_id],
-        client_secret: credentials[:client_secret],
-        subscription_id: credentials[:subscription]
-      )
+      @application_gateway = Fog::ApplicationGateway::AzureRM.new(creds)
       @gateway_attributes = {}
       @configurations = YAML.load_file(File.expand_path('../config/config.yml', __dir__))
     end

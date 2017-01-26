@@ -38,17 +38,19 @@ end
 
 subscription = dns_attributes['subscription']
 resource_group = node['platform-resource-group']
-tenant_id = dns_attributes['tenant_id']
-client_id = dns_attributes['client_id']
-client_secret = dns_attributes['client_secret']
-
-credentials = Utils.get_credentials(tenant_id, client_id, client_secret)
 
 zone_name = dns_attributes['zone']
 zone_name = zone_name.split('.').reverse.join('.').partition('.').last.split('.').reverse.join('.')
 zone_name = zone_name.tr('.', '-')
 
-public_ip = AzureDns::PublicIp.new(resource_group, credentials, subscription, zone_name)
+credentials = {
+    tenant_id: dns_attributes['tenant_id'],
+    client_secret: dns_attributes['client_secret'],
+    client_id: dns_attributes['client_id'],
+    subscription_id: subscription
+}
+
+public_ip = AzureDns::PublicIp.new(resource_group, credentials, zone_name)
 
 domain_name_label = public_ip.update_dns(node)
 node.set['domain_name_label'] = domain_name_label unless domain_name_label.nil?

@@ -3,8 +3,8 @@ module AzureCompute
   # Class for all things Availability Sets that we do in OneOps for Azure.
   # get, add, delete, etc.
   class AvailabilitySet
-    def initialize(compute_service)
-      @resource_client = Fog::Compute::AzureRM.new(client_id: compute_service[:client_id], client_secret: compute_service[:client_secret], tenant_id: compute_service[:tenant_id], subscription_id: compute_service[:subscription])
+    def initialize(creds)
+      @resource_client = Fog::Compute::AzureRM.new(creds)
     end
 
     # method will get the availability set using the resource group and

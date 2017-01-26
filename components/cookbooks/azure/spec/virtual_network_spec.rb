@@ -11,13 +11,13 @@ require ::File.expand_path('../../../azure_base/libraries/utils', __FILE__)
 describe AzureNetwork::VirtualNetwork do
   before :each do
     credentials = {
-      'tenant_id': '<TENANT_ID>',
-      'client_id': '<CLIENT_ID>',
-      'client_secret': '<CLIENT_SECRET>',
-      'subscription': '<SUBSCRIPTION_ID>',
+        tenant_id: '<TENANT_ID>',
+        client_secret: '<CLIENT_SECRET>',
+        client_id: '<CLIENT_ID>',
+        subscription_id: '<SUBSCRIPTION>'
     }
     @platform_resource_group = '<RESOURCE-GROUP-NAME>'
-    @azure_client = AzureNetwork::VirtualNetwork.new(credentials, credentials[:subscription])
+    @azure_client = AzureNetwork::VirtualNetwork.new(credentials)
     @azure_client.name = '<VNET-NAME>'
 
     @fog_vnetwork = Fog::Network::AzureRM::VirtualNetwork.new

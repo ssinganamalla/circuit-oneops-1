@@ -10,13 +10,8 @@ module AzureNetwork
 
     attr_accessor :azure_network_service
 
-    def initialize(tenant_id, client_id, client_secret, subscription_id)
-      @azure_network_service = Fog::Network::AzureRM.new(
-          tenant_id: tenant_id,
-          client_id: client_id,
-          client_secret: client_secret,
-          subscription_id: subscription_id
-      )
+    def initialize(creds)
+      @azure_network_service = Fog::Network::AzureRM.new(creds)
     end
 
     def get_subscription_load_balancers

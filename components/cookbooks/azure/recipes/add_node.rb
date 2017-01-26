@@ -20,8 +20,8 @@ compute_service =
 location = compute_service[:location]
 express_route_enabled = compute_service[:express_route_enabled]
 OOLog.info('Express Route is enabled: ' + express_route_enabled )
-subscription = compute_service[:subscription]
-OOLog.info("Subscription ID: #{subscription}")
+subscription_id = compute_service[:subscription]
+OOLog.info("Subscription ID: #{subscription_id}")
 ci_id = node['workorder']['rfcCi']['ciId']
 OOLog.info("ci_id: #{ci_id.to_s}")
 
@@ -61,12 +61,19 @@ OOLog.info('ip_type: ' + ip_type)
 # get the credentials needed to call Azure SDK
 creds = Utils.get_credentials(compute_service[:tenant_id], compute_service[:client_id], compute_service[:client_secret])
 
+credentials = {
+    tenant_id: compute_service[:tenant_id],
+    client_secret: compute_service[:client_secret],
+    client_id: compute_service[:client_id],
+    subscription_id: subscription_id
+}
+
 # must do this until all is refactored to use the util above.
 node.set['azureCredentials'] = creds
 
 # create the VM in the platform specific resource group and availability set
 client = ComputeManagementClient.new(creds)
-client.subscription_id = subscription
+client.subscription_id = subscription_id
 
 node.set['VM_exists'] = false
 #check whether the VM with given name exists already
@@ -97,7 +104,7 @@ end
 
 # get the storage profile
 begin
-  storageprofilecls = AzureCompute::StorageProfile.new(creds,subscription)
+  storageprofilecls = AzureCompute::StorageProfile.new(creds,subscription_id)
   storageprofilecls.location = location
   storageprofilecls.resource_group_name = resource_group_name
   storageprofile =
@@ -111,7 +118,7 @@ secgroup_name = node['workorder']['payLoad']['DependsOn'][0]['ciName']
 
 # invoke class to build the network profile
 begin
-  network_interface_cls = AzureNetwork::NetworkInterfaceCard.new(creds, subscription)
+  network_interface_cls = AzureNetwork::NetworkInterfaceCard.new(credentials)
   network_interface_cls.location = location
   network_interface_cls.rg_name = resource_group_name
   network_interface_cls.ci_id = ci_id
@@ -178,7 +185,7 @@ if ip_type == 'public'
     public_ip_name = Utils.get_component_name('publicip', ci_id)
     OOLog.info("public ip name: #{public_ip_name }")
 
-    pip = AzureNetwork::PublicIp.new(creds,subscription)
+    pip = AzureNetwork::PublicIp.new(credentials)
     publicip_details = pip.get(resource_group_name, public_ip_name)
     pubip_address = publicip_details.ip_address
     OOLog.info("public ip found: #{pubip_address}")
