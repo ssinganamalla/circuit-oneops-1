@@ -57,7 +57,7 @@ begin
   profile_name = 'trafficmanager-' + ns_path_parts[5]
   resource_group_name = get_traffic_manager_resource_group(resource_group_names, profile_name, dns_attributes)
 
-  traffic_manager_processor = TrafficManagers.new(resource_group_name, profile_name, dns_attributes)
+  traffic_manager_processor = TrafficManagers.new(resource_group_name, profile_name, credentials)
   traffic_manager = traffic_manager_processor.initialize_traffic_manager(dns_attributes, resource_group_names, ns_path_parts, gdns_attributes, listeners, subdomain)
   node.set[:entries] = traffic_manager_processor.entries
 
