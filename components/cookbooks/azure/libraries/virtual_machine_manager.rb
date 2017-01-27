@@ -49,7 +49,7 @@ module AzureCompute
       OOLog.info('Resource group name: ' + @resource_group_name)
 
       @ip_type = 'public'
-      @ip_type = 'private' if @express_route_enabled
+      @ip_type = 'private' if @express_route_enabled == 'true'
       OOLog.info('ip_type: ' + @ip_type)
 
 
@@ -165,10 +165,8 @@ module AzureCompute
         #   #Delete both osdisk and datadisk blob
         #   include_recipe "azure::del_blobs"
         #
-        # end
-
+        end
         OOLog.fatal("JUST MESSING AROUND :P")
-
       rescue MsRestAzure::AzureOperationError => e
         OOLog.fatal("Error deleting VM, resource group: #{node['platform-resource-group']}, VM name: #{node['server_name']}. Exception is=#{e.body.values[0]['message']}")
       rescue => ex

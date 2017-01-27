@@ -10,6 +10,9 @@ Utils.set_proxy(node['workorder']['payLoad']['OO_CLOUD_VARS'])
 # get platform resource group and availability set
 include_recipe 'azure::get_platform_rg_and_as'
 
+resource_group_name = node['platform-resource-group']
+OOLog.info('Resource group name: ' + resource_group_name)
+
 vm_manager = AzureCompute::VirtualMachineManager.new(node)
 compute_service = vm_manager.compute_service
 # get the credentials needed to call Azure SDK
@@ -54,7 +57,8 @@ if ip_type == 'public'
     public_ip_name = Utils.get_component_name('publicip', ci_id)
     OOLog.info("public ip name: #{public_ip_name }")
 
-    pip = AzureNetwork::PublicIp.new(creds,subscription)
+
+    pip = AzureNetwork::PublicIp.new(creds, compute_service[:subscription])
     publicip_details = pip.get(resource_group_name, public_ip_name)
     pubip_address = publicip_details.ip_address
     OOLog.info("public ip found: #{pubip_address}")
