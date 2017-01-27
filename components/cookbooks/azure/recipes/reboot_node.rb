@@ -6,12 +6,13 @@ Utils.set_proxy_from_env(node)
 
 cloud_name = node[:workorder][:cloud][:ciName]
 compute_service = node[:workorder][:services][:compute][cloud_name][:ciAttributes]
-credentials = Utils.get_credentials(compute_service[:tenant_id],
-                                    compute_service[:client_id],
-                                    compute_service[:client_secret])
-                                    
+credentials = {
+    tenant_id: compute_service[:tenant_id],
+    client_secret: compute_service[:client_secret],
+    client_id: compute_service[:client_id],
+    subscription_id: compute_service[:subscription]
+}
 location = compute_service[:location]
-subscription_id = compute_service[:subscription]
 
 ci = node[:workorder][:ci]
 vm_name = ci[:ciAttributes][:instance_name]
@@ -28,7 +29,7 @@ platform_ciID = node.workorder.box.ciId
 
 resource_group_name = AzureResources::ResourceGroup.get_name(org, assembly, platform_ciID, environment, location)
 begin
-  vm_svc = AzureCompute::VirtualMachine.new(credentials, subscription_id)
+  vm_svc = AzureCompute::VirtualMachine.new(credentials)
   vm_svc.restart(resource_group_name, vm_name)
   node.set['reboot_result'] = 'Success'
 rescue Exception => e
