@@ -17,9 +17,7 @@ module AzureCompute
         end_time = Time.now.to_i
         duration = end_time - start_time
       rescue RuntimeError => e
-        OOLog.info("Error getting VMs in resource group: #{resource_group_name}")
-        OOLog.info("Error Message: #{e.message}")
-        return []
+        OOLog.fatal("Error getting VMs in resource group: #{resource_group_name}. Error Message: #{e.message}")
       end
 
       OOLog.info("operation took #{duration} seconds")

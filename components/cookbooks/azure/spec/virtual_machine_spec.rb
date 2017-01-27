@@ -41,32 +41,32 @@ describe AzureCompute::VirtualMachine do
       expect(@virtual_machine.get_resource_group_vms('test-rg')).to eq([])
     end
 
-    it 'returns Fog-azure-rm servers object' do
+    it 'raises exception' do
       allow(@virtual_machine.compute_service).to receive(:servers).and_raise(RuntimeError.new)
-      expect(@virtual_machine.get_resource_group_vms('test-rg')).to eq([])
+      expect { @virtual_machine.get_resource_group_vms('test-rg') }.to raise_error('no backtrace')
     end
   end
 
   describe '# test get method' do
-    it 'returns Fog-azure-rm servers object' do
+    it 'returns Fog-azure-rm server object' do
       allow(@virtual_machine.compute_service).to receive_message_chain(:servers, :get).and_return(@server)
       expect(@virtual_machine.get('fog-test-rg', 'fog-test-server')).to eq(@server)
     end
 
-    it 'returns Fog-azure-rm servers object' do
+    it 'raises exception' do
       allow(@virtual_machine.compute_service).to receive(:servers).and_raise(RuntimeError.new)
       expect { @virtual_machine.get('fog-test-rg', 'fog-test-server') }.to raise_error('no backtrace')
     end
   end
 
   describe '# test start method' do
-    it 'returns Fog-azure-rm servers object' do
+    it 'returns true' do
       allow(@virtual_machine.compute_service).to receive_message_chain(:servers, :get).and_return(@server)
       allow(@server).to receive(:start).and_return(true)
       expect(@virtual_machine.start('fog-test-rg', 'fog-test-server')).to eq(true)
     end
 
-    it 'returns Fog-azure-rm servers object' do
+    it 'raises exception' do
       allow(@virtual_machine.compute_service).to receive_message_chain(:servers, :get).and_return(@server)
       allow(@server).to receive(:start).and_raise(RuntimeError.new)
       expect { @virtual_machine.start('fog-test-rg', 'fog-test-server') }.to raise_error('no backtrace')
@@ -74,13 +74,13 @@ describe AzureCompute::VirtualMachine do
   end
 
   describe '# test restart method' do
-    it 'returns Fog-azure-rm servers object' do
+    it 'returns true' do
       allow(@virtual_machine.compute_service).to receive_message_chain(:servers, :get).and_return(@server)
       allow(@server).to receive(:restart).and_return(true)
       expect(@virtual_machine.restart('fog-test-rg', 'fog-test-server')).to eq(true)
     end
 
-    it 'returns Fog-azure-rm servers object' do
+    it 'raises exception' do
       allow(@virtual_machine.compute_service).to receive_message_chain(:servers, :get).and_return(@server)
       allow(@server).to receive(:restart).and_raise(RuntimeError.new)
       expect { @virtual_machine.restart('fog-test-rg', 'fog-test-server') }.to raise_error('no backtrace')
@@ -88,13 +88,13 @@ describe AzureCompute::VirtualMachine do
   end
 
   describe '# test power_off method' do
-    it 'returns Fog-azure-rm servers object' do
+    it 'returns true' do
       allow(@virtual_machine.compute_service).to receive_message_chain(:servers, :get).and_return(@server)
       allow(@server).to receive(:power_off).and_return(true)
       expect(@virtual_machine.power_off('fog-test-rg', 'fog-test-server')).to eq(true)
     end
 
-    it 'returns Fog-azure-rm servers object' do
+    it 'raises exception' do
       allow(@virtual_machine.compute_service).to receive_message_chain(:servers, :get).and_return(@server)
       allow(@server).to receive(:power_off).and_raise(RuntimeError.new)
       expect { @virtual_machine.power_off('fog-test-rg', 'fog-test-server') }.to raise_error('no backtrace')
