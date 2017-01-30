@@ -1,6 +1,5 @@
 module AzureCompute
   class VirtualMachineManager
-
     attr_accessor :compute_service,
                   :initial_user,
                   :private_ip,
@@ -8,11 +7,10 @@ module AzureCompute
                   :compute_ci_id,
                   :token
 
-
     def initialize(node)
       @cloud_name = node['workorder']['cloud']['ciName']
       @compute_service =
-          node['workorder']['services']['compute'][@cloud_name]['ciAttributes']
+        node['workorder']['services']['compute'][@cloud_name]['ciAttributes']
       @keypair_service = node['workorder']['payLoad']['SecuredBy'].first
       @server_name = node['server_name']
       @resource_group_name = node['platform-resource-group']
@@ -45,14 +43,12 @@ module AzureCompute
       end
     end
 
-    def create_or_update_vm()
+    def create_or_update_vm
       OOLog.info('Resource group name: ' + @resource_group_name)
 
       @ip_type = 'public'
       @ip_type = 'private' if @express_route_enabled
       OOLog.info('ip_type: ' + @ip_type)
-
-
 
       @storage_profile = AzureCompute::StorageProfile.new(@creds)
       @storage_profile.resource_group_name = @resource_group_name
@@ -73,14 +69,14 @@ module AzureCompute
       vm_hash[:name] = @server_name
       vm_hash[:resource_group] = @resource_group_name
       vm_hash[:availability_set_id] =
-          @compute_client.availability_sets.get(@resource_group_name, @resource_group_name).id
+        @compute_client.availability_sets.get(@resource_group_name, @resource_group_name).id
       vm_hash[:location] = @compute_service[:location]
 
       # hardware profile values
       vm_hash[:vm_size] = @size_id
 
       # storage profile values
-      vm_hash[:storage_account_name] = @storage_profile.get_storage_account_name()
+      vm_hash[:storage_account_name] = @storage_profile.get_storage_account_name
       vm_hash[:publisher] = @imageID[0]
       vm_hash[:offer] = @imageID[1]
       vm_hash[:sku] = @imageID[2]
@@ -98,16 +94,15 @@ module AzureCompute
       vm_hash[:ssh_key_data] = @keypair_service[:ciAttributes][:public]
 
       # network profile values
-      vm_hash[:network_interface_card_id] = @network_profile.build_network_profile( @compute_service[:express_route_enabled],
-                                                                                    @compute_service[:resource_group],
-                                                                                    @compute_service[:network],
-                                                                                    @compute_service[:network_address].strip,
-                                                                                    (@compute_service[:subnet_address]).split(','),
-                                                                                    (@compute_service[:dns_ip]).split(','),
-                                                                                    @ip_type,
-                                                                                    @secgroup_name )
+      vm_hash[:network_interface_card_id] = @network_profile.build_network_profile(@compute_service[:express_route_enabled],
+                                                                                   @compute_service[:resource_group],
+                                                                                   @compute_service[:network],
+                                                                                   @compute_service[:network_address].strip,
+                                                                                   (@compute_service[:subnet_address]).split(','),
+                                                                                   (@compute_service[:dns_ip]).split(','),
+                                                                                   @ip_type,
+                                                                                   @secgroup_name)
 
-      puts "VM_HASH: #{vm_hash.inspect}"
       @private_ip = @network_profile.private_ip
       # create the virtual machine
       begin
@@ -122,7 +117,7 @@ module AzureCompute
       OOLog.info('Subscription id is: ' + @compute_service[:subscription])
       start_time = Time.now.to_i
       @ip_type = 'public'
-      @ip_type = 'private' if @express_route_enabled == true
+      @ip_type = 'private' if @express_route_enabled == 'true'
       OOLog.info('ip_type: ' + @ip_type)
       begin
         vm = @compute_client.servers.get(@resource_group_name, @server_name)
@@ -131,15 +126,13 @@ module AzureCompute
         else
           # retrive the vhd name from the VM properties and use it to delete the associated VHD in the later step.
           vhd_uri = vm.os_disk_vhd_uri
-          storage_account  = (vhd_uri.split(".").first).split("//").last
+          storage_account = vhd_uri.split('.').first.split('//').last
           datadisk_uri = nil
-          if vm.data_disks.count > 0
-            datadisk_uri = vm.data_disks[0].vhd_uri
-          end
+          datadisk_uri = vm.data_disks[0].vhd_uri if vm.data_disks.count > 0
           Chef::Log.info("Deleting Azure VM: '#{@server_name}'")
-          #delete the VM from the platform resource group
+          # delete the VM from the platform resource group
 
-          Chef::Log.info("VM is deleted") if vm.destroy
+          Chef::Log.info('VM is deleted') if vm.destroy
 
           return storage_account, vhd_uri, datadisk_uri
         end
@@ -152,7 +145,6 @@ module AzureCompute
         duration = end_time - start_time
         OOLog.info("Deleting VM took #{duration} seconds")
       end
-
     end
   end
 end
