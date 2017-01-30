@@ -30,18 +30,14 @@ module AzureBase
 
       OOLog.info("Service name is: #{service_name}")
 
-      @service =
-        node[:workorder][:services][service_name][cloud_name][:ciAttributes]
+      @service = node[:workorder][:services][service_name][cloud_name][:ciAttributes]
       @tenant = @service[:tenant_id]
       @client = @service[:client_id]
       @client_secret = @service[:client_secret]
 
       if @creds.nil?
-        OOLog.info("Creds do NOT exist, creating...")
-        token_provider =
-          MsRestAzure::ApplicationTokenProvider.new(@tenant,
-                                                    @client,
-                                                    @client_secret)
+        OOLog.info('Creds do NOT exist, creating...')
+        token_provider = MsRestAzure::ApplicationTokenProvider.new(@tenant, @client, @client_secret)
 
         OOLog.fatal('Azure Token Provider is nil') if token_provider.nil?
 
@@ -50,6 +46,5 @@ module AzureBase
         OOLog.info("Creds EXIST, no need to create.")
       end
     end
-
   end
 end
