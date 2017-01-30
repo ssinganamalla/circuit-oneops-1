@@ -16,13 +16,9 @@ module AzureNetwork
                   :network_client
     attr_reader :creds, :subscription
 
-    def initialize(creds, subscription)
+    def initialize(creds)
       @creds = creds
-      tenant_id = creds[:tenant_id]
-      client_secret = creds[:client_secret]
-      client_id = creds[:client_id]
-      @subscription = subscription
-      @network_client = Fog::Network::AzureRM.new(client_id: client_id, client_secret: client_secret, tenant_id: tenant_id, subscription_id: subscription)
+      @network_client = Fog::Network::AzureRM.new(creds)
     end
 
     # this method creates the vnet object that is later passed in to create
@@ -36,7 +32,7 @@ module AzureNetwork
         ns_list.push(dns_list.strip)
       end
 
-      subnet = AzureNetwork::Subnet.new(@creds, @subscription)
+      subnet = AzureNetwork::Subnet.new(@creds)
       subnet.sub_address = @sub_address
       subnet.name = @name
       sub_nets = subnet.build_subnet_object
@@ -62,7 +58,6 @@ module AzureNetwork
                                                            subnets: array_of_subnets,
                                                            dns_servers: virtual_network.dns_servers,
                                                            address_prefixes: virtual_network.address_prefixes)
-
       rescue MsRestAzure::AzureOperationError => e
         OOLog.fatal("Failed creating/updating vnet: #{@name} with exception #{e.body}")
       rescue => ex
@@ -138,6 +133,54 @@ module AzureNetwork
         OOLog.fatal("Error getting virtual network: #{@name} from resource group #{resource_group_name}.  Exception: #{ex.message}")
       end
       result
+    end
+
+    def get_subnet_with_available_ips(subnets, express_route_enabled)
+      subnets.each do |subnet|
+        OOLog.info('checking for ip availability in ' + subnet.name)
+        address_prefix = subnet.address_prefix
+
+        if express_route_enabled
+          total_num_of_ips_possible = (2**(32 - address_prefix.split('/').last.to_i)) - 5 # Broadcast(1)+Gateway(1)+azure express routes(3) = 5
+        else
+          total_num_of_ips_possible = (2**(32 - address_prefix.split('/').last.to_i)) - 2 # Broadcast(1)+Gateway(1)
+        end
+        OOLog.info("Total number of ips possible is: #{total_num_of_ips_possible}")
+
+        no_ips_inuse = subnet.ip_configurations_ids.nil? ? 0 : subnet.ip_configurations_ids.length
+        OOLog.info("Num of ips in use: #{no_ips_inuse}")
+
+        remaining_ips = total_num_of_ips_possible - no_ips_inuse
+        if remaining_ips.zero?
+          OOLog.info("No IP address remaining in the Subnet '#{subnet.name}'")
+          OOLog.info("Total number of subnets(subnet_name_list.count) = #{subnets.count}")
+          OOLog.info('checking the next subnet')
+          next # check the next subnet
+        else
+          return subnet
+        end
+      end
+
+      OOLog.fatal('***FAULT:FATAL=- No IP address available in any of the Subnets allocated. limit exceeded')
+    end
+
+    def add_gateway_subnet_to_vnet(virtual_network, gateway_subnet_address, gateway_subnet_name)
+      if virtual_network.subnets.count > 1
+
+        virtual_network.subnets.each do |subnet|
+          if subnet.name == gateway_subnet_name
+            OOLog.info('No need to add Gateway subnet. Gateway subnet already exist...')
+            return virtual_network
+          end
+        end
+      end
+
+      subnet = Fog::Network::AzureRM::Subnet.new
+      subnet.name = gateway_subnet_name
+      subnet.address_prefix = gateway_subnet_address
+
+      virtual_network.subnets.push(subnet)
+      virtual_network
     end
 
     private

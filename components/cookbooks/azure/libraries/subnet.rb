@@ -10,15 +10,8 @@ module AzureNetwork
     attr_accessor :sub_address, :name, :network_client
     attr_reader :creds, :subscription
 
-    def initialize(creds, subscription_id)
-      @creds = creds
-
-      tenant_id = creds[:tenant_id]
-      client_secret = creds[:client_secret]
-      client_id = creds[:client_id]
-      @subscription = subscription_id
-      @network_client = Fog::Network::AzureRM.new(client_id: client_id, client_secret: client_secret, tenant_id: tenant_id, subscription_id: subscription_id)
-
+    def initialize(creds)
+      @network_client = Fog::Network::AzureRM.new(creds)
     end
 
     # this builds an array of subnets to be used for creating a vnet.

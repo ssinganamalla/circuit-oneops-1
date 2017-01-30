@@ -6,8 +6,8 @@ include_recipe 'azure::get_platform_rg_and_as'
 
 # ==============================================================
 
-def create_publicip(credentials, subscription_id, location, resource_group_name)
-  pip_svc = AzureNetwork::PublicIp.new(credentials, subscription_id)
+def create_publicip(cred_hash, location, resource_group_name)
+  pip_svc = AzureNetwork::PublicIp.new(cred_hash)
   pip_svc.location = location
   public_ip_address = pip_svc.build_public_ip_object(node.workorder.rfcCi.ciId, 'lb_publicip')
   pip = pip_svc.create_update(resource_group_name, public_ip_address.name, public_ip_address)
@@ -269,45 +269,6 @@ def get_allow_rule_port(allow_rules)
   port
 end
 
-def get_nic_name(raw_nic_id)
-  # /subscriptions/subscription_id/resourceGroups/vnet_name/providers/Microsoft.Network/networkInterfaces/nic_name
-  nicnameParts = raw_nic_id.split('/')
-  # retrieve the last part
-  nic_name = nicnameParts.last
-
-  nic_name
-end
-
-def get_subnet_with_available_ips(subnets, express_route_enabled)
-  subnets.each do |subnet|
-    Chef::Log.info('checking for ip availability in ' + subnet.name)
-    address_prefix = subnet.address_prefix
-
-    if express_route_enabled == true
-      total_num_of_ips_possible = (2**(32 - address_prefix.split('/').last.to_i)) - 5 # Broadcast(1)+Gateway(1)+azure express routes(3) = 5
-    else
-      total_num_of_ips_possible = (2**(32 - address_prefix.split('/').last.to_i)) - 2 # Broadcast(1)+Gateway(1)
-    end
-    Chef::Log.info("Total number of ips possible is: #{total_num_of_ips_possible}")
-
-    no_ips_inuse = subnet.ip_configurations.nil? ? 0 : subnet.ip_configurations.length
-    Chef::Log.info("Num of ips in use: #{no_ips_inuse}")
-
-    remaining_ips = total_num_of_ips_possible - no_ips_inuse
-    if remaining_ips.zero?
-      Chef::Log.info("No IP address remaining in the Subnet '#{subnet.name}'")
-      Chef::Log.info("Total number of subnets(subnet_name_list.count) = #{subnets.count}")
-      Chef::Log.info('checking the next subnet')
-      next # check the next subnet
-    else
-      return subnet
-    end
-  end
-
-  Chef::Log.error('***FAULT:FATAL=- No IP address available in any of the Subnets allocated. limit exceeded')
-  exit 1
-end
-
 # ==============================================================
 # Variables
 
@@ -362,12 +323,13 @@ if xpress_route_enabled
   master_rg = lb_service[:ciAttributes][:resource_group]
 
   token = credentials.instance_variable_get(:@token_provider)
-  cred_hash = {
-      tenant_id: token.instance_variable_get(:@tenant_id),
-      client_secret: token.instance_variable_get(:@client_secret),
-      client_id: token.instance_variable_get(:@client_id)
+  creds = {
+      tenant_id: tenant_id,
+      client_secret: client_secret,
+      client_id: client_id,
+      subscription_id: subscription_id
   }
-  vnet_svc = AzureNetwork::VirtualNetwork.new(cred_hash, subscription_id)
+  vnet_svc = AzureNetwork::VirtualNetwork.new(creds)
   vnet_svc.name = vnet_name
   vnet = vnet_svc.get(master_rg)
 
@@ -376,11 +338,11 @@ if xpress_route_enabled
   OOLog.fatal("VNET '#{vnet_name}' does not have subnets") if vnet.subnets.count < 1
 
   subnets = vnet.subnets
-  subnet = get_subnet_with_available_ips(subnets, xpress_route_enabled)
+  subnet = vnet_svc.get_subnet_with_available_ips(subnets, xpress_route_enabled)
 
 else
   # Public IP Config
-  public_ip = create_publicip(credentials, subscription_id, location, resource_group_name)
+  public_ip = create_publicip(creds, location, resource_group_name)
   OOLog.info("PublicIP created. PIP: #{public_ip.name}")
 end
 
@@ -415,7 +377,7 @@ get_compute_nat_rules(frontend_ipconfig_id, nat_rules, compute_natrules)
 load_balancer = AzureNetwork::LoadBalancer.get_lb(resource_group_name, lb_name, location, frontend_ipconfigs, backend_address_pools, lb_rules, nat_rules, probes)
 
 # Create LB
-lb_svc = AzureNetwork::LoadBalancer.new(tenant_id, client_id, client_secret, subscription_id)
+lb_svc = AzureNetwork::LoadBalancer.new(creds)
 
 lb = nil
 begin
@@ -429,8 +391,8 @@ if lb.nil?
 elsif compute_natrules.empty?
   OOLog.info('No computes found for load balanced')
 else
-  vm_svc = AzureCompute::VirtualMachine.new(credentials, subscription_id)
-  nic_svc = AzureNetwork::NetworkInterfaceCard.new(credentials, subscription_id)
+  vm_svc = AzureCompute::VirtualMachine.new(creds)
+  nic_svc = AzureNetwork::NetworkInterfaceCard.new(creds)
   nic_svc.rg_name = resource_group_name
   nic_svc.location = location
 
@@ -444,8 +406,8 @@ else
       next # could not find VM. Nothing to be done; skipping
     else
       # the asumption is that each VM will have only one NIC
-      nic = vm.network_profile.network_interfaces[0]
-      nic_name = get_nic_name(nic.id)
+      nic_id = vm.network_interface_card_id
+      nic_name = nic_svc.get_nic_name(nic_id)
       # nic = nic_svc.get(resource_group_name, nic_name)
       nic = nic_svc.get(nic_name)
 
@@ -466,7 +428,7 @@ lbip = nil
 if xpress_route_enabled
   lbip = lb.frontend_ipconfigurations[0].private_ipaddress
 else
-  pip_svc = AzureNetwork::PublicIp.new(credentials, subscription_id)
+  pip_svc = AzureNetwork::PublicIp.new(creds)
   public_ip = pip_svc.get(resource_group_name, public_ip.name)
   lbip = public_ip.ip_address unless public_ip.nil?
 end

@@ -1,5 +1,4 @@
 require 'simplecov'
-require 'rest-client'
 SimpleCov.start
 require File.expand_path('../../libraries/traffic_managers.rb', __FILE__)
 require File.expand_path('../../libraries/model/traffic_manager.rb', __FILE__)
@@ -14,7 +13,7 @@ describe TrafficManagers do
       tenant_id: '<TENANT_ID>',
       client_id: 'CLIENT_ID',
       client_secret: 'CLIENT_SECRET',
-      subscription: 'SUBSCRIPTION_ID'
+      subscription_id: 'SUBSCRIPTION_ID'
     }
     resource_group_name = '<RG_NAME>'
     profile_name = '<PROFILE_NAME>'
@@ -84,6 +83,37 @@ describe TrafficManagers do
         .and_raise(MsRestAzure::AzureOperationError.new('Errors'))
 
       expect(@traffic_manager.get_profile).to eq(nil)
+    end
+  end
+
+  describe '#initialize_traffic_manager' do
+    it 'initializes traffic manager successfully' do
+      dns_attributes = {
+          tenant_id: '<TENANT_ID>',
+          client_id: '<CLIENT_ID>',
+          client_secret: '<CLIENT_SECRET>',
+          subscription: '<SUBSCRIPTION_ID>',
+          zone: 'dnszone.com'
+      }
+      resource_group_names = ['<RG_NAME>']
+      ns_path_parts = %w(confiz first-try env bom first-plt 1)
+      gdns_attributes = {
+          'ttl': '30',
+          'traffic_routing_method': 'Performance'
+      }
+      listeners = 'http [80]'
+      subdomain = 'en.first-try.Confiz'
+
+      allow(@traffic_manager).to receive(:get_public_ip_fqdns).and_return(['test.test.test.test'])
+      traffic_manager = @traffic_manager.initialize_traffic_manager(dns_attributes,resource_group_names,ns_path_parts, gdns_attributes, listeners, subdomain)
+      expect(traffic_manager.routing_method).to eq('Performance')
+      expect(traffic_manager.dns_config.ttl).to eq('30')
+      expect(traffic_manager.monitor_config.protocol).to eq('HTTP')
+      expect(traffic_manager.monitor_config.port).to eq('80')
+      expect(traffic_manager.monitor_config.path).to eq('/')
+      expect(traffic_manager.endpoints[0].name).to eq('endpoint_test_0')
+      expect(traffic_manager.profile_status).to eq('Enabled')
+      expect(traffic_manager.location).to eq('global')
     end
   end
 end

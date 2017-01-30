@@ -1,6 +1,5 @@
 require 'fog/azurerm'
 require 'chef'
-
 # TODO: add checks in each method for rg_name
 require File.expand_path('../../../azuresecgroup/libraries/network_security_group.rb', __FILE__)
 require ::File.expand_path('../../../azure_base/libraries/logger', __FILE__)
@@ -12,29 +11,19 @@ module AzureNetwork
     attr_accessor :location, :rg_name, :private_ip, :profile, :ci_id, :network_client, :publicip, :subnet_cls, :virtual_network, :nsg
     attr_reader :creds, :subscription
 
-    def initialize(credentials, subscription_id)
-      @creds = credentials
-      @subscription = subscription_id
-
-      token = credentials.instance_variable_get(:@token_provider)
-      cred_hash = {
-        tenant_id: token.instance_variable_get(:@tenant_id),
-        client_secret: token.instance_variable_get(:@client_secret),
-        client_id: token.instance_variable_get(:@client_id)
-      }
-
-      @network_client = Fog::Network::AzureRM.new(client_id: cred_hash[:client_id], client_secret: cred_hash[:client_secret], tenant_id: cred_hash[:tenant_id], subscription_id: subscription_id)
-      @publicip = AzureNetwork::PublicIp.new(credentials, subscription_id)
-      @subnet_cls = AzureNetwork::Subnet.new(cred_hash, subscription_id)
-      @virtual_network = AzureNetwork::VirtualNetwork.new(cred_hash, subscription_id)
-      @nsg = AzureNetwork::NetworkSecurityGroup.new(credentials, subscription_id)
+    def initialize(creds)
+      @network_client = Fog::Network::AzureRM.new(creds)
+      @publicip = AzureNetwork::PublicIp.new(creds)
+      @subnet_cls = AzureNetwork::Subnet.new(creds)
+      @virtual_network = AzureNetwork::VirtualNetwork.new(creds)
+      @nsg = AzureNetwork::NetworkSecurityGroup.new(creds)
     end
 
     # define the NIC's IP Config
     def define_nic_ip_config(ip_type, subnet)
       nic_ip_config = Fog::Network::AzureRM::FrontendIPConfiguration.new
-      nic_ip_config.subnet_id = subnet
-      nic_ip_config.private_ipallocation_method = Azure::ARM::Network::Models::IPAllocationMethod::Dynamic
+      nic_ip_config.subnet_id = subnet.id
+      nic_ip_config.private_ipallocation_method = Fog::ARM::Network::Models::IPAllocationMethod::Dynamic
 
       if ip_type == 'public'
         @publicip.location = @location
@@ -58,6 +47,8 @@ module AzureNetwork
       network_interface.name = Utils.get_component_name('nic', @ci_id)
       network_interface.ip_configuration_id = nic_ip_config.id
       network_interface.ip_configuration_name = nic_ip_config.name
+      network_interface.subnet_id = nic_ip_config.subnet_id
+      network_interface.public_ip_address_id = nic_ip_config.public_ipaddress_id
 
       OOLog.info("Network Interface name is: #{network_interface.name}")
       network_interface
@@ -90,6 +81,7 @@ module AzureNetwork
                                                              location: network_interface.location,
                                                              subnet_id: network_interface.subnet_id,
                                                              public_ip_address_id: network_interface.public_ip_address_id,
+                                                             network_security_group_id: network_interface.network_security_group_id,
                                                              ip_configuration_name: network_interface.ip_configuration_name,
                                                              private_ip_allocation_method: network_interface.private_ip_allocation_method,
                                                              load_balancer_backend_address_pools_ids: network_interface.load_balancer_backend_address_pools_ids,
@@ -99,7 +91,6 @@ module AzureNetwork
       rescue => ex
         OOLog.fatal("Error creating/updating NIC.  Exception: #{ex.message}")
       end
-
       end_time = Time.now.to_i
       duration = end_time - start_time
       puts("operation took #{duration} seconds")
@@ -155,10 +146,8 @@ module AzureNetwork
       network_interface = define_network_interface(nic_ip_config)
 
       # include the network securtiry group to the network interface
-
       network_security_group = @nsg.get(@rg_name, security_group_name)
       network_interface.network_security_group_id = network_security_group.id unless network_security_group.nil?
-      network_interface.subnet_id = subnet.id
       # create the nic
       nic = create_update(network_interface)
 
@@ -167,6 +156,14 @@ module AzureNetwork
       OOLog.info('Private IP is: ' + @private_ip)
 
       nic.id
+    end
+
+    def get_nic_name(raw_nic_id)
+      nicnameParts = raw_nic_id.split('/')
+      # retrieve the last part
+      nic_name = nicnameParts.last
+
+      nic_name
     end
   end
 end

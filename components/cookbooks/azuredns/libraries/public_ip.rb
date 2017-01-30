@@ -8,9 +8,9 @@ module AzureDns
   class PublicIp
     attr_accessor :pubip
 
-    def initialize(resource_group, credentials, subscription, zone_name)
+    def initialize(resource_group, creds, zone_name)
       @resource_group = resource_group
-      @pubip = AzureNetwork::PublicIp.new(credentials, subscription)
+      @pubip = AzureNetwork::PublicIp.new(creds)
       @zone_name = zone_name
     end
 

@@ -14,11 +14,13 @@ require ::File.expand_path('../../../azure_base/libraries/utils', __FILE__)
 
 describe AzureNetwork::NetworkInterfaceCard do
   before :each do
-    token_provider = MsRestAzure::ApplicationTokenProvider.new('<TENANT_ID>', '<CLIENT_ID>', 'CLIENT_SECRET')
-    credentials = MsRest::TokenCredentials.new(token_provider)
-
-    subscription = '<SUBSCRIPTION-ID>'
-    @azure_client = AzureNetwork::NetworkInterfaceCard.new(credentials, subscription)
+    credentials = {
+        tenant_id: '<TENANT_ID>',
+        client_secret: '<CLIENT_SECRET>',
+        client_id: '<CLIENT_ID>',
+        subscription_id: '<SUBSCRIPTION>'
+    }
+    @azure_client = AzureNetwork::NetworkInterfaceCard.new(credentials)
     @azure_client.rg_name = 'Resource-group'
     @azure_client.ci_id = 'ci-id'
 
@@ -190,5 +192,10 @@ describe AzureNetwork::NetworkInterfaceCard do
     end
   end
 
-
+  describe '#test get nic name' do
+    it 'creates nic name' do
+      nic_id = "/subscriptions/########-####-####-####-############/resourceGroups/Test-RG-NIC/providers/Microsoft.Network/networkInterfaces/Test-NIC"
+      expect(@azure_client.get_nic_name(nic_id)).to eq('Test-NIC')
+    end
+  end
 end
