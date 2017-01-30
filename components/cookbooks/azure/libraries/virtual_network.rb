@@ -163,7 +163,25 @@ module AzureNetwork
       end
 
       OOLog.fatal('***FAULT:FATAL=- No IP address available in any of the Subnets allocated. limit exceeded')
-      exit 1
+    end
+
+    def add_gateway_subnet_to_vnet(virtual_network, gateway_subnet_address, gateway_subnet_name)
+      if virtual_network.subnets.count > 1
+
+        virtual_network.subnets.each do |subnet|
+          if subnet.name == gateway_subnet_name
+            OOLog.info('No need to add Gateway subnet. Gateway subnet already exist...')
+            return virtual_network
+          end
+        end
+      end
+
+      subnet = Fog::Network::AzureRM::Subnet.new
+      subnet.name = gateway_subnet_name
+      subnet.address_prefix = gateway_subnet_address
+
+      virtual_network.subnets.push(subnet)
+      virtual_network
     end
 
     private
