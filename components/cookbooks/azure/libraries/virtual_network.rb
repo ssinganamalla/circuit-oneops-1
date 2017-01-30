@@ -58,7 +58,6 @@ module AzureNetwork
                                                            subnets: array_of_subnets,
                                                            dns_servers: virtual_network.dns_servers,
                                                            address_prefixes: virtual_network.address_prefixes)
-
       rescue MsRestAzure::AzureOperationError => e
         OOLog.fatal("Failed creating/updating vnet: #{@name} with exception #{e.body}")
       rescue => ex
