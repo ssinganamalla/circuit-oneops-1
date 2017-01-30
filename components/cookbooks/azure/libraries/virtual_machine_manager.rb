@@ -6,13 +6,13 @@ module AzureCompute
                   :private_ip,
                   :ip_type,
                   :compute_ci_id,
-                  :creds
+                  :resource_group_name,
+                  :server_name
 
 
     def initialize(node)
       @cloud_name = node['workorder']['cloud']['ciName']
-      @compute_service =
-          node['workorder']['services']['compute'][@cloud_name]['ciAttributes']
+      @compute_service = node['workorder']['services']['compute'][@cloud_name]['ciAttributes']
       @keypair_service = node['workorder']['payLoad']['SecuredBy'].first
       @server_name = node['server_name']
       @resource_group_name = node['platform-resource-group']
@@ -27,17 +27,16 @@ module AzureCompute
       @platform_ci_id = node['workorder']['box']['ciId']
       @compute_ci_id = node['workorder']['rfcCi']['ciId']
 
+      @creds = {
+        tenant_id: @compute_service[:tenant_id],
+        client_secret: @compute_service[:client_secret],
+        client_id: @compute_service[:client_id],
+        subscription_id: @compute_service[:subscription]
+      }
+
       @compute_client = Fog::Compute::AzureRM.new(@creds)
       @network_client = Fog::Network::AzureRM.new(@creds)
-    end
-
-    def check_vm_exists?
-      begin
-        exists = @compute_client.servers.check_vm_exists(@resource_group_name, @server_name)
-        OOLog.debug("VM Exists?: #{exists}")
-      rescue MsRestAzure::AzureOperationError => e
-        OOLog.debug("Error Body: #{e.body}")
-      end
+      @virtual_machine_lib = AzureCompute::VirtualMachine.new(@creds)
     end
 
     def create_or_update_vm()
@@ -46,8 +45,6 @@ module AzureCompute
       @ip_type = 'public'
       @ip_type = 'private' if @express_route_enabled == 'true'
       OOLog.info('ip_type: ' + @ip_type)
-
-
 
       @storage_profile = AzureCompute::StorageProfile.new(@creds)
       @storage_profile.resource_group_name = @resource_group_name
@@ -106,7 +103,7 @@ module AzureCompute
       @private_ip = @network_profile.private_ip
       # create the virtual machine
       begin
-        @compute_client.servers.create(vm_hash)
+        @virtual_machine_lib.create_update(vm_hash)
       rescue MsRestAzure::AzureOperationError => e
         OOLog.debug("Error Body: #{e.body}")
       end

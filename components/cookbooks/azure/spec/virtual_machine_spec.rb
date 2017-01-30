@@ -45,6 +45,71 @@ describe AzureCompute::VirtualMachine do
       allow(@virtual_machine.compute_service).to receive(:servers).and_raise(RuntimeError.new)
       expect { @virtual_machine.get_resource_group_vms('test-rg') }.to raise_error('no backtrace')
     end
+
+    it 'raises exception while getting resource_group_vms virtual machine' do
+      allow(@virtual_machine.compute_service).to receive(:servers)
+        .and_raise(MsRest::HttpOperationError.new('Error'))
+      expect { @virtual_machine.get_resource_group_vms('fog-test-rg') }.to raise_error('no backtrace')
+    end
+  end
+
+  describe '#check_vm_exists?' do
+    it 'returns true if virtual machine exists' do
+      allow(@virtual_machine.compute_service).to receive_message_chain(:servers, :check_vm_exists).and_return(true)
+      expect(@virtual_machine.check_vm_exists?('fog-test-rg', 'fog-test-server')).to eq(true)
+    end
+
+    it 'returns false if virtual machine does not exists' do
+      allow(@virtual_machine.compute_service).to receive_message_chain(:servers, :check_vm_exists).and_return(false)
+      expect(@virtual_machine.check_vm_exists?('fog-test-rg', 'fog-test-server')).to eq(false)
+    end
+
+    it 'raises exception' do
+      allow(@virtual_machine.compute_service).to receive_message_chain(:servers, :check_vm_exists)
+        .and_raise(MsRestAzure::AzureOperationError.new('Errors'))
+      expect { @virtual_machine.check_vm_exists?('fog-test-rg', 'fog-test-server') }.to raise_error('no backtrace')
+    end
+  end
+
+  describe '#create_update' do
+    it 'Create/Updates virtual machine successfully' do
+      vm_params = { name: 'server_name', resource_group: 'RG_name' }
+      allow(@virtual_machine.compute_service).to receive_message_chain(:servers, :create).and_return(@server)
+      expect(@virtual_machine.create_update(vm_params)).to eq(@server)
+    end
+
+    it 'raises RuntimeError exception while creating/updating virtual machine' do
+      vm_params = { name: 'server_name', resource_group: 'RG_name' }
+      allow(@virtual_machine.compute_service).to receive_message_chain(:servers, :create)
+        .and_raise(RuntimeError.new)
+      expect { @virtual_machine.create_update(vm_params) }.to raise_error('no backtrace')
+    end
+
+    it 'raises exception while creating/updating virtual machine' do
+      vm_params = { name: 'server_name', resource_group: 'RG_name' }
+      allow(@virtual_machine.compute_service).to receive_message_chain(:servers, :create)
+        .and_raise(MsRest::HttpOperationError.new('Error'))
+      expect { @virtual_machine.create_update(vm_params) }.to raise_error('no backtrace')
+    end
+  end
+
+  describe '#delete' do
+    it 'Deletes virtual machine successfully' do
+      allow(@virtual_machine.compute_service).to receive_message_chain(:servers, :get, :destroy).and_return(true)
+      expect(@virtual_machine.delete('fog-test-rg', 'fog-test-server')).to eq(true)
+    end
+
+    it 'raises RuntimeError exception while deleting virtual machine' do
+      allow(@virtual_machine.compute_service).to receive_message_chain(:servers, :get, :destroy)
+        .and_raise(RuntimeError.new)
+      expect { @virtual_machine.delete('fog-test-rg', 'fog-test-server') }.to raise_error('no backtrace')
+    end
+
+    it 'raises exception while deleting virtual machine' do
+      allow(@virtual_machine.compute_service).to receive_message_chain(:servers, :get, :destroy)
+        .and_raise(MsRest::HttpOperationError.new('Error'))
+      expect { @virtual_machine.delete('fog-test-rg', 'fog-test-server') }.to raise_error('no backtrace')
+    end
   end
 
   describe '# test get method' do
@@ -55,6 +120,12 @@ describe AzureCompute::VirtualMachine do
 
     it 'raises exception' do
       allow(@virtual_machine.compute_service).to receive(:servers).and_raise(RuntimeError.new)
+      expect { @virtual_machine.get('fog-test-rg', 'fog-test-server') }.to raise_error('no backtrace')
+    end
+
+    it 'raises exception while getting virtual machine' do
+      allow(@virtual_machine.compute_service).to receive_message_chain(:servers, :get)
+        .and_raise(MsRest::HttpOperationError.new('Error'))
       expect { @virtual_machine.get('fog-test-rg', 'fog-test-server') }.to raise_error('no backtrace')
     end
   end
@@ -71,6 +142,12 @@ describe AzureCompute::VirtualMachine do
       allow(@server).to receive(:start).and_raise(RuntimeError.new)
       expect { @virtual_machine.start('fog-test-rg', 'fog-test-server') }.to raise_error('no backtrace')
     end
+
+    it 'raises exception while starting virtual machine' do
+      allow(@virtual_machine.compute_service).to receive_message_chain(:servers, :get, :start)
+        .and_raise(MsRest::HttpOperationError.new('Error'))
+      expect { @virtual_machine.start('fog-test-rg', 'fog-test-server') }.to raise_error('no backtrace')
+    end
   end
 
   describe '# test restart method' do
@@ -85,6 +162,12 @@ describe AzureCompute::VirtualMachine do
       allow(@server).to receive(:restart).and_raise(RuntimeError.new)
       expect { @virtual_machine.restart('fog-test-rg', 'fog-test-server') }.to raise_error('no backtrace')
     end
+
+    it 'raises exception while restarting virtual machine' do
+      allow(@virtual_machine.compute_service).to receive_message_chain(:servers, :get, :restart)
+        .and_raise(MsRest::HttpOperationError.new('Error'))
+      expect { @virtual_machine.restart('fog-test-rg', 'fog-test-server') }.to raise_error('no backtrace')
+    end
   end
 
   describe '# test power_off method' do
@@ -97,6 +180,12 @@ describe AzureCompute::VirtualMachine do
     it 'raises exception' do
       allow(@virtual_machine.compute_service).to receive_message_chain(:servers, :get).and_return(@server)
       allow(@server).to receive(:power_off).and_raise(RuntimeError.new)
+      expect { @virtual_machine.power_off('fog-test-rg', 'fog-test-server') }.to raise_error('no backtrace')
+    end
+
+    it 'raises exception while power off virtual machine' do
+      allow(@virtual_machine.compute_service).to receive_message_chain(:servers, :get, :power_off)
+        .and_raise(MsRest::HttpOperationError.new('Error'))
       expect { @virtual_machine.power_off('fog-test-rg', 'fog-test-server') }.to raise_error('no backtrace')
     end
   end

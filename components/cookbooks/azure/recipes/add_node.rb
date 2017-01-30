@@ -8,9 +8,6 @@ Utils.set_proxy(node['workorder']['payLoad']['OO_CLOUD_VARS'])
 # get platform resource group and availability set
 include_recipe 'azure::get_platform_rg_and_as'
 
-resource_group_name = node['platform-resource-group']
-OOLog.info('Resource group name: ' + resource_group_name)
-
 vm_manager = AzureCompute::VirtualMachineManager.new(node)
 compute_service = vm_manager.compute_service
 
@@ -20,13 +17,12 @@ credentials = {
     client_id: compute_service[:client_id],
     subscription_id: compute_service[:subscription]
 }
-
-vm_manager.creds = credentials
 # must do this until all is refactored to use the util above.
 node.set['azureCredentials'] = credentials
 
 # check whether the VM with given name exists already
-node.set['VM_exists'] = vm_manager.check_vm_exists?
+virtual_machine_lib = AzureCompute::VirtualMachine.new(credentials)
+node.set['VM_exists'] = virtual_machine_lib.check_vm_exists?(vm_manager.resource_group_name, vm_manager.server_name)
 
 # create the vm
 vm_manager.create_or_update_vm
@@ -62,7 +58,7 @@ if ip_type == 'public'
     OOLog.info("public ip name: #{public_ip_name}")
 
     pip = AzureNetwork::PublicIp.new(credentials)
-    publicip_details = pip.get(resource_group_name, public_ip_name)
+    publicip_details = pip.get(vm_manager.resource_group_name, public_ip_name)
     pubip_address = publicip_details.ip_address
     OOLog.info("public ip found: #{pubip_address}")
     # set the public ip and dns record on stdout for the inductor
@@ -78,9 +74,6 @@ end
 
 include_recipe 'compute::ssh_port_wait'
 
-rfcCi = node['workorder']['rfcCi']
-nsPathParts = rfcCi['nsPath'].split("/")
-customer_domain = node['customer_domain']
 owner = node['workorder']['payLoad']['Assembly'][0]['ciAttributes']['owner'] || 'na'
 node.set['max_retry_count_add'] = 30
 
