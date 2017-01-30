@@ -1,4 +1,5 @@
 require File.expand_path('../../../azure_base/libraries/resource_group_manager.rb', __FILE__)
+require File.expand_path('../../../azure/libraries/virtual_machine.rb', __FILE__)
 require 'chef'
 require 'fog/azurerm'
 
@@ -9,7 +10,8 @@ class Datadisk
                 :instance_name,
                 :compute_client,
                 :storage_client,
-                :credentials
+                :credentials,
+                :virtual_machine_lib
 
   def initialize(creds, storage_account_name, rg_name_persistent_storage, instance_name, device_maps)
     @credentials = creds
@@ -18,6 +20,7 @@ class Datadisk
     @instance_name = instance_name
     @device_maps = device_maps
 
+    @virtual_machine_lib = AzureCompute::VirtualMachine.new(@credentials)
     @compute_client = Fog::Compute::AzureRM.new(@credentials)
     @storage_client = Fog::Storage::AzureRM.new(@credentials)
   end
@@ -54,7 +57,7 @@ class Datadisk
       dev_id = dev_vol.split(':')[4]
       component_name = dev_vol.split(":")[2]
       OOLog.info("slice_size :#{slice_size}, dev_id: #{dev_id}")
-      vm = get_vm_info
+      vm = @virtual_machine_lib.get(@rg_name, @instance_name)
 
       #Add a data disk
       flag = false
@@ -81,7 +84,7 @@ class Datadisk
     start_time = Time.now.to_i
     OOLog.info('Attaching Storage disk ....')
     begin
-      my_vm = @compute_client.servers.create(get_hash_from_object(vm))
+      @virtual_machine_lib.create_update(get_hash_from_object(vm))
     rescue MsRestAzure::AzureOperationError => e
       OOLog.debug(e.body.inspect)
       if e.body.to_s =~ /InvalidParameter/ && e.body.to_s =~ /already exists/
@@ -97,13 +100,6 @@ class Datadisk
     OOLog.info("Storage Disk attached #{duration} seconds")
     OOLog.info("VM: #{vm.name} UPDATED!!!")
     true
-  end
-
-  # Get the information about the VM
-  def get_vm_info
-    result = @compute_client.servers.get(@rg_name, @instance_name)
-    OOLog.info('vm info :' + result.inspect)
-    result
   end
 
   #Get storage account name to use
@@ -214,7 +210,7 @@ class Datadisk
 
   def detach
     i=1
-    vm = get_vm_info
+    vm = @virtual_machine_lib.get(@rg_name, @instance_name)
     @device_maps.each do |dev_vol|
       dev_id = dev_vol.split(':')[4]
       component_name = dev_vol.split(':')[2]
@@ -239,7 +235,7 @@ class Datadisk
   def update_vm_properties(vm)
     begin
       start_time = Time.now.to_i
-      my_vm = @compute_client.servers.create(get_hash_from_object(vm))
+      my_vm = @virtual_machine_lib.create_update(get_hash_from_object(vm))
       end_time = Time.now.to_i
       duration = end_time - start_time
       OOLog.info("Storage Disk detached #{duration} seconds")
