@@ -82,7 +82,6 @@ module AzureCompute
 
       # os profile values
       vm_hash[:username] = @initial_user
-      vm_hash[:password] = 'On3oP$'
       vm_hash[:disable_password_authentication] = true
       # vm_hash[:disable_password_authentication] = false
       vm_hash[:ssh_key_data] = @keypair_service[:ciAttributes][:public]
@@ -114,7 +113,7 @@ module AzureCompute
       @ip_type = 'private' if @express_route_enabled == 'true'
       OOLog.info('ip_type: ' + @ip_type)
       begin
-        vm = @compute_client.servers.get(@resource_group_name, @server_name)
+        vm = @virtual_machine_lib.get(@resource_group_name, @server_name)
         if vm.nil?
           Chef::Log.info("VM '#{@server_name}' was not found. Nothing to delete. ")
         else
@@ -126,7 +125,7 @@ module AzureCompute
           Chef::Log.info("Deleting Azure VM: '#{@server_name}'")
           # delete the VM from the platform resource group
 
-          Chef::Log.info('VM is deleted') if vm.destroy
+          Chef::Log.info('VM is deleted') if @virtual_machine_lib.delete(@resource_group_name, @server_name)
 
           return storage_account, vhd_uri, datadisk_uri
         end
