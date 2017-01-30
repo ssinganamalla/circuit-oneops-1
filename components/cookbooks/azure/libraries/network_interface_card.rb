@@ -165,5 +165,22 @@ module AzureNetwork
 
       nic_name
     end
+
+    def delete(resource_group_name, nic_name)
+      OOLog.info("Deleting NetworkInterfaceCard '#{nic_name}' from '#{resource_group_name}' ")
+      start_time = Time.now.to_i
+      begin
+        nic = @network_client.network_interfaces.get(resource_group_name, nic_name)
+        result = !nic.nil? ? nic.destroy : OOLog.info('AzureNetwork::NetworkInterfaceCard - 404 code, trying to delete something that is not there.')
+      rescue MsRestAzure::AzureOperationError => e
+        OOLog.fatal("Error deleting NetworkInterfaceCard '#{nic_name}' in ResourceGroup '#{resource_group_name}'. Exception: #{e.body}")
+      rescue => e
+        OOLog.fatal("Error deleting NetworkInterfaceCard '#{nic_name}' in ResourceGroup '#{resource_group_name}'. Exception: #{e.message}")
+      end
+      end_time = Time.now.to_i
+      duration = end_time - start_time
+      OOLog.info("operation took #{duration} seconds")
+      result
+    end
   end
 end
