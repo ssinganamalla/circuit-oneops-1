@@ -391,7 +391,7 @@ if lb.nil?
 elsif compute_natrules.empty?
   OOLog.info('No computes found for load balanced')
 else
-  vm_svc = AzureCompute::VirtualMachine.new(credentials, subscription_id)
+  vm_svc = AzureCompute::VirtualMachine.new(creds)
   nic_svc = AzureNetwork::NetworkInterfaceCard.new(creds)
   nic_svc.rg_name = resource_group_name
   nic_svc.location = location
@@ -406,8 +406,8 @@ else
       next # could not find VM. Nothing to be done; skipping
     else
       # the asumption is that each VM will have only one NIC
-      nic = vm.network_profile.network_interfaces[0]
-      nic_name = nic_svc.get_nic_name(nic.id)
+      nic_id = vm.network_interface_card_id
+      nic_name = nic_svc.get_nic_name(nic_id)
       # nic = nic_svc.get(resource_group_name, nic_name)
       nic = nic_svc.get(nic_name)
 
