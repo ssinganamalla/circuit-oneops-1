@@ -12,7 +12,6 @@ credentials = {
     subscription_id: compute_service[:subscription]
 }
 location = compute_service[:location]
-subscription_id = compute_service[:subscription]
 
 ci = node[:workorder][:ci]
 vm_name = ci[:ciAttributes][:instance_name]
