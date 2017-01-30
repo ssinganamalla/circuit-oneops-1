@@ -38,7 +38,7 @@ node['run_list'].each do |recipe|
     node.set['subscriptionid'] = compute_service['subscription']
     resource_group_name = generate_rg_name(org,assembly,platform,env,location)
     node.set['platform-resource-group'] = resource_group_name
-    true
+    return true
   end
 end
 

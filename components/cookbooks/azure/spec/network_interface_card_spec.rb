@@ -37,6 +37,7 @@ describe AzureNetwork::NetworkInterfaceCard do
         subnet_id:'some-id',
         private_ip_address: '1.1.1.1'
     )
+    @nic_name = 'nic-ci-id'
     @virtual_network_response = Fog::Network::AzureRM::VirtualNetwork.new(
       subnets: [],
       address_prefixes: "10.1.57.12"
@@ -55,12 +56,12 @@ describe AzureNetwork::NetworkInterfaceCard do
 
   describe '# test define_nic_ip_config functionality' do
     it 'builds desired config successfully without public ip scenario' do
-      expect(@azure_client.define_nic_ip_config('private', 'subnet-id')).to be_a Fog::Network::AzureRM::FrontendIPConfiguration
+      expect(@azure_client.define_nic_ip_config('private', @subnet_response)).to be_a Fog::Network::AzureRM::FrontendIPConfiguration
     end
 
     it 'builds desired config successfully with public ip scenario' do
       allow(@azure_client.publicip).to receive(:create_update).and_return(@public_ip_response)
-      expect(@azure_client.define_nic_ip_config('public', 'subnet-id')).to be_a Fog::Network::AzureRM::FrontendIPConfiguration
+      expect(@azure_client.define_nic_ip_config('public', @subnet_response)).to be_a Fog::Network::AzureRM::FrontendIPConfiguration
     end
   end
 
@@ -196,6 +197,27 @@ describe AzureNetwork::NetworkInterfaceCard do
     it 'creates nic name' do
       nic_id = "/subscriptions/########-####-####-####-############/resourceGroups/Test-RG-NIC/providers/Microsoft.Network/networkInterfaces/Test-NIC"
       expect(@azure_client.get_nic_name(nic_id)).to eq('Test-NIC')
+    end
+  end
+
+  describe '#test delete functionality' do
+    it 'successfull case of delete functionality' do
+      allow(@azure_client.network_client).to receive_message_chain(:network_interfaces, :get, :destroy).and_return(true)
+      delete_nic = @azure_client.delete(@platform_resource_group, @nic_name)
+
+      expect(delete_nic).to_not eq(false)
+    end
+
+    it 'raises AzureOperationError exception' do
+      allow(@azure_client.network_client).to receive_message_chain(:network_interfaces, :get, :destroy)
+                                                 .and_raise(MsRestAzure::AzureOperationError.new('Errors'))
+      expect { @azure_client.delete(@platform_resource_group, @nic_name) }.to raise_error('no backtrace')
+    end
+
+    it 'raises a generic exception' do
+      allow(@azure_client.network_client).to receive_message_chain(:network_interfaces, :get, :destroy)
+                                                 .and_raise(MsRest::HttpOperationError.new('Error'))
+      expect {  @azure_client.delete(@platform_resource_group, @nic_name) }.to raise_error('no backtrace')
     end
   end
 end
