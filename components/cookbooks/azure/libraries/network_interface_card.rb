@@ -22,7 +22,7 @@ module AzureNetwork
     # define the NIC's IP Config
     def define_nic_ip_config(ip_type, subnet)
       nic_ip_config = Fog::Network::AzureRM::FrontendIPConfiguration.new
-      nic_ip_config.subnet_id = subnet
+      nic_ip_config.subnet_id = subnet.id
       nic_ip_config.private_ipallocation_method = Fog::ARM::Network::Models::IPAllocationMethod::Dynamic
 
       if ip_type == 'public'
@@ -47,6 +47,8 @@ module AzureNetwork
       network_interface.name = Utils.get_component_name('nic', @ci_id)
       network_interface.ip_configuration_id = nic_ip_config.id
       network_interface.ip_configuration_name = nic_ip_config.name
+      network_interface.subnet_id = nic_ip_config.subnet_id
+      network_interface.public_ip_address_id = nic_ip_config.public_ipaddress_id
 
       OOLog.info("Network Interface name is: #{network_interface.name}")
       network_interface
@@ -79,6 +81,7 @@ module AzureNetwork
                                                              location: network_interface.location,
                                                              subnet_id: network_interface.subnet_id,
                                                              public_ip_address_id: network_interface.public_ip_address_id,
+                                                             network_security_group_id: network_interface.network_security_group_id,
                                                              ip_configuration_name: network_interface.ip_configuration_name,
                                                              private_ip_allocation_method: network_interface.private_ip_allocation_method,
                                                              load_balancer_backend_address_pools_ids: network_interface.load_balancer_backend_address_pools_ids,
@@ -88,7 +91,6 @@ module AzureNetwork
       rescue => ex
         OOLog.fatal("Error creating/updating NIC.  Exception: #{ex.message}")
       end
-
       end_time = Time.now.to_i
       duration = end_time - start_time
       puts("operation took #{duration} seconds")
@@ -146,7 +148,6 @@ module AzureNetwork
       # include the network securtiry group to the network interface
       network_security_group = @nsg.get(@rg_name, security_group_name)
       network_interface.network_security_group_id = network_security_group.id unless network_security_group.nil?
-      network_interface.subnet_id = subnet.id
       # create the nic
       nic = create_update(network_interface)
 
