@@ -6,7 +6,8 @@ module AzureCompute
                   :ip_type,
                   :compute_ci_id,
                   :resource_group_name,
-                  :server_name
+                  :server_name,
+                  :creds
 
     def initialize(node)
       @cloud_name = node['workorder']['cloud']['ciName']
