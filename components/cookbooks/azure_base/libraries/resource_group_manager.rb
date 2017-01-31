@@ -13,7 +13,8 @@ module AzureBase
                   :environment,
                   :platform_ci_id,
                   :location,
-                  :subscription
+                  :subscription,
+                  :resource_client
 
     def initialize(node)
       super(node)

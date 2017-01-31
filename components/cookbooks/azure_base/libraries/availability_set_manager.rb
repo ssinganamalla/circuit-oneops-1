@@ -6,7 +6,8 @@ require File.expand_path('../../libraries/utils.rb', __FILE__)
 module AzureBase
   # Add/Get/Delete operations of availability set
   class AvailabilitySetManager < AzureBase::ResourceGroupManager
-    attr_accessor :as_name
+    attr_accessor :as_name,
+                  :compute_client
 
     def initialize(node)
       super(node)

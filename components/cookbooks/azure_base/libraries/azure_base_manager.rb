@@ -43,7 +43,7 @@ module AzureBase
 
         @creds = MsRest::TokenCredentials.new(token_provider)
       else
-        OOLog.info("Creds EXIST, no need to create.")
+        OOLog.info('Creds EXIST, no need to create.')
       end
     end
   end
