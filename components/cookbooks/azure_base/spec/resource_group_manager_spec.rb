@@ -6,15 +6,28 @@ require 'chef'
 
 describe AzureBase::ResourceGroupManager do
   before do
-    workorder = File.read('../spec/node.json')
+    workorder = File.read('../azure_base/spec/node.json')
     workorder_hash = JSON.parse(workorder)
 
-    node = Chef::Node.new
-    node.normal = workorder_hash
+    @node = Chef::Node.new
+    @node.normal = workorder_hash
 
-    @resource_group_manager = AzureBase::ResourceGroupManager.new(node)
+    @resource_group_manager = AzureBase::ResourceGroupManager.new(@node)
 
     @resource_group_response = Fog::Resources::AzureRM::ResourceGroup.new(name: 'Confiz-first-try-113932-env-eus')
+  end
+
+  describe '#initialize' do
+    it 'creates resource group with location' do
+      expect(@resource_group_manager.location).to eq('eastus')
+    end
+
+    it 'creates resource group with region' do
+      @node.normal['app_name'] = 'fqdn'
+
+      resource_group_manager = AzureBase::ResourceGroupManager.new(@node)
+      expect(resource_group_manager.location).to eq('eastus')
+    end
   end
 
   describe '#exists?' do

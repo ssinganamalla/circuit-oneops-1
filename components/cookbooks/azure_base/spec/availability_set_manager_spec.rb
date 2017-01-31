@@ -6,7 +6,7 @@ require 'chef'
 
 describe AzureBase::AvailabilitySetManager do
   before do
-    workorder = File.read('../spec/node.json')
+    workorder = File.read('../azure_base/spec/node.json')
     workorder_hash = JSON.parse(workorder)
 
     node = Chef::Node.new
