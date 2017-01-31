@@ -17,7 +17,7 @@ require File.expand_path('../../../azure_base/libraries/utils', __FILE__)
 
 describe AzureCompute::VirtualMachineManager do
   before :each do
-    workorder = File.read('/home/Azure-Refactor/circuit-oneops-1/components/cookbooks/azure/spec/virtual_machine_manager_spec.json')
+    workorder = File.read('./spec/virtual_machine_manager_spec.json')
     workorder_hash = JSON.parse(workorder)
 
     node = Chef::Node.new
