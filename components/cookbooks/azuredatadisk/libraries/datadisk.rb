@@ -10,19 +10,17 @@ class Datadisk
                 :instance_name,
                 :compute_client,
                 :storage_client,
-                :credentials,
                 :virtual_machine_lib
 
   def initialize(creds, storage_account_name, rg_name_persistent_storage, instance_name, device_maps)
-    @credentials = creds
     @storage_account_name = storage_account_name
     @rg_name_persistent_storage = rg_name_persistent_storage
     @instance_name = instance_name
     @device_maps = device_maps
 
-    @virtual_machine_lib = AzureCompute::VirtualMachine.new(@credentials)
-    @compute_client = Fog::Compute::AzureRM.new(@credentials)
-    @storage_client = Fog::Storage::AzureRM.new(@credentials)
+    @virtual_machine_lib = AzureCompute::VirtualMachine.new(creds)
+    @compute_client = Fog::Compute::AzureRM.new(creds)
+    @storage_client = Fog::Storage::AzureRM.new(creds)
   end
 
   def create
@@ -57,11 +55,10 @@ class Datadisk
       dev_id = dev_vol.split(':')[4]
       component_name = dev_vol.split(":")[2]
       OOLog.info("slice_size :#{slice_size}, dev_id: #{dev_id}")
-      vm = @virtual_machine_lib.get(@rg_name, @instance_name)
+      vm = @virtual_machine_lib.get(@rg_name_persistent_storage, @instance_name)
 
       #Add a data disk
       flag = false
-      puts vm.data_disks
       (vm.data_disks).each do |disk|
         if disk.lun == i - 1
           flag = true
@@ -209,8 +206,8 @@ class Datadisk
   end
 
   def detach
-    i=1
-    vm = @virtual_machine_lib.get(@rg_name, @instance_name)
+    i = 1
+    vm = @virtual_machine_lib.get(@rg_name_persistent_storage, @instance_name)
     @device_maps.each do |dev_vol|
       dev_id = dev_vol.split(':')[4]
       component_name = dev_vol.split(':')[2]
@@ -224,7 +221,7 @@ class Datadisk
         end
       end
     end
-    if vm != nil
+    unless vm.nil?
       OOLog.info('updating VM with these properties' + vm.inspect)
       update_vm_properties(vm)
     end
