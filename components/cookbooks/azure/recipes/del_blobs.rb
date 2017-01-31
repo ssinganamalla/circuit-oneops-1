@@ -3,8 +3,8 @@ require 'azure'
 os_disk_blobname = (node['vhd_uri'].split("/").last)
 OOLog.info("Deleting os_disk : #{os_disk_blobname}")
 
-creds = AzureBase::AzureBaseManager.new(node_obj)
-dd_manager = Datadisk.new(creds, nil, nil, nil, nil)
+base_manager = AzureBase::AzureBaseManager.new(node_obj)
+dd_manager = Datadisk.new(base_manager.creds, nil, nil, nil, nil)
 dd_manager.delete_disk_by_name(os_disk_blobname)
 
 if node['datadisk_uri'] != nil

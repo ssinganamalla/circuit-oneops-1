@@ -14,7 +14,7 @@ module AzureCompute
         Fog::Compute::AzureRM.new(creds)
     end
 
-    def get_storage_account_name()
+    def get_storage_account_name
       # create storage account if needed
       begin
         storage_account_name = create_storage_account_name()
@@ -154,6 +154,7 @@ module AzureCompute
       rescue => ex
         OOLog.fatal("Error checking availability of #{storage_account_name}: #{ex.message}")
       end
+      response
     end
 
     def storage_account_created?(storage_account_name)
@@ -167,6 +168,7 @@ module AzureCompute
       rescue => ex
         OOLog.fatal("Error getting properties of #{storage_account_name}: #{ex.message}")
       end
+      response
     end
   end
 end

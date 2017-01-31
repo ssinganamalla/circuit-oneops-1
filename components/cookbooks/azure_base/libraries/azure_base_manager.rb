@@ -7,10 +7,6 @@ module AzureBase
   class AzureBaseManager
 
     attr_accessor :cloud_name,
-                  :service,
-                  :tenant,
-                  :client,
-                  :client_secret,
                   :creds
 
     def initialize(node)
@@ -31,7 +27,7 @@ module AzureBase
       OOLog.info("Service name is: #{service_name}")
 
       @service =
-        node[:workorder][:services][service_name][cloud_name][:ciAttributes]
+        node[:workorder][:services][service_name][@cloud_name][:ciAttributes]
 
       if @creds.nil?
         OOLog.info("Creds do NOT exist, creating...")
@@ -42,9 +38,9 @@ module AzureBase
             subscription_id: @service[:subscription]
         }
       else
-        OOLog.info("Creds EXIST, no need to create.")
+        OOLog.info('Creds EXIST, no need to create.')
+        puts 'Hell'
       end
     end
-
   end
 end

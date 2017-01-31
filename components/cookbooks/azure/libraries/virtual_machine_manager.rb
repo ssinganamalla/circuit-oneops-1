@@ -7,7 +7,11 @@ module AzureCompute
                   :compute_ci_id,
                   :resource_group_name,
                   :server_name,
-                  :creds
+                  :creds,
+                  :compute_client,
+                  :storage_profile,
+                  :network_profile,
+                  :virtual_machine_lib
 
     def initialize(node)
       @cloud_name = node['workorder']['cloud']['ciName']
@@ -36,6 +40,8 @@ module AzureCompute
       @compute_client = Fog::Compute::AzureRM.new(@creds)
       @network_client = Fog::Network::AzureRM.new(@creds)
       @virtual_machine_lib = AzureCompute::VirtualMachine.new(@creds)
+      @storage_profile = AzureCompute::StorageProfile.new(@creds)
+      @network_profile = AzureNetwork::NetworkInterfaceCard.new(@creds)
     end
 
     def create_or_update_vm
@@ -45,17 +51,14 @@ module AzureCompute
       @ip_type = 'private' if @express_route_enabled == 'true'
       OOLog.info('ip_type: ' + @ip_type)
 
-      @storage_profile = AzureCompute::StorageProfile.new(@creds)
       @storage_profile.resource_group_name = @resource_group_name
       @storage_profile.location = @location
       @storage_profile.size_id = @size_id
       @storage_profile.ci_id = @platform_ci_id
 
-      @network_profile = AzureNetwork::NetworkInterfaceCard.new(@creds)
       @network_profile.location = @location
       @network_profile.rg_name = @resource_group_name
       @network_profile.ci_id = @compute_ci_id
-
       # build hash containing vm info
       # used in Fog::Compute::AzureRM::create_virtual_machine()
       vm_hash = {}
@@ -77,7 +80,7 @@ module AzureCompute
       vm_hash[:sku] = @imageID[2]
       vm_hash[:version] = @imageID[3]
 
-      # @platform = 'linux' unless @platform =~ /windows/
+      @platform = 'linux' unless @platform =~ /windows/
 
       vm_hash[:platform] = @platform
 
@@ -103,6 +106,7 @@ module AzureCompute
         @virtual_machine_lib.create_update(vm_hash)
       rescue MsRestAzure::AzureOperationError => e
         OOLog.debug("Error Body: #{e.body}")
+        OOLog.fatal('Error creating/updating VM')
       end
     end
 
@@ -116,22 +120,21 @@ module AzureCompute
       begin
         vm = @virtual_machine_lib.get(@resource_group_name, @server_name)
         if vm.nil?
-          Chef::Log.info("VM '#{@server_name}' was not found. Nothing to delete. ")
+          OOLog.info("VM '#{@server_name}' was not found. Nothing to delete. ")
+          exit 1
         else
           # retrive the vhd name from the VM properties and use it to delete the associated VHD in the later step.
           vhd_uri = vm.os_disk_vhd_uri
-          storage_account = vhd_uri.split('.').first.split('//').last
+          storage_account = vm.storage_account_name
           datadisk_uri = nil
           datadisk_uri = vm.data_disks[0].vhd_uri if vm.data_disks.count > 0
-          Chef::Log.info("Deleting Azure VM: '#{@server_name}'")
+          OOLog.info("Deleting Azure VM: '#{@server_name}'")
           # delete the VM from the platform resource group
 
-          Chef::Log.info('VM is deleted') if @virtual_machine_lib.delete(@resource_group_name, @server_name)
-
-          return storage_account, vhd_uri, datadisk_uri
+          OOLog.info('VM is deleted') if @virtual_machine_lib.delete(@resource_group_name, @server_name)
         end
       rescue MsRestAzure::AzureOperationError => e
-        OOLog.fatal("Error deleting VM, resource group: #{@resource_group_name}, VM name: #{@server_name}. Exception is=#{e.body.values[0]['message']}")
+        OOLog.fatal("Error deleting VM, resource group: #{@resource_group_name}, VM name: #{@server_name}. Exception is=#{e.body}")
       rescue => ex
         OOLog.fatal("Error deleting VM, resource group: #{@resource_group_name}, VM name: #{@server_name}. Exception is=#{ex.message}")
       ensure
@@ -139,6 +142,7 @@ module AzureCompute
         duration = end_time - start_time
         OOLog.info("Deleting VM took #{duration} seconds")
       end
+      return storage_account, vhd_uri, datadisk_uri
     end
   end
 end

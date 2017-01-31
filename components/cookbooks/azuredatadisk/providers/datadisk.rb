@@ -23,7 +23,7 @@ action :detach do
 end
 
 def get_datadisk_params_from_node(node_obj)
-  creds = AzureBase::AzureBaseManager.new(node_obj)
+  base_manager = AzureBase::AzureBaseManager.new(node_obj)
   device_maps = nil
 
   if node_obj['device_map'] != nil
@@ -71,5 +71,5 @@ def get_datadisk_params_from_node(node_obj)
       # type code here
   end
 
-  return creds, storage_account_name, rg_name_persistent_storage, instance_name, device_maps
+  return base_manager.creds, storage_account_name, rg_name_persistent_storage, instance_name, device_maps
 end

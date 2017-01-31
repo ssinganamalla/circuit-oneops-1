@@ -1,6 +1,5 @@
 require 'fog/azurerm'
 require File.expand_path('../../libraries/azure_base_manager.rb', __FILE__)
-
 require File.expand_path('../../libraries/logger.rb', __FILE__)
 require File.expand_path('../../libraries/utils.rb', __FILE__)
 
@@ -14,7 +13,8 @@ module AzureBase
                   :environment,
                   :platform_ci_id,
                   :location,
-                  :subscription
+                  :subscription,
+                  :resource_client
 
     def initialize(node)
       super(node)
@@ -33,7 +33,7 @@ module AzureBase
       @subscription = @service[:subscription]
 
       @rg_name = get_name
-      @resource_client = Fog::Resources::AzureRM.new(client_id: @client, client_secret: @client_secret, tenant_id: @tenant, subscription_id: @subscription)
+      @resource_client = Fog::Resources::AzureRM.new(@creds)
     end
 
     # this method will create/update the resource group with the info passed in

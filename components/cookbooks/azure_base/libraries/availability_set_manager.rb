@@ -1,19 +1,19 @@
 require 'fog/azurerm'
 require File.expand_path('../../libraries/resource_group_manager.rb', __FILE__)
-
 require File.expand_path('../../libraries/logger.rb', __FILE__)
 require File.expand_path('../../libraries/utils.rb', __FILE__)
 
 module AzureBase
   # Add/Get/Delete operations of availability set
   class AvailabilitySetManager < AzureBase::ResourceGroupManager
-    attr_accessor :as_name
+    attr_accessor :as_name,
+                  :compute_client
 
     def initialize(node)
       super(node)
       # set availability set name same as resource group name
       @as_name = @rg_name
-      @compute_client = Fog::Compute::AzureRM.new(client_id: @client, client_secret: @client_secret, tenant_id: @tenant, subscription_id: @subscription)
+      @compute_client = Fog::Compute::AzureRM.new(@creds)
     end
 
     # method will get the availability set using the resource group and
@@ -45,8 +45,7 @@ module AzureBase
         OOLog.info("Availability Set #{@as_name} exists in the #{@location} region.")
       else
         # need to create the availability set
-        OOLog.info("Creating Availability Set
-                      '#{@as_name}' in #{@location} region")
+        OOLog.info("Creating Availability Set '#{@as_name}' in #{@location} region")
 
         begin
           @compute_client.availability_sets.create(resource_group: @rg_name, name: @as_name, location: @location)
