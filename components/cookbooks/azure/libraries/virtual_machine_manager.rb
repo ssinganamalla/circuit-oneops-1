@@ -24,7 +24,6 @@ module AzureCompute
       @express_route_enabled = @compute_service['express_route_enabled']
       @secgroup_name = node['workorder']['payLoad']['DependsOn'][0]['ciName']
       @imageID = node['image_id'].split(':')
-      @platform = node['platform']
       @size_id = node[:size_id]
       @ip_type = node['ip_type']
       @platform_ci_id = node['workorder']['box']['ciId']
@@ -80,9 +79,7 @@ module AzureCompute
       vm_hash[:sku] = @imageID[2]
       vm_hash[:version] = @imageID[3]
 
-      @platform = 'linux' unless @platform =~ /windows/
-
-      vm_hash[:platform] = @platform
+      vm_hash[:platform] = 'linux'
 
       # os profile values
       vm_hash[:username] = @initial_user

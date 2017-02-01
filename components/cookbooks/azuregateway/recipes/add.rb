@@ -48,7 +48,7 @@ def get_vnet(resource_group_name, vnet_name, virtual_network)
   vnet
 end
 
-def get_ag_service
+def get_ag_service(cloud_name)
   if !node.workorder.services['lb'].nil? && !node.workorder.services['lb'][cloud_name].nil?
     ag_service = node.workorder.services['lb'][cloud_name]
     return ag_service
@@ -57,7 +57,7 @@ def get_ag_service
   OOLog.fatal('missing application gateway service') if ag_service.nil?
 end
 
-def get_compute_service
+def get_compute_service(cloud_name)
   if !node.workorder.services['compute'].nil? && !node.workorder.services['compute'][cloud_name].nil?
     compute_service = node.workorder.services['compute'][cloud_name]
     return compute_service
@@ -83,9 +83,9 @@ def cookie_enabled?(ag_service)
 end
 
 cloud_name = node.workorder.cloud.ciName
-ag_service = get_ag_service
+ag_service = get_ag_service(cloud_name)
 
-compute_service = get_compute_service
+compute_service = get_compute_service(cloud_name)
 
 platform_name = node.workorder.box.ciName
 environment_name = node.workorder.payLoad.Environment[0]['ciName']
