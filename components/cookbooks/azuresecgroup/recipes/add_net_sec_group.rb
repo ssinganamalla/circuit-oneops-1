@@ -51,8 +51,8 @@ rules.each do |item|
                              Fog::ARM::Network::Models::SecurityRuleProtocol::Asterisk
                            end
   security_rule_provisioning_state = nil
-  security_rule_destination_addres_prefix = '0.0.0.0/0'
-  security_rule_source_port_range = item2[0].to_s
+  security_rule_destination_addres_prefix = '*'
+  security_rule_source_port_range = '*'
   security_rule_name = network_security_group_name + '-' + priority.to_s
   sec_rules << { name: security_rule_name, resource_group: resource_group_name, protocol: security_rule_protocol, network_security_group_name: network_security_group_name, source_port_range: security_rule_source_port_range, destination_port_range: security_rule_destination_port_range, source_address_prefix: security_rule_source_addres_prefix, destination_address_prefix: security_rule_destination_addres_prefix, access: security_rule_access, priority: security_rule_priority, direction: security_rule_direction }
   priority += 100
