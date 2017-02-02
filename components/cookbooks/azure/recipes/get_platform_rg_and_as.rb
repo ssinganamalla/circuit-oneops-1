@@ -17,9 +17,9 @@ def generate_rg_name(org, assembly, platform, environment, location)
 end
 
 OOLog.info('get_platform_rg_and_as.rb called from')
-OOLog.info(node['run_list'][0])
+OOLog.info(node.run_list[0])
 
-node['run_list'].each do |recipe|
+node.run_list.each do |recipe|
   if recipe == 'recipe[compute::status]' || recipe == 'recipe[compute::reboot]' || recipe == 'recipe[compute::powercycle]'
     ci = node['workorder']['ci']
     cloud_name = node['workorder']['cloud']['ciName']
