@@ -34,17 +34,21 @@ module AzureDns
 
     def get_existing_records_for_recordset(record_type, record_set_name)
       Chef::Log.info('AzureDns::RecordSet - Get existing records for RecordSet')
-      begin
-        record_set = @dns_client.record_sets.get(@dns_resource_group, record_set_name, @zone, record_type)
-        record_set unless record_set.nil?
+      record_set = nil
 
+      begin
+        record_set = @dns_client.record_sets.get(@dns_resource_group, record_set_name, @zone, record_type) if check_record_set_exists?(record_set_name, record_type)
       rescue MsRestAzure::AzureOperationError => e
         OOLog.fatal("Exception setting #{record_type} records for the record set: #{record_set_name}...: #{e.body}")
       rescue => e
         OOLog.fatal("AzureDns::RecordSet - Exception is: #{e.message}")
       end
-      Chef::Log.info('AzureDns::RecordSet - 404 code, record set does not exist. Returning empty array.')
-      []
+      if record_set.nil?
+        Chef::Log.info('AzureDns::RecordSet - 404 code, record set does not exist. Returning empty array.')
+        []
+      else
+        record_set
+      end
     end
 
     def set_records_on_record_set(record_set_name, records, record_type, ttl)
@@ -73,6 +77,14 @@ module AzureDns
         OOLog.fatal("Exception trying to remove #{record_type} records for the record set: #{record_set_name} ...: #{e.body}")
       rescue => e
         OOLog.fatal("AzureDns::RecordSet - Exception is: #{e.message}")
+      end
+    end
+
+    def check_record_set_exists?(record_set_name, record_type)
+      begin
+        @dns_client.record_sets.check_record_set_exists(@dns_resource_group, record_set_name, @zone, record_type)
+      rescue MsRestAzure::AzureOperationError => e
+        OOLog.fatal("Exception trying to check #{record_set_name}")
       end
     end
   end

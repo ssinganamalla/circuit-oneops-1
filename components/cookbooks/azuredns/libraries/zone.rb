@@ -34,7 +34,7 @@ module AzureDns
       rescue MsRestAzure::AzureOperationError => e
         OOLog.fatal("FATAL ERROR getting DNS Zone....: #{e.body}")
       rescue => e
-        false if e == 'ResourceNotFound'
+        return false if e == 'ResourceNotFound'
       end
       OOLog.info("AzureDns:Zone - Zone Exists in the Resource Group: #{@resource_group}. No need to create ")
       true
