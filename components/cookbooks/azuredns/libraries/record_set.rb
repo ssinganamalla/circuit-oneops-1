@@ -37,7 +37,7 @@ module AzureDns
       record_set = nil
 
       begin
-        record_set = @dns_client.record_sets.get(@dns_resource_group, record_set_name, @zone, record_type) if check_record_set_exists?(record_set_name, record_type)
+        record_set = @dns_client.record_sets.get(@dns_resource_group, record_set_name, @zone, record_type) if exists?(record_set_name, record_type)
       rescue MsRestAzure::AzureOperationError => e
         OOLog.fatal("Exception setting #{record_type} records for the record set: #{record_set_name}...: #{e.body}")
       rescue => e
@@ -80,7 +80,7 @@ module AzureDns
       end
     end
 
-    def check_record_set_exists?(record_set_name, record_type)
+    def exists?(record_set_name, record_type)
       begin
         @dns_client.record_sets.check_record_set_exists(@dns_resource_group, record_set_name, @zone, record_type)
       rescue MsRestAzure::AzureOperationError => e
