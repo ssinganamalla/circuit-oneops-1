@@ -30,14 +30,19 @@ module AzureDns
 
     def check_for_zone
       begin
-        @dns_client.zones.check_zone_exists?(@resource_group, @zone_name)
+        response = @dns_client.zones.check_zone_exists?(@resource_group, @zone_name)
       rescue MsRestAzure::AzureOperationError => e
         OOLog.fatal("FATAL ERROR getting DNS Zone....: #{e.body}")
       rescue => e
         return false if e == 'ResourceNotFound'
       end
-      OOLog.info("AzureDns:Zone - Zone Exists in the Resource Group: #{@resource_group}. No need to create ")
-      true
+
+      if response
+        OOLog.info("AzureDns:Zone - Zone Exists in the Resource Group: #{@resource_group}. No need to create ")
+        true
+      else
+        false
+      end
     end
 
     def create

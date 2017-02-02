@@ -34,7 +34,6 @@ module AzureDns
 
     def get_existing_records_for_recordset(record_type, record_set_name)
       Chef::Log.info('AzureDns::RecordSet - Get existing records for RecordSet')
-      record_set = nil
 
       begin
         record_set = @dns_client.record_sets.get(@dns_resource_group, record_set_name, @zone, record_type) if exists?(record_set_name, record_type)
@@ -47,7 +46,18 @@ module AzureDns
         Chef::Log.info('AzureDns::RecordSet - 404 code, record set does not exist. Returning empty array.')
         []
       else
-        record_set
+        records = []
+        if record_type == 'A'
+          record_set.a_records.each do |record|
+            records << record.ipv4address
+          end
+        elsif record_type == 'CNAME'
+          record_set.cname_records.each do |record|
+            records << record.cname
+          end
+        end
+
+        records
       end
     end
 
