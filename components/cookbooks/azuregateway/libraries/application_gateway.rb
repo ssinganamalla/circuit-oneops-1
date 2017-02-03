@@ -21,30 +21,6 @@ module AzureNetwork
       @configurations['gateway']['subscription_id'] % { subscription_id: @subscription_id, resource_group_name: @resource_group_name, ag_name: @ag_name, gateway_attribute: gateway_attribute, attribute_name: attribute_name }
     end
 
-    def get_private_ip_address(token)
-      resource_url = "https://management.azure.com/subscriptions/#{@subscription_id}/resourceGroups/#{@resource_group_name}/providers/Microsoft.Network/applicationGateways/#{@ag_name}?api-version=2016-03-30"
-      dns_response = RestClient.get(
-        resource_url,
-        accept: 'application/json',
-        content_type: 'application/json',
-        authorization: token
-      )
-      OOLog.info("Azuregateway::Application Gateway - API response is #{dns_response}")
-      dns_hash = JSON.parse(dns_response)
-      OOLog.info("Azuregateway::Application Gateway - #{dns_hash}")
-      dns_hash['properties']['frontendIPConfigurations'][0]['properties']['privateIPAddress']
-    rescue RestClient::Exception => e
-      if e.http_code == 404
-        OOLog.info('Azuregateway::Application Gateway doesn not exist')
-      else
-        OOLog.info("***FAULT:Body=#{e.http_body}")
-        OOLog.fatal("***FAULT:Message=#{e.message}")
-      end
-    rescue => e
-      OOLog.debug("Azuregateway::Add - Exception is: #{e.message}")
-      OOLog.fatal("Exception trying to parse response: #{dns_response}")
-    end
-
     def set_gateway_configuration(subnet)
       gateway_configuration = {
         name: @configurations['gateway']['gateway_config_name'],

@@ -31,14 +31,11 @@ plat_name = platform_name.gsub(/-/, '').downcase
 env_name = environment_name.gsub(/-/, '').downcase
 ag_name = "ag-#{plat_name}"
 cred_hash = {
-    tenant_id: ag_service[:ciAttributes][:tenant_id],
-    client_secret: ag_service[:ciAttributes][:client_secret],
-    client_id: ag_service[:ciAttributes][:client_id],
-    subscription_id: subscription_id
+  tenant_id: ag_service[:ciAttributes][:tenant_id],
+  client_secret: ag_service[:ciAttributes][:client_secret],
+  client_id: ag_service[:ciAttributes][:client_id],
+  subscription_id: subscription_id
 }
-tenant_id = ag_service[:ciAttributes][:tenant_id]
-client_id = ag_service[:ciAttributes][:client_id]
-client_secret = ag_service[:ciAttributes][:client_secret]
 
 OOLog.info("Cloud Name: #{cloud_name}")
 OOLog.info("Org: #{org_name}")
@@ -51,7 +48,6 @@ OOLog.info("Resource Group: #{resource_group_name}")
 OOLog.info("Application Gateway: #{ag_name}")
 
 begin
-  credentials = Utils.get_credentials(tenant_id, client_id, client_secret)
   application_gateway = AzureNetwork::Gateway.new(resource_group_name, ag_name, cred_hash)
 
   public_ip_name = Utils.get_component_name('ag_publicip', node.workorder.rfcCi.ciId)

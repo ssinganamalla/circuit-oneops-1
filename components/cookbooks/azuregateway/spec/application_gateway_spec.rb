@@ -23,33 +23,6 @@ describe AzureNetwork::Gateway do
     )
   end
 
-  describe '#get_private_ip_address' do
-    it 'verifies private ip address of Gateway.' do
-      file_path = File.expand_path('get_application_gateway_response.json', __dir__)
-      file = File.open(file_path)
-      dns_response = file.read
-      allow(RestClient).to receive(:get) { dns_response }
-
-      expect(@gateway.get_private_ip_address('<TOKEN>')).to eq('10.0.1.5')
-    end
-    it 'raises RestClient exception while getting private IP of Gateway' do
-      allow(RestClient).to receive(:get)
-        .and_raise(RestClient::Exception.new(nil))
-
-      expect { @gateway.get_private_ip_address('<TOKEN>') }.to raise_error('no backtrace')
-    end
-    it 'raises RestClient exception with error code 404 while getting api response' do
-      allow(RestClient).to receive(:get)
-        .and_raise(RestClient::Exception.new(nil, 404))
-
-      expect(@gateway.get_private_ip_address('<TOKEN>')).not_to eq(nil)
-    end
-    it 'raises exception while parsing invalid json response' do
-      allow(RestClient).to receive(:get) {}
-      expect { @gateway.get_private_ip_address('<TOKEN>') }.to raise_error('no backtrace')
-    end
-  end
-
   describe '#set_gateway_configuration' do
     it 'checks gateway configuration object name' do
       subnet = double
