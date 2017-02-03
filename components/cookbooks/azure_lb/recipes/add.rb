@@ -313,22 +313,21 @@ lb_name = "lb-#{plat_name}"
 #   # 6 - Inbound NAT rules
 #   # 7 - Create LB
 
-credentials = Utils.get_credentials(tenant_id, client_id, client_secret)
 public_ip = nil
 subnet = nil
+creds = {
+    tenant_id: tenant_id,
+    client_secret: client_secret,
+    client_id: client_id,
+    subscription_id: subscription_id
+}
+
 # Public IP
 if xpress_route_enabled
 
   vnet_name = lb_service[:ciAttributes][:network]
   master_rg = lb_service[:ciAttributes][:resource_group]
 
-  token = credentials.instance_variable_get(:@token_provider)
-  creds = {
-      tenant_id: tenant_id,
-      client_secret: client_secret,
-      client_id: client_id,
-      subscription_id: subscription_id
-  }
   vnet_svc = AzureNetwork::VirtualNetwork.new(creds)
   vnet_svc.name = vnet_name
   vnet = vnet_svc.get(master_rg)
