@@ -47,6 +47,10 @@ when /azure_lb/
 
     include_recipe "azure_lb::delete"
 
+when /azuregateway/
+
+    include_recipe "azuregateway::delete"
+
 when /f5-bigip/
 
    include_recipe "f5-bigip::f5_delete_lbvserver"

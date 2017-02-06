@@ -144,8 +144,7 @@ ruby_block 'lvremove storage' do
             Chef::Log.info("out: #{out}")
             if $? != 0 #No more volumes, disk can be detached.
                Chef::Log.info("There is no more volumes on the disk, so disk can be detached.")
-               dd_manager = Datadisk.new(node) # using azuredatadisk library to detach, recipes cannot be called from the ruby block
-               dd_manager.detach()                       
+               include_recipe 'azuredatadisk::detach'
             end              
           else
             volume = provider.volumes.get  vol_id
