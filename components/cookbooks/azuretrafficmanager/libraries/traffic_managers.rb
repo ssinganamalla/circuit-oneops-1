@@ -9,7 +9,6 @@ class TrafficManagers
   attr_accessor :entries
 
   def initialize(resource_group, profile_name, cred_hash)
-    raise ArgumentError, 'resource_group is nil' if resource_group.nil?
     raise ArgumentError, 'profile_name is nil' if profile_name.nil?
 
     @resource_group_name = resource_group
@@ -66,7 +65,7 @@ class TrafficManagers
     endpoints = initialize_endpoints(get_public_ip_fqdns(dns_attributes, resource_group_names, ns_path_parts))
     dns_config = initialize_dns_config(dns_attributes, gdns_attributes, subdomain)
     monitor_config = initialize_monitor_config(listeners)
-    traffic_routing_method = gdns_attributes[:traffic_routing_method]
+    traffic_routing_method = gdns_attributes['traffic-routing-method']
     TrafficManager.new(traffic_routing_method, dns_config, monitor_config, endpoints)
   end
 

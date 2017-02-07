@@ -16,8 +16,8 @@ module AzureDns
 
     def update_dns(node)
       domain_name_label = nil
-      update_dns_for_os node if node['app_name'] == 'os'
-      update_dns_for_fqdn node if node['app_name'] == 'fqdn'
+      domain_name_label = update_dns_for_os(node).domain_name_label if node['app_name'] == 'os'
+      domain_name_label = update_dns_for_fqdn(node).domain_name_label if node['app_name'] == 'fqdn'
       domain_name_label = update_dns_for_lb node if node['app_name'] == 'lb'
       domain_name_label
     end
@@ -82,7 +82,7 @@ module AzureDns
             pip = @pubip.get(@resource_group, public_ip_name)
             pip.domain_name_label = new_dns_settings.domain_name_label
             ## update the public ip with the new dns settings
-            @pubip.create_update(@resource_group, public_ip_name, pip)
+            return @pubip.create_update(@resource_group, public_ip_name, pip)
           end
         end
       elsif availability == 'redundant'
@@ -99,6 +99,7 @@ module AzureDns
               cloud_id = node['workorder']['rfcCi']['ciName'].split('-', 2).last
               subdomain = node['workorder']['payLoad']['Environment'][0]['ciAttributes']['subdomain']
               new_dns_settings.domain_name_label = Utils.get_dns_domain_label('lb', cloud_id, instance, subdomain) + '-' + @zone_name
+
               if new_dns_settings.domain_name_label.length >= 61
                 new_dns_settings.domain_name_label = new_dns_settings.domain_name_label.slice!(0, 60)
                 new_dns_settings.domain_name_label.chomp!('-') if new_dns_settings.domain_name_label[59] == '-'
@@ -117,7 +118,7 @@ module AzureDns
             pip.domain_name_label = new_dns_settings.domain_name_label
             Chef::Log.info('updating domain label: ' + new_dns_settings.domain_name_label)
             # update the public ip with the new dns settings
-            @pubip.create_update(@resource_group, public_ip_name, pip)
+            return @pubip.create_update(@resource_group, public_ip_name, pip)
           end
         end
       end
