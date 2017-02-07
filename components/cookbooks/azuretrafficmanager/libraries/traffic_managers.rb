@@ -66,7 +66,7 @@ class TrafficManagers
     endpoints = initialize_endpoints(get_public_ip_fqdns(dns_attributes, resource_group_names, ns_path_parts))
     dns_config = initialize_dns_config(dns_attributes, gdns_attributes, subdomain)
     monitor_config = initialize_monitor_config(listeners)
-    traffic_routing_method = gdns_attributes[:traffic_routing_method]
+    traffic_routing_method = gdns_attributes['traffic-routing-method']
     TrafficManager.new(traffic_routing_method, dns_config, monitor_config, endpoints)
   end
 

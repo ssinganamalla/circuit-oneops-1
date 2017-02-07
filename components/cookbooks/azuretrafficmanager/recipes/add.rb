@@ -25,9 +25,9 @@ def get_resource_group_names
   resource_group_names
 end
 
-def get_traffic_manager_resource_group(resource_group_names, profile_name, dns_attributes)
+def get_traffic_manager_resource_group(resource_group_names, profile_name, credentials)
   resource_group_names.each do |resource_group_name|
-    traffic_manager_processor = TrafficManagers.new(resource_group_name, profile_name, dns_attributes)
+    traffic_manager_processor = TrafficManagers.new(resource_group_name, profile_name, credentials)
     Chef::Log.info('Checking traffic manager FQDN set in resource group: ' + resource_group_name)
     profile = traffic_manager_processor.get_profile
     return resource_group_name unless profile.nil?
@@ -55,7 +55,7 @@ credentials = {
 begin
   resource_group_names = get_resource_group_names
   profile_name = 'trafficmanager-' + ns_path_parts[5]
-  resource_group_name = get_traffic_manager_resource_group(resource_group_names, profile_name, dns_attributes)
+  resource_group_name = get_traffic_manager_resource_group(resource_group_names, profile_name, credentials)
 
   traffic_manager_processor = TrafficManagers.new(resource_group_name, profile_name, credentials)
   traffic_manager = traffic_manager_processor.initialize_traffic_manager(dns_attributes, resource_group_names, ns_path_parts, gdns_attributes, listeners, subdomain)
