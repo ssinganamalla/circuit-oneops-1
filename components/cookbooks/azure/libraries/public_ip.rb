@@ -72,7 +72,7 @@ module AzureNetwork
       @location = public_ip_address.location
       start_time = Time.now.to_i
       begin
-        response = @network_client.public_ips.create(name: public_ip_name, resource_group: resource_group_name, location: @location, public_ip_allocation_method: public_ip_address.public_ip_allocation_method, domain_name_label: public_ip_address.domain_name_label)
+        response = @network_client.public_ips.create(name: public_ip_name, resource_group: resource_group_name, location: @location, public_ip_allocation_method: public_ip_address.public_ip_allocation_method, domain_name_label: public_ip_address.domain_name_label, idle_timeout_in_minutes: public_ip_address.idle_timeout_in_minutes)
       rescue MsRestAzure::AzureOperationError => ex
         OOLog.fatal("Exception trying to create/update public ip #{public_ip_address.name} from resource group: #{resource_group_name}.  Exception: #{ex.body}")
       rescue => e
