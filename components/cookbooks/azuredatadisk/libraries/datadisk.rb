@@ -21,6 +21,18 @@ class Datadisk
     @virtual_machine_lib = AzureCompute::VirtualMachine.new(creds)
     @compute_client = Fog::Compute::AzureRM.new(creds)
     @storage_client = Fog::Storage::AzureRM.new(creds)
+    storage_access_key = get_storage_access_key
+
+    credentials = {
+      tenant_id: creds['tenant_id'],
+      client_id: creds['client_id'],
+      client_secret: creds['client_secret'],
+      subscription_id: creds['subscription_id'],
+      azure_storage_account_name: @storage_account_name,
+      azure_storage_access_key: storage_access_key
+    }
+
+    @storage_client = Fog::Storage::AzureRM.new(credentials)
   end
 
   def create
