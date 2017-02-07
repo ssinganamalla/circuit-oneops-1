@@ -9,7 +9,6 @@ class TrafficManagers
   attr_accessor :entries
 
   def initialize(resource_group, profile_name, cred_hash)
-    raise ArgumentError, 'resource_group is nil' if resource_group.nil?
     raise ArgumentError, 'profile_name is nil' if profile_name.nil?
 
     @resource_group_name = resource_group
