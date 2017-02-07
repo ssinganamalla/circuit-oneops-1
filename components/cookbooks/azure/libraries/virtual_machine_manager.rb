@@ -84,9 +84,13 @@ module AzureCompute
 
       # os profile values
       vm_hash[:username] = @initial_user
-      vm_hash[:disable_password_authentication] = true
-      # vm_hash[:disable_password_authentication] = false
-      vm_hash[:ssh_key_data] = @keypair_service[:ciAttributes][:public]
+
+      if @compute_service[:ostype].include?('windows')
+        vm_hash[:password] = 'On3oP$'
+      else
+        vm_hash[:disable_password_authentication] = true
+        vm_hash[:ssh_key_data] = @keypair_service[:ciAttributes][:public]
+      end
 
       # network profile values
       vm_hash[:network_interface_card_id] = @network_profile.build_network_profile(@compute_service[:express_route_enabled],
