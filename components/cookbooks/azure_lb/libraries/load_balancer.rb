@@ -62,8 +62,7 @@ module AzureNetwork
         OOLog.info("Error Code: #{e.body['error']['code']}")
         OOLog.info("Error Message: #{e.body['error']['message']}")
 
-        result = Fog::Network::AzureRM::LoadBalancer.new(service: @azure_network_service)
-        return result
+        return nil
       end
       OOLog.info("operation took #{duration} seconds")
       result
@@ -91,7 +90,7 @@ module AzureNetwork
       begin
         OOLog.info("Deleting load balancer '#{load_balancer_name}' from '#{resource_group_name}' ")
         start_time = Time.now.to_i
-        result = @azure_network_service.load_balancers.delete(resource_group_name, load_balancer_name)
+        result = @azure_network_service.load_balancers.get(resource_group_name, load_balancer_name).destroy
         end_time = Time.now.to_i
         duration = end_time - start_time
       rescue  MsRestAzure::AzureOperationError => e
