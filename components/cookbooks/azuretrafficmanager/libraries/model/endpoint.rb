@@ -5,7 +5,7 @@ class EndPoint
     DISABLED = 'Disabled'.freeze
   end
 
-  TYPE = 'Microsoft.Network/trafficManagerProfiles/externalEndpoints'.freeze
+  TYPE = 'externalEndpoints'.freeze
 
   def initialize(name, target, location)
     raise ArgumentError, 'name is nil' if name.nil?
