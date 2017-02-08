@@ -15,8 +15,8 @@ describe Datadisk do
     storage_account_name = 'Storage_account_name'
     rg_name_persistent_storage = 'RG_Name'
     instance_name = 'Test_Datadisk'
-    device_maps = ['Temp:RG_Name:storage_account_name:RG_Name1:storage_account_name1']
-    @datadisk = Datadisk.new(creds, storage_account_name, rg_name_persistent_storage, instance_name, device_maps)
+    @device_maps = ['Temp:RG_Name:storage_account_name:10:storage_account_name1']
+    @datadisk = Datadisk.new(creds, storage_account_name, rg_name_persistent_storage, instance_name, @device_maps)
     @datadisk_response = Fog::Storage::AzureRM::DataDisk.new
     @vm_response = Fog::Compute::AzureRM::Server.new(
         name: 'fog-test-server',
@@ -36,12 +36,11 @@ describe Datadisk do
         data_disks: [@datadisk_response]
     )
   end
-
   describe '#create' do
     it 'creates datadisk successfully' do
       allow(@datadisk).to receive(:check_blob_exist).and_return(false)
-      allow(@datadisk.storage_client).to receive(:create_page_blob).and_return(true)
-      expect(@datadisk.create).to eq(true)
+      allow(@datadisk.storage_client).to receive(:create_disk).and_return(true)
+      expect(@datadisk.create).to eq(@device_maps)
     end
     it 'raises error if datadisk already exist' do
       allow(@datadisk).to receive(:check_blob_exist).and_return(true)
@@ -50,7 +49,7 @@ describe Datadisk do
     it 'raises AzureOperationError exception while creating datadisk' do
       exception = MsRestAzure::AzureOperationError.new('Errors')
       allow(@datadisk).to receive(:check_blob_exist).and_return(false)
-      allow(@datadisk.storage_client).to receive(:create_page_blob)
+      allow(@datadisk.storage_client).to receive(:create_disk)
         .and_raise(exception)
       expect { @datadisk.create }.to raise_error('no backtrace')
     end
@@ -59,70 +58,18 @@ describe Datadisk do
   describe '#attach' do
     it 'attach datadisks to a VM successfully' do
       allow(@datadisk.virtual_machine_lib).to receive(:get).and_return(@vm_response)
-      allow(@datadisk).to receive(:attach_disk_to_vm).and_return(true)
+      allow(@vm_response).to receive(:attach_data_disk).and_return(true)
       expect(@datadisk.attach).to eq('storage_account_name1')
     end
     it 'attach datadisks to a VM if flag is true' do
       custom_vm = @vm_response
       custom_vm.data_disks[0].lun = 0
       allow(@datadisk.virtual_machine_lib).to receive(:get).and_return(@vm_response)
-      allow(@datadisk).to receive(:attach_disk_to_vm).and_return(true)
+      allow(@vm_response).to receive(:attach_data_disk).and_return(true)
       expect(@datadisk.attach).to eq('storage_account_name1')
     end
   end
 
-  describe '#attach_disk_to_vm' do
-    it 'attach datadisks to a VM successfully' do
-      allow(@datadisk.virtual_machine_lib).to receive(:create_update).and_return(@vm_response)
-      expect(@datadisk.attach_disk_to_vm(@vm_response)).to eq(true)
-    end
-    it 'raises AzureOperationError exception while attaching datadisks' do
-      vm = double
-      allow(@datadisk.virtual_machine_lib).to receive(:create_update)
-        .and_raise(MsRestAzure::AzureOperationError.new('Errors'))
-      expect { @datadisk.attach_disk_to_vm(vm) }.to raise_error('no backtrace')
-    end
-    it 'raises AzureOperationError exception while attaching datadisks' do
-      exception = MsRestAzure::AzureOperationError.new('Errors')
-      allow(exception).to receive(:body) { 'InvalidParameter already exists' }
-      vm = double
-      allow(vm).to receive(:name) { 'test_vm' }
-      allow(@datadisk.virtual_machine_lib).to receive(:create_update)
-        .and_raise(exception)
-      expect(@datadisk.attach_disk_to_vm(vm)).to eq(true)
-    end
-    it 'raises exception while attaching datadisk' do
-      vm = double
-      allow(@datadisk.compute_client).to receive_message_chain(:servers, :create)
-        .and_raise(MsRest::HttpOperationError.new('Error'))
-      expect { @datadisk.attach_disk_to_vm(vm) }.to raise_error('no backtrace')
-    end
-  end
-
-  describe '#get_storage_account_name' do
-    it 'get storage account name of VM successfully' do
-      vm = double
-      allow(vm).to receive(:os_disk_vhd_uri) { 'https://fog_test.blob.core.windows.net/vhds/test.vhd' }
-      expect(@datadisk.get_storage_account_name(vm)).to eq('fog_test')
-    end
-  end
-
-  describe '#build_storage_profile' do
-    it 'builds storage profile successfully' do
-      allow(@datadisk).to receive(:check_blob_exist).and_return(true)
-      data_disk = @datadisk.build_storage_profile(112233, 'component_name', 50, '/vhds/test.vhd')
-      expect(data_disk.name).to eq('component_name-datadisk-test.vhd')
-      expect(data_disk.disk_size_gb).to eq(50)
-      expect(data_disk.create_option).to eq(Fog::ARM::Compute::Models::DiskCreateOptionTypes::Attach)
-    end
-    it 'builds storage profile successfully' do
-      allow(@datadisk).to receive(:check_blob_exist).and_return(false)
-      data_disk = @datadisk.build_storage_profile(112233, 'component_name', 50, '/vhds/test.vhd')
-      expect(data_disk.name).to eq('component_name-datadisk-test.vhd')
-      expect(data_disk.disk_size_gb).to eq(50)
-      expect(data_disk.create_option).to eq(Fog::ARM::Compute::Models::DiskCreateOptionTypes::Empty)
-    end
-  end
 
   describe '#check_blob_exist' do
     it 'Checks if blob exist or not' do
@@ -204,35 +151,15 @@ describe Datadisk do
   describe '#detach' do
     it 'detach datadisk successfully' do
       allow(@datadisk.virtual_machine_lib).to receive(:get).and_return(@vm_response)
-      allow(@datadisk).to receive(:update_vm_properties).and_return(true)
-      expect(@datadisk.detach).to eq(true)
+      allow(@vm_response).to receive(:detach_data_disk).and_return(true)
+      expect(@datadisk.detach).to eq(@device_maps)
     end
     it 'delete datadisk if diskname is storage_account_name-datadisk-storage_account_name1' do
       custom_vm = @vm_response
       custom_vm.data_disks[0].name = 'storage_account_name-datadisk-storage_account_name1'
       allow(@datadisk.virtual_machine_lib).to receive(:get).and_return(custom_vm)
-      allow(@datadisk).to receive(:update_vm_properties).and_return(true)
-      expect(@datadisk.detach).to eq(true)
-    end
-  end
-
-  describe '#update_vm_properties' do
-    it 'update virtual machine properties successfully' do
-      vm = double
-      allow(@datadisk.virtual_machine_lib).to receive(:create_update).and_return(@vm_response)
-      expect(@datadisk.update_vm_properties(vm)).to eq(true)
-    end
-    it 'raises AzureOperationError exception while updating virtual machine properties' do
-      vm = double
-      allow(@datadisk.virtual_machine_lib).to receive(:create_update)
-        .and_raise(MsRestAzure::AzureOperationError.new('Errors'))
-      expect { @datadisk.update_vm_properties(vm) }.to raise_error('no backtrace')
-    end
-    it 'raises exception while updating virtual machine properties' do
-      vm = double
-      allow(@datadisk.virtual_machine_lib).to receive(:create_update)
-        .and_raise(MsRest::HttpOperationError.new('Error'))
-      expect { @datadisk.update_vm_properties(vm) }.to raise_error('no backtrace')
+      allow(custom_vm).to receive(:detach_data_disk).and_return(true)
+      expect(@datadisk.detach).to eq(@device_maps)
     end
   end
 end
