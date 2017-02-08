@@ -17,21 +17,22 @@ class Datadisk
     @rg_name_persistent_storage = rg_name_persistent_storage
     @instance_name = instance_name
     @device_maps = device_maps
-
+    @storage_client = Fog::Storage::AzureRM.new(creds)
     @virtual_machine_lib = AzureCompute::VirtualMachine.new(creds)
     @compute_client = Fog::Compute::AzureRM.new(creds)
-    @storage_client = Fog::Storage::AzureRM.new(creds)
+  end
+
+  def set_storage_account_service(creds)
     storage_access_key = get_storage_access_key
 
     credentials = {
-      tenant_id: creds['tenant_id'],
-      client_id: creds['client_id'],
-      client_secret: creds['client_secret'],
-      subscription_id: creds['subscription_id'],
-      azure_storage_account_name: @storage_account_name,
-      azure_storage_access_key: storage_access_key
+        tenant_id: creds['tenant_id'],
+        client_id: creds['client_id'],
+        client_secret: creds['client_secret'],
+        subscription_id: creds['subscription_id'],
+        azure_storage_account_name: @storage_account_name,
+        azure_storage_access_key: storage_access_key
     }
-
     @storage_client = Fog::Storage::AzureRM.new(credentials)
   end
 
@@ -40,15 +41,15 @@ class Datadisk
       @device_maps.each do |dev_vol|
         slice_size = dev_vol.split(":")[3]
         dev_id = dev_vol.split(":")[4]
+        storage_account_name = dev_vol.split(":")[1]
         component_name = dev_vol.split(":")[2]
         dev_name = dev_id.split('/').last
         OOLog.info("slice_size :#{slice_size}, dev_id: #{dev_id}")
-        vhd_blobname = "https://#{@storage_account_name}.blob.core.windows.net/vhds/#{@storage_account_name}-#{component_name}-datadisk-#{dev_name}.vhd"
-        if check_blob_exist(vhd_blobname)
+        vhd_blobname = "#{storage_account_name}-#{component_name}-datadisk-#{dev_name}"
+        if check_blob_exist("#{vhd_blobname}.vhd")
           OOLog.fatal('disk name exists already')
         else
-          container = 'vhds'
-          return @storage_client.create_page_blob(container, vhd_blobname, slice_size)
+          @storage_client.create_disk(vhd_blobname, slice_size.to_i, options = {})
         end
       end
     rescue MsRestAzure::AzureOperationError => e
@@ -66,9 +67,12 @@ class Datadisk
       slice_size = dev_vol.split(':')[3]
       dev_id = dev_vol.split(':')[4]
       component_name = dev_vol.split(":")[2]
+      dev_name = dev_id.split('/').last
+      data_disk_name = "#{component_name}-datadisk-#{dev_name}"
       OOLog.info("slice_size :#{slice_size}, dev_id: #{dev_id}")
-      vm = @virtual_machine_lib.get(@rg_name_persistent_storage, @instance_name)
 
+      vm = @virtual_machine_lib.get(@rg_name_persistent_storage, @instance_name)
+      storage_account_name = vm.storage_account_name
       #Add a data disk
       flag = false
       (vm.data_disks).each do |disk|
@@ -80,64 +84,11 @@ class Datadisk
         i = i + 1
         next
       end
-      vm.data_disks.push(build_storage_profile(i, component_name, slice_size, dev_id))
-      attach_disk_to_vm(vm)
+      vm.attach_data_disk(data_disk_name, slice_size, storage_account_name)
       OOLog.info("Adding #{dev_id} to the dev list")
       i = i + 1
     end
     dev_id
-  end
-
-  #attach disk to the VM
-  def attach_disk_to_vm(vm)
-    start_time = Time.now.to_i
-    OOLog.info('Attaching Storage disk ....')
-    begin
-      @virtual_machine_lib.create_update(get_hash_from_object(vm))
-    rescue MsRestAzure::AzureOperationError => e
-      OOLog.debug(e.body.inspect)
-      if e.body.to_s =~ /InvalidParameter/ && e.body.to_s =~ /already exists/
-        OOLog.debug('The disk is already attached')
-      else
-        OOLog.fatal(e.body)
-      end
-    rescue Exception => ex
-      OOLog.fatal("Error Attaching Storage disk: #{ex.message}")
-    end
-    end_time = Time.now.to_i
-    duration = end_time - start_time
-    OOLog.info("Storage Disk attached #{duration} seconds")
-    OOLog.info("VM: #{vm.name} UPDATED!!!")
-    true
-  end
-
-  #Get storage account name to use
-  def get_storage_account_name(vm)
-    storage_account_name=((vm.os_disk_vhd_uri).split('.')[0]).split('//')[1]
-    OOLog.info('storage account to use:' + storage_account_name)
-    storage_account_name
-  end
-
-  # build the storage profile object to add a new datadisk
-  def build_storage_profile(disk_no, component_name, slice_size, dev_id)
-    data_disk = Fog::Storage::AzureRM::DataDisk.new
-    dev_name = dev_id.split('/').last
-    data_disk.name = "#{component_name}-datadisk-#{dev_name}"
-    OOLog.info('data_disk:' + data_disk.name)
-    data_disk.lun = disk_no - 1
-    OOLog.info('data_disk lun:' + data_disk.lun.to_s)
-    data_disk.disk_size_gb = slice_size
-    data_disk.vhd_uri = "https://#{@storage_account_name}.blob.core.windows.net/vhds/#{@storage_account_name}-#{component_name}-datadisk-#{dev_name}.vhd"
-    OOLog.info('data_disk uri:'+data_disk.vhd_uri)
-    data_disk.caching = Fog::ARM::Compute::Models::CachingTypes::ReadWrite
-    blob_name = "#{@storage_account_name}-#{component_name}-datadisk-#{dev_name}.vhd"
-    is_new_disk_or_old = check_blob_exist(blob_name)
-    if is_new_disk_or_old
-      data_disk.create_option = Fog::ARM::Compute::Models::DiskCreateOptionTypes::Attach
-    else
-      data_disk.create_option = Fog::ARM::Compute::Models::DiskCreateOptionTypes::Empty
-    end
-    data_disk
   end
 
   def check_blob_exist(blob_name)
@@ -218,7 +169,6 @@ class Datadisk
   end
 
   def detach
-    i = 1
     vm = @virtual_machine_lib.get(@rg_name_persistent_storage, @instance_name)
     @device_maps.each do |dev_vol|
       dev_id = dev_vol.split(':')[4]
@@ -226,40 +176,10 @@ class Datadisk
       dev_name = dev_id.split('/').last
       diskname = "#{component_name}-datadisk-#{dev_name}"
       #Detach a data disk
-      (vm.data_disks).each do |disk|
-        if disk.name == diskname
-          OOLog.info('deleting disk at lun:'+(disk.lun).to_s + " dev:#{dev_name} ")
-          vm.data_disks.delete_at(i-1)
-        end
+      unless vm.nil?
+        OOLog.info('updating VM with these properties' + vm.inspect)
+        vm.detach_data_disk(diskname)
       end
     end
-    unless vm.nil?
-      OOLog.info('updating VM with these properties' + vm.inspect)
-      update_vm_properties(vm)
-    end
-  end
-
-  #detach disk from the VM
-
-  def update_vm_properties(vm)
-    begin
-      start_time = Time.now.to_i
-      my_vm = @virtual_machine_lib.create_update(get_hash_from_object(vm))
-      end_time = Time.now.to_i
-      duration = end_time - start_time
-      OOLog.info("Storage Disk detached #{duration} seconds")
-      OOLog.info("VM: #{my_vm.name} UPDATED!!!")
-      return true
-    rescue MsRestAzure::AzureOperationError => e
-      OOLog.fatal(e.body)
-    rescue Exception => ex
-      OOLog.fatal(ex.message)
-    end
-  end
-
-  def get_hash_from_object(object)
-    hash = {}
-    object.instance_variables.each { |attr| hash[attr.to_s.delete('@')] = object.instance_variable_get(attr) }
-    hash
   end
 end
