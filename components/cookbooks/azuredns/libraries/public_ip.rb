@@ -16,8 +16,8 @@ module AzureDns
 
     def update_dns(node)
       domain_name_label = nil
-      domain_name_label = update_dns_for_os(node).domain_name_label if node['app_name'] == 'os'
-      domain_name_label = update_dns_for_fqdn(node).domain_name_label if node['app_name'] == 'fqdn'
+      domain_name_label = update_dns_for_os node if node['app_name'] == 'os'
+      domain_name_label = update_dns_for_fqdn node if node['app_name'] == 'fqdn'
       domain_name_label = update_dns_for_lb node if node['app_name'] == 'lb'
       domain_name_label
     end
@@ -30,7 +30,7 @@ module AzureDns
         Chef::Log.info('domain name label :' + full_hostname)
         full_hostname = full_hostname.tr('.', '-')
         pip.domain_name_label = (full_hostname.length >= 61) ? full_hostname.slice!(0, 60) : full_hostname
-        @pubip.create_update(@resource_group, public_ip_name, pip)
+        @pubip.create_update(@resource_group, public_ip_name, pip).domain_name_label
       end
     end
 
@@ -58,7 +58,7 @@ module AzureDns
       end
       availability = node['workorder']['box']['ciAttributes']['availability']
       if availability == 'single'
-        dependson = node['workorder']['payLoad']['DependsOn']
+        dependson = node[:workorder][:payLoad][:DependsOn]
         dependson.each do |depends|
           public_ip_name = Utils.get_component_name('publicip', depends['ciId']) if depends['ciAttributes'].key?('instance_name')
           next if short_name_available
@@ -82,7 +82,7 @@ module AzureDns
             pip = @pubip.get(@resource_group, public_ip_name)
             pip.domain_name_label = new_dns_settings.domain_name_label
             ## update the public ip with the new dns settings
-            return @pubip.create_update(@resource_group, public_ip_name, pip)
+            return @pubip.create_update(@resource_group, public_ip_name, pip).domain_name_label
           end
         end
       elsif availability == 'redundant'
@@ -118,7 +118,7 @@ module AzureDns
             pip.domain_name_label = new_dns_settings.domain_name_label
             Chef::Log.info('updating domain label: ' + new_dns_settings.domain_name_label)
             # update the public ip with the new dns settings
-            return @pubip.create_update(@resource_group, public_ip_name, pip)
+            return @pubip.create_update(@resource_group, public_ip_name, pip).domain_name_label
           end
         end
       end

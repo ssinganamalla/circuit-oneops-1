@@ -103,11 +103,11 @@ module AzureDns
         # need to remove the zone name from the end of the record set name.  Azure will auto append the zone to the recordset
         # name internally.
         # dns_name will be the record set created/updated in azure dns
-        dns_name = entry['name'].sub('.' + @dns_attributes['zone'], '')
+        dns_name = entry[:name].sub('.' + @dns_attributes['zone'], '')
         Chef::Log.info("azuredns:set_dns_records.rb - dns_name is: #{dns_name}")
 
         # dns_value will be the A or CNAME records put on the record sets
-        dns_values = entry['values'].is_a?(String) ? Array.new([entry['values']]) : entry['values']
+        dns_values = entry[:values].is_a?(String) ? Array.new([entry[:values]]) : entry[:values]
         Chef::Log.info("azuredns:dns.rb - dns_name is: #{dns_name}")
         Chef::Log.info("azuredns:dns.rb - dns_values are: #{dns_values}")
 
