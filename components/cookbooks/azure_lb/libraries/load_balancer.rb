@@ -57,11 +57,9 @@ module AzureNetwork
         result = @azure_network_service.load_balancers.get(resource_group_name, load_balancer_name)
         end_time = Time.now.to_i
         duration = end_time - start_time
-      rescue MsRestAzure::AzureOperationError => e
+      rescue => e
         OOLog.info("Error getting LoadBalancer '#{load_balancer_name}' in ResourceGroup '#{resource_group_name}' ")
-        OOLog.info("Error Code: #{e.body['error']['code']}")
-        OOLog.info("Error Message: #{e.body['error']['message']}")
-
+        OOLog.info("Error Message: #{e.message}")
         return nil
       end
       OOLog.info("operation took #{duration} seconds")

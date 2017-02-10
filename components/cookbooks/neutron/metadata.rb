@@ -1,4 +1,4 @@
-name             "Neutron"
+name             "neutron"
 description      "Net/Lb Cloud Service"
 version          "0.1"
 maintainer       "OneOps"
