@@ -14,10 +14,10 @@ end
 subscription_details = node[:workorder][:ci][:ciAttributes]
 
 cred_hash = {
-  'tenant_id': subscription_details['tenant_id'],
-  'client_id': subscription_details['client_id'],
-  'client_secret': subscription_details['client_secret'],
-  'subscription_id': subscription_details[:subscription]
+  tenant_id: subscription_details[:tenant_id],
+  client_id: subscription_details[:client_id],
+  client_secret: subscription_details[:client_secret],
+  subscription_id: subscription_details[:subscription]
 }
 
 resource_group_name = subscription_details[:resource_group]
