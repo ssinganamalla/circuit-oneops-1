@@ -14,30 +14,30 @@
 
 require 'fog'
 
-env_name = node.workorder.payLoad["Environment"][0]["ciName"]
-cloud_name = node.workorder.cloud.ciName
-platform_name = node.workorder.box.ciName
-rfcCi = node.workorder.rfcCi
+env_name = node[:workorder][:payLoad]["Environment"][0]["ciName"]
+cloud_name = node[:workorder][:cloud][:ciName]
+platform_name = node[:workorder][:box][:ciName]
+rfcCi = node[:workorder][:rfcCi]
 
 include_recipe "lb::build_load_balancers"
 lb_name = node[:lb_name]
 
 
 cloud_service = nil
-if !node.workorder.services["lb"].nil? &&
-  !node.workorder.services["lb"][cloud_name].nil?
+if !node[:workorder][:services]["lb"].nil? &&
+  !node[:workorder][:services]["lb"][cloud_name].nil?
   
-  cloud_service = node.workorder.services["lb"][cloud_name]
+  cloud_service = node[:workorder][:services]["lb"][cloud_name]
 end
 
 if cloud_service.nil?
-  Chef::Log.error("no cloud service defined. services: "+node.workorder.services.inspect)
+  Chef::Log.error("no cloud service defined. services: "+node[:workorder][:services].inspect)
   exit 1
 end
 
 
 # nsPath":"/xcom/demo/r-aws-1/bom"
-security_group_parts = node.workorder.rfcCi.nsPath.split("/")
+security_group_parts = node[:workorder][:rfcCi][:nsPath].split("/")
 security_group = security_group_parts[3]+'.'+security_group_parts[2]+'.'+security_group_parts[1]
 Chef::Log.info("using security_group:"+security_group)
 

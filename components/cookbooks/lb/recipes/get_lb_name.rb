@@ -12,25 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-cloud_name = node.workorder.cloud.ciName
+cloud_name = node[:workorder][:cloud][:ciName]
 cloud_service = nil
 dns_service = nil
-if !node.workorder.services["lb"].nil? &&
-  !node.workorder.services["lb"][cloud_name].nil?
+if !node[:workorder][:services]["lb"].nil? &&
+  !node[:workorder][:services]["lb"][cloud_name].nil?
   
-  cloud_service = node.workorder.services["lb"][cloud_name]
-  dns_service = node.workorder.services["dns"][cloud_name]
+  cloud_service = node[:workorder][:services]["lb"][cloud_name]
+  dns_service = node[:workorder][:services]["dns"][cloud_name]
 end
 
 if cloud_service.nil? || dns_service.nil?
-  Chef::Log.error("missing cloud service. services: "+node.workorder.services.inspect)
+  Chef::Log.error("missing cloud service. services: "+node[:workorder][:services].inspect)
   exit 1
 end
 
 cloud_dns_id = cloud_service[:ciAttributes][:cloud_dns_id] || 'glb'
-env_name = node.workorder.payLoad.Environment[0]["ciName"]
-asmb_name = node.workorder.payLoad.Assembly[0]["ciName"]
-org_name = node.workorder.payLoad.Organization[0]["ciName"]
+env_name = node[:workorder][:payLoad][:Environment][0]["ciName"]
+asmb_name = node[:workorder][:payLoad][:Assembly][0]["ciName"]
+org_name = node[:workorder][:payLoad][:Organization][0]["ciName"]
 dns_zone = dns_service[:ciAttributes][:zone]
 
 if !cloud_service[:ciAttributes].has_key?("gslb_site_dns_id")
@@ -46,10 +46,10 @@ dc_dns_zone = cloud_service[:ciAttributes][:gslb_site_dns_id]+"."+dns_service[:c
 # remote_dc_dns_zone = cloud_service[:ciAttributes][:gslb_site_dns_id]+"-remote."+dns_service[:ciAttributes][:zone]
 
 ci = {}
-if node.workorder.has_key?("rfcCi")
-  ci = node.workorder.rfcCi
+if node[:workorder].has_key?("rfcCi")
+  ci = node[:workorder][:rfcCi]
 else
-  ci = node.workorder.ci  
+  ci = node[:workorder][:ci]  
 end  
 
 
@@ -92,8 +92,8 @@ node.set["ns_service_type"] = service_type
 node.set["ns_iport_service_type"] = get_ns_service_type(cloud_service[:ciClassName],ci[:ciAttributes][:iprotocol])
 
 
-platform = node.workorder.box
-platform_name = node.workorder.box.ciName
+platform = node[:workorder][:box]
+platform_name = node[:workorder][:box][:ciName]
 
 # env-platform.glb.domain.domain.domain-servicetype_tcp[port]-lb
 # d1-pricing.glb.dev.x.com-HTTP_tcp80-lb
@@ -128,8 +128,8 @@ dc_lb = {
   :service_type => service_type
 }
 
-if node.workorder.cloud.ciAttributes.has_key?("priority") &&
-  node.workorder.cloud.ciAttributes.priority.to_i != 1
+if node[:workorder][:cloud][:ciAttributes].has_key?("priority") &&
+  node[:workorder][:cloud][:ciAttributes][:priority].to_i != 1
   
   dc_lb[:is_secondary] = true
   
@@ -138,8 +138,8 @@ end
 
 # skip deletes if other active clouds for same dc
 has_other_cloud_in_dc_active = false
-if node.workorder.payLoad.has_key?("primaryactiveclouds")
-  node.workorder.payLoad["primaryactiveclouds"].each do |lb_service|
+if node[:workorder][:payLoad].has_key?("primaryactiveclouds")
+  node[:workorder][:payLoad]["primaryactiveclouds"].each do |lb_service|
     if lb_service[:ciAttributes][:gslb_site_dns_id] == cloud_service[:ciAttributes][:gslb_site_dns_id] &&
        lb_service[:nsPath] != cloud_service[:nsPath]
       has_other_cloud_in_dc_active = true
@@ -149,7 +149,7 @@ if node.workorder.payLoad.has_key?("primaryactiveclouds")
 end
 
 
-if node.workorder.rfcCi.rfcAction == "delete" && has_other_cloud_in_dc_active   
+if node[:workorder][:rfcCi][:rfcAction] == "delete" && has_other_cloud_in_dc_active   
   Chef::Log.info("skipping delete of dc vip")
   dcloadbalancers = []
 else
@@ -187,14 +187,14 @@ additional_ports.each do |type, port|
     :vport => port,
     :service_type => service_type    
   }
-  if node.workorder.cloud.ciAttributes.has_key?("priority") &&
-    node.workorder.cloud.ciAttributes.priority.to_i != 1
+  if node[:workorder][:cloud][:ciAttributes].has_key?("priority") &&
+    node[:workorder][:cloud][:ciAttributes][:priority].to_i != 1
     
     dc_lb[:is_secondary] = true
     
   end
     
-  if node.workorder.rfcCi.rfcAction == "delete" &&  
+  if node[:workorder][:rfcCi][:rfcAction] == "delete" &&  
      has_other_cloud_in_dc_active   
     Chef::Log.info("skipping delete of dc vip")
   else
