@@ -19,7 +19,7 @@
 extend Fqdn::Base
 Chef::Resource::RubyBlock.send(:include, Fqdn::Base)
           
-ip = node.workorder.rfcCi.ciAttributes.public_ip
+ip = node[:workorder][:rfcCi][:ciAttributes][:public_ip]
 ptr = `dig +short -x #{ip}`.split("\n")
 
 if ptr.size > 0  

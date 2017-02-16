@@ -52,7 +52,7 @@ zone = dns.zones.find { |z| z.domain == domain_name }
 if zone.nil?
   zone = dns.zones.create(
     :domain => domain_name,
-    :email => node.workorder.payLoad[:Assembly].first[:ciAttributes][:owner] )
+    :email => node[:workorder][:payLoad][:Assembly].first[:ciAttributes][:owner] )
 end
 
 if zone.nil?

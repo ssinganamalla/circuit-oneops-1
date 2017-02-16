@@ -21,9 +21,9 @@
 require 'excon'
    
 # ex) customer_domain: env.asm.org.oneops.com
-customer_domain = node.customer_domain
-if node.customer_domain !~ /^\./
-  customer_domain = '.'+node.customer_domain
+customer_domain = node[:customer_domain]
+if node[:customer_domain] !~ /^\./
+  customer_domain = '.'+node[:customer_domain]
 end
 
 # entries Array of {name:String, values:Array}
@@ -32,21 +32,21 @@ aliases = Array.new
 current_aliases = Array.new
 full_aliases = Array.new
 current_full_aliases = Array.new
-ns = node.ns
+ns = node[:ns]
 
-if node.workorder.rfcCi.ciBaseAttributes.has_key?("aliases")
+if node[:workorder][:rfcCi][:ciBaseAttributes].has_key?("aliases")
   begin
-   aliases = JSON.parse(node.workorder.rfcCi.ciBaseAttributes.aliases)
+   aliases = JSON.parse(node[:workorder][:rfcCi][:ciBaseAttributes][:aliases])
   rescue Exception =>e
-    Chef::Log.info("could not parse aliases json: "+node.workorder.rfcCi.ciBaseAttributes.aliases)
+    Chef::Log.info("could not parse aliases json: "+node[:workorder][:rfcCi][:ciBaseAttributes][:aliases])
   end
 end
 
-if node.workorder.rfcCi.ciAttributes.has_key?("aliases")
+if node[:workorder][:rfcCi][:ciAttributes].has_key?("aliases")
   begin
-    current_aliases = JSON.parse(node.workorder.rfcCi.ciAttributes.aliases)
+    current_aliases = JSON.parse(node[:workorder][:rfcCi][:ciAttributes][:aliases])
   rescue Exception =>e
-    Chef::Log.info("could not parse aliases json: "+node.workorder.rfcCi.ciAttributes.aliases)
+    Chef::Log.info("could not parse aliases json: "+node[:workorder][:rfcCi][:ciAttributes][:aliases])
   end
 end
 
@@ -55,19 +55,19 @@ current_aliases.each do |active_alias|
 end
 
 
-if node.workorder.rfcCi.ciBaseAttributes.has_key?("full_aliases")
+if node[:workorder][:rfcCi][:ciBaseAttributes].has_key?("full_aliases")
   begin
-   full_aliases = JSON.parse(node.workorder.rfcCi.ciBaseAttributes.full_aliases)
+   full_aliases = JSON.parse(node[:workorder][:rfcCi][:ciBaseAttributes][:full_aliases])
   rescue Exception =>e
-    Chef::Log.info("could not parse full_aliases json: "+node.workorder.rfcCi.ciBaseAttributes.full_aliases)
+    Chef::Log.info("could not parse full_aliases json: "+node[:workorder][:rfcCi][:ciBaseAttributes][:full_aliases])
   end
 end
 
-if node.workorder.rfcCi.ciAttributes.has_key?("full_aliases")
+if node[:workorder][:rfcCi][:ciAttributes].has_key?("full_aliases")
   begin
-    current_full_aliases = JSON.parse(node.workorder.rfcCi.ciAttributes.full_aliases)
+    current_full_aliases = JSON.parse(node[:workorder][:rfcCi][:ciAttributes][:full_aliases])
   rescue Exception =>e
-    Chef::Log.info("could not parse full_aliases json: "+node.workorder.rfcCi.ciAttributes.full_aliases)
+    Chef::Log.info("could not parse full_aliases json: "+node[:workorder][:rfcCi][:ciAttributes][:full_aliases])
   end
 end
 
@@ -92,8 +92,8 @@ aliases.each do |a|
     Chef::Log.info("already removed: "+alias_name)
   end
 
-  if node.workorder.cloud.ciAttributes.priority == "1"
-     cloud_name = node.workorder.cloud.ciName
+  if node[:workorder][:cloud][:ciAttributes][:priority] == "1"
+     cloud_name = node[:workorder][:cloud][:ciName]
      service = node[:workorder][:services][:dns][cloud_name][:ciAttributes]
      if service[:cloud_dns_id].nil? || service[:cloud_dns_id].empty?
        Chef::Log.info(" no cloud_dns_id - service: #{service.inspect} ")
@@ -130,7 +130,7 @@ full_aliases.each do |full_alias|
   if !values.nil?
     values.gsub!(/\.$/,"")
     is_removable = false
-    node.deletable_entries.each do |record|
+    node[:deletable_entries].each do |record|
       if record[:name].include?(full_alias) && record[:values].include?(values)
         is_removable = true
       end
@@ -193,7 +193,7 @@ entries.each do |entry|
     # check for server
     record = { :name => dns_name, infoblox_key => dns_values.first }
     Chef::Log.info("record: #{record.inspect}")
-    records = JSON.parse(node.infoblox_conn.request(
+    records = JSON.parse(node[:infoblox_conn].request(
       :method=>:get,
       :path=>"/wapi/v1.0/record:#{delete_type}",
       :body => JSON.dump(record) ).body)
@@ -204,7 +204,7 @@ entries.each do |entry|
     else
       records.each do |r|
         ref = r["_ref"]
-        resp = node.infoblox_conn.request(:method => :delete, :path => "/wapi/v1.0/#{ref}")
+        resp = node[:infoblox_conn].request(:method => :delete, :path => "/wapi/v1.0/#{ref}")
         Chef::Log.info("status: #{resp.status}")
         Chef::Log.info("response: #{resp.inspect}")
       end
