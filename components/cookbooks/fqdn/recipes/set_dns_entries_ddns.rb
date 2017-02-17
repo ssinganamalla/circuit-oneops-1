@@ -48,12 +48,12 @@ include_recipe "fqdn::get_ddns_connection"
 
 cloud_name = node[:workorder][:cloud][:ciName]
 domain_name = node[:workorder][:services][:dns][cloud_name][:ciAttributes][:zone]
-cmd_file = node.ddns_key_file + '-cmd'
-ns = node.ns
+cmd_file = node[:ddns_key_file] + '-cmd'
+ns = node[:ns]
 
 deletable_values = []
 if node.has_key?("deletable_entries")
-  node.deletable_entries.each do |deletable_entry|
+  node[:deletable_entries].each do |deletable_entry|
     if deletable_entry[:values].is_a?(String)
       deletable_values.push(deletable_entry[:values])
     else
@@ -85,7 +85,7 @@ node[:entries].each do |entry|
 
   existing_dns = get_existing_dns(dns_name,ns)
 
-  Chef::Log.info("previous entries: #{node.previous_entries}")
+  Chef::Log.info("previous entries: #{node[:previous_entries]}")
   Chef::Log.info("deletable_values: #{deletable_values}")
   
   
@@ -97,8 +97,8 @@ node[:entries].each do |entry|
          (dns_values.include?(existing_entry) && node[:dns_action] == "delete") ||          
          # value was in previous entry, but not anymore
          (!dns_values.include?(existing_entry) &&
-          node.previous_entries.has_key?(dns_name) &&
-          node.previous_entries[dns_name].include?(existing_entry) && 
+          node[:previous_entries].has_key?(dns_name) &&
+          node[:previous_entries][dns_name].include?(existing_entry) && 
           node[:dns_action] != "delete")
 
         delete_dns(dns_name, existing_entry)
@@ -125,8 +125,8 @@ node[:entries].each do |entry|
     Chef::Log.info("create #{dns_type}: #{dns_name} to #{dns_values.to_s}")
     
     ttl = 60
-    if node.workorder.rfcCi.ciAttributes.has_key?("ttl")
-      ttl = node.workorder.rfcCi.ciAttributes.ttl.to_i
+    if node[:workorder][:rfcCi][:ciAttributes].has_key?("ttl")
+      ttl = node[:workorder][:rfcCi][:ciAttributes][:ttl].to_i
     end
     
     type = get_record_type(dns_name,[dns_value]).upcase
@@ -139,7 +139,7 @@ node[:entries].each do |entry|
 
 end
 
-File.delete(node.ddns_key_file)
+File.delete(node[:ddns_key_file])
 if File.exists?(cmd_file)
   File.delete(cmd_file)  
 end

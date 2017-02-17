@@ -22,13 +22,13 @@ extend Fqdn::Base
 Chef::Resource::RubyBlock.send(:include, Fqdn::Base)
 
 # set in get_fog_connection
-zone = node.fog_zone
-ns = node.ns
+zone = node[:fog_zone]
+ns = node[:ns]
 
 clean_set = []
 deletable_values = []
 if node.has_key?("deletable_entries")
-  node.deletable_entries.each do |deletable_entry|
+  node[:deletable_entries].each do |deletable_entry|
     if deletable_entry[:values].is_a?(String)
       deletable_values.push(deletable_entry[:values])
     else
@@ -68,8 +68,8 @@ node[:entries].each do |entry|
          (dns_values.include?(existing_entry) && node[:dns_action] == "delete") ||
          # value was in previous entry, but not anymore
          (!dns_values.include?(existing_entry) &&
-          node.previous_entries.has_key?(dns_name) &&
-          node.previous_entries[dns_name].include?(existing_entry) &&
+          node[:previous_entries].has_key?(dns_name) &&
+          node[:previous_entries][dns_name].include?(existing_entry) &&
           node[:dns_action] != "delete")
 
         delete_type = get_record_type(dns_name, existing_dns).upcase
@@ -77,7 +77,7 @@ node[:entries].each do |entry|
 
         # rackspace get is by record_id, not name and type like route53
         record = nil
-        if node.dns_service_class =~ /rackspace/
+        if node[:dns_service_class] =~ /rackspace/
           record = zone.records.all.select{ |r| r.name == dns_name.downcase}.first
         else
           record = zone.records.get(dns_name, delete_type)
@@ -87,7 +87,7 @@ node[:entries].each do |entry|
           Chef::Log.error("could not get record: #{dns_name} #{delete_type}")
           exit 1
         end
-        if node.dns_service_class =~ /route53/
+        if node[:dns_service_class] =~ /route53/
           new_values = record.value.clone
           new_values.delete(existing_entry)
           clean_set = new_values
@@ -113,16 +113,16 @@ node[:entries].each do |entry|
 
 
   ttl = 60
-  if node.workorder.rfcCi.ciAttributes.has_key?("ttl")
-    ttl = node.workorder.rfcCi.ciAttributes.ttl.to_i
+  if node[:workorder][:rfcCi][:ciAttributes].has_key?("ttl")
+    ttl = node[:workorder][:rfcCi][:ciAttributes][:ttl].to_i
   end
-  if node.dns_service_class =~ /rackspace/ && ttl < 300
+  if node[:dns_service_class] =~ /rackspace/ && ttl < 300
     Chef::Log.warn("rackspace dns has min ttl of 300 - using that")
     ttl = 300
   end
 
   Chef::Log.info("create #{dns_type}: #{dns_name} to #{dns_values.to_s}") if !dns_values.empty?
-  case node.dns_service_class
+  case node[:dns_service_class]
   when /rackspace/
     # rackspace cannot handle array dns_value
     dns_values.each do |dns_value|

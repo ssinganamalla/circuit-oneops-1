@@ -21,18 +21,18 @@ require 'fog'
 # number retries for backend calls
 max_retry_count = 5
 
-env_name = node.workorder.payLoad["Environment"][0]["ciName"]
-cloud_name = node.workorder.cloud.ciName
+env_name = node[:workorder][:payLoad]["Environment"][0]["ciName"]
+cloud_name = node[:workorder][:cloud][:ciName]
 
 cloud_service = nil
-if !node.workorder.services["lb"].nil? &&
-  !node.workorder.services["lb"][cloud_name].nil?
+if !node[:workorder][:services]["lb"].nil? &&
+  !node[:workorder][:services]["lb"][cloud_name].nil?
 
-  cloud_service = node.workorder.services["lb"][cloud_name]
+  cloud_service = node[:workorder][:services]["lb"][cloud_name]
 end
 
 if cloud_service.nil?
-  Chef::Log.error("no cloud service defined. services: "+node.workorder.services.inspect)
+  Chef::Log.error("no cloud service defined. services: "+node[:workorder][:services].inspect)
   exit 1
 end
 
@@ -41,14 +41,14 @@ lb_name = node[:lb_name]
 
 
 instances = Array.new
-computes = node.workorder.payLoad.DependsOn.select { |d| d[:ciClassName] =~ /Compute/ }
+computes = node[:workorder][:payLoad][:DependsOn].select { |d| d[:ciClassName] =~ /Compute/ }
 computes.each do |compute|
   instance_id = compute["ciAttributes"]["instance_id"]
   instances.push(instance_id)
 end
 
 # nsPath":"/xcom/demo/r-aws-1/bom"
-security_group_parts = node.workorder.rfcCi.nsPath.split("/")
+security_group_parts = node[:workorder][:rfcCi][:nsPath].split("/")
 security_group = security_group_parts[3]+'.'+security_group_parts[2]+'.'+security_group_parts[1]
 Chef::Log.info("security_group: "+security_group)
 
@@ -60,12 +60,12 @@ case cloud_service[:ciClassName].split(".").last.downcase
 when /azure_lb/
 
   include_recipe "azure_lb::add"
-  lb_dns_name = node.azurelb_ip
+  lb_dns_name = node[:azurelb_ip]
 
 when /azuregateway/
 
   include_recipe "azuregateway::add"
-  lb_dns_name = node.azure_ag_ip
+  lb_dns_name = node[:azure_ag_ip]
 
 when /netscaler/
 
@@ -81,34 +81,34 @@ when /netscaler/
   include_recipe "netscaler::add_lbvserver"
   include_recipe "netscaler::add_servicegroup"  
   include_recipe "netscaler::logout"
-  lb_dns_name = node.ns_lbvserver_ip  
+  lb_dns_name = node[:ns_lbvserver_ip]  
 
 when /f5-bigip/
 
   include_recipe "f5-bigip::f5_add_server"
   include_recipe "f5-bigip::f5_add_pool"
   include_recipe "f5-bigip::f5_add_lbvserver"
-  lb_dns_name = node.ns_lbvserver_ip
+  lb_dns_name = node[:ns_lbvserver_ip]
   
 when /rackspace/
 
   include_recipe "rackspace::add_lb"
-  lb_dns_name = node.virtual_ip 
+  lb_dns_name = node[:virtual_ip] 
   
 when /haproxy/
 
   include_recipe "haproxy::add_lb"
-  lb_dns_name = node.lb_dns_name
+  lb_dns_name = node[:lb_dns_name]
 
 when /neutron/
 
   include_recipe "neutron::add_lb"
-  lb_dns_name = node.lb_dns_name
+  lb_dns_name = node[:lb_dns_name]
       
 when /elb/
 
   include_recipe "elb::add_lb"
-  lb_dns_name = node.lb_dns_name
+  lb_dns_name = node[:lb_dns_name]
           
 end
 

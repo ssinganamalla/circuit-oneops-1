@@ -43,7 +43,7 @@ def delete_record (dns_name, dns_value)
               
   end
 
-  records = JSON.parse(node.infoblox_conn.request(:method=>:get,
+  records = JSON.parse(node[:infoblox_conn].request(:method=>:get,
     :path=>"/wapi/v1.0/record:#{delete_type}", :body => JSON.dump(record) ).body)
 
   if records.size == 0
@@ -52,7 +52,7 @@ def delete_record (dns_name, dns_value)
   else
     records.each do |r|
       ref = r["_ref"]
-      resp = node.infoblox_conn.request(:method => :delete, :path => "/wapi/v1.0/#{ref}")
+      resp = node[:infoblox_conn].request(:method => :delete, :path => "/wapi/v1.0/#{ref}")
       Chef::Log.info("status: #{resp.status}")
       if (resp.status.to_i != 200)
         Chef::Log.error("response: #{resp.inspect}")
@@ -88,14 +88,14 @@ end
 def set_is_hijackable_record(dns_name)
   
   # 'txt-' prefix due to cnames and txt records cannot exist for same name in infoblox 
-  record = { :name => 'txt-' + dns_name, :text => "hijackable_from_#{node.customer_domain}" }
+  record = { :name => 'txt-' + dns_name, :text => "hijackable_from_#{node[:customer_domain]}" }
   
-  records = JSON.parse(node.infoblox_conn.request(:method=>:get,
+  records = JSON.parse(node[:infoblox_conn].request(:method=>:get,
     :path=>"/wapi/v1.0/record:txt", :body => JSON.dump(record) ).body)
 
   if records.size == 0
     Chef::Log.info("creating txt record: #{record.inspect}")
-    handle_response node.infoblox_conn.request(
+    handle_response node[:infoblox_conn].request(
       :method => :post,
       :path => "/wapi/v1.0/record:txt",
       :body => JSON.dump(record))
@@ -118,11 +118,11 @@ view_attribute = node[:workorder][:services][:dns][cloud_name][:ciAttributes][:v
 
 Chef::Log.debug("view_attribute: #{view_attribute}")
 
-ns = node.ns
+ns = node[:ns]
 
 deletable_values = []
 if node.has_key?("deletable_entries")
-  node.deletable_entries.each do |deletable_entry|
+  node[:deletable_entries].each do |deletable_entry|
     if deletable_entry[:values].is_a?(String)
       deletable_values.push(deletable_entry[:values])
     else
@@ -154,17 +154,17 @@ node[:entries].each do |entry|
 
   existing_dns = get_existing_dns(dns_name,ns)
 
-  Chef::Log.info("previous entries: #{node.previous_entries}")
+  Chef::Log.info("previous entries: #{node[:previous_entries]}")
   Chef::Log.info("deletable_values: #{deletable_values}")
   
   
   # is_hijackable only set on full_aliases
   if entry.has_key?(:is_hijackable)    
-    if node.workorder.rfcCi.ciAttributes.hijackable_full_aliases == 'true'
+    if node[:workorder][:rfcCi][:ciAttributes][:hijackable_full_aliases] == 'true'
       set_is_hijackable_record(dns_name)
-    elsif node.workorder.rfcCi.ciBaseAttributes.has_key?('hijackable_full_aliases') &&
-      node.workorder.rfcCi.ciBaseAttributes.hijackable_full_aliases == 'true'
-      delete_record('txt-' + dns_name,"hijackable_from_#{node.customer_domain}")
+    elsif node[:workorder][:rfcCi][:ciBaseAttributes].has_key?('hijackable_full_aliases') &&
+      node[:workorder][:rfcCi][:ciBaseAttributes][:hijackable_full_aliases] == 'true'
+      delete_record('txt-' + dns_name,"hijackable_from_#{node[:customer_domain]}")
     end
   end
     
@@ -176,8 +176,8 @@ node[:entries].each do |entry|
          (dns_values.include?(existing_entry) && node[:dns_action] == "delete") ||          
          # value was in previous entry, but not anymore
          (!dns_values.include?(existing_entry) &&
-          node.previous_entries.has_key?(dns_name) &&
-          node.previous_entries[dns_name].include?(existing_entry) && 
+          node[:previous_entries].has_key?(dns_name) &&
+          node[:previous_entries][dns_name].include?(existing_entry) && 
           node[:dns_action] != "delete") ||
          # hijackable cname - remove unknown value
          (entry.has_key?(:is_hijackable) && is_hijackable(dns_name,ns) && !dns_values.include?(existing_entry))
@@ -206,8 +206,8 @@ node[:entries].each do |entry|
     Chef::Log.info("create #{dns_type}: #{dns_name} to #{dns_values.to_s}")
     
     ttl = 60
-    if node.workorder.rfcCi.ciAttributes.has_key?("ttl")
-      ttl = node.workorder.rfcCi.ciAttributes.ttl.to_i
+    if node[:workorder][:rfcCi][:ciAttributes].has_key?("ttl")
+      ttl = node[:workorder][:rfcCi][:ciAttributes][:ttl].to_i
     end
     
     record = {
@@ -229,7 +229,7 @@ node[:entries].each do |entry|
 
     Chef::Log.debug("record: #{record.inspect}")
 
-    handle_response node.infoblox_conn.request(
+    handle_response node[:infoblox_conn].request(
       :method => :post,
       :path => "/wapi/v1.0/record:#{dns_type}",
       :body => JSON.dump(record))
