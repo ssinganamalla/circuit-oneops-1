@@ -18,16 +18,16 @@
 #
 
 lbs = []
-JSON.parse(node[:workorder][:ci][:ciAttributes][:gslb_vnames]).keys.each do |lb_name|
+JSON.parse(node.workorder.ci.ciAttributes.gslb_vnames).keys.each do |lb_name|
   lbs.push({:name => lb_name})
 end
 node.set["loadbalancers"] = lbs
 
-cloud_name = node[:workorder][:cloud][:ciName]
-if !node[:workorder][:services]["gdns"].nil? &&
-   !node[:workorder][:services]["gdns"][cloud_name].nil?
+cloud_name = node.workorder.cloud.ciName
+if !node.workorder.services["gdns"].nil? &&
+   !node.workorder.services["gdns"][cloud_name].nil?
   
-  cloud_service = node[:workorder][:services]["gdns"][cloud_name]
+  cloud_service = node.workorder.services["gdns"][cloud_name]
 else
   Chef::Log.info("no gdns cloud service")
   return

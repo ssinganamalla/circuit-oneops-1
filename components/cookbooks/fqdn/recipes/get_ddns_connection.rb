@@ -28,4 +28,4 @@ auth_content += "};\n"
 filename = '/tmp/ddns' + (0..16).to_a.map{|a| rand(16).to_s(16)}.join
 File.open(filename, 'w') { |file| file.write(auth_content) }  
 node.set["ddns_key_file"] = filename
-node.set["ddns_header"] = "server #{node[:ns]}\nzone #{service[:zone]}\n"
+node.set["ddns_header"] = "server #{node.ns}\nzone #{service[:zone]}\n"

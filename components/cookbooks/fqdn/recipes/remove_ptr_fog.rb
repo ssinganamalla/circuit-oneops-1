@@ -16,7 +16,7 @@
 # Recipe:: remove_ptr_fog
 #
           
-ip = node[:workorder][:rfcCi][:ciAttributes][:public_ip]
+ip = node.workorder.rfcCi.ciAttributes.public_ip
 
 ptr = `dig +short -x #{ip}`.split("\n")
 
@@ -28,7 +28,7 @@ if ptr.size > 0
   record = {:ipv4addr => ip, :ptrdname => name }
   Chef::Log.info("record "+record.inspect)
   
-  records = JSON.parse(node[:infoblox_conn].request(
+  records = JSON.parse(node.infoblox_conn.request(
     :method=>:get, 
     :path=>"/wapi/v1.0/record:ptr", 
     :body => JSON.dump(record) ).body)
@@ -38,7 +38,7 @@ if ptr.size > 0
   else      
     records.each do |r|      
       ref = r["_ref"]
-      resp = node[:infoblox_conn].request(:method => :delete, :path => "/wapi/v1.0/#{ref}")
+      resp = node.infoblox_conn.request(:method => :delete, :path => "/wapi/v1.0/#{ref}")
       Chef::Log.info("rm ptr status: #{resp.status}")
       Chef::Log.info("rm ptr response: #{resp.inspect}")
     end      

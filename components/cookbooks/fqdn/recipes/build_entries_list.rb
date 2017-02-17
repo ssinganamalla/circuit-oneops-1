@@ -25,9 +25,9 @@ cloud_name = node[:workorder][:cloud][:ciName]
 service_attrs = node[:workorder][:services][:dns][cloud_name][:ciAttributes]
   
 # ex) customer_domain: env.asm.org.oneops.com
-customer_domain = node[:customer_domain].downcase
-if node[:customer_domain].downcase !~ /^\./
-  customer_domain = '.'+node[:customer_domain].downcase
+customer_domain = node.customer_domain.downcase
+if node.customer_domain.downcase !~ /^\./
+  customer_domain = '.'+node.customer_domain.downcase
 end
 
 # entries Array of {name:String, values:Array}
@@ -36,14 +36,14 @@ entries = Array.new
 # used to prevent full,short aliases on hostname entries
 is_hostname_entry = false
 
-if !node[:workorder][:payLoad].has_key?(:DependsOn)
+if !node.workorder.payLoad.has_key?(:DependsOn)
   fail_with_fault "missing DependsOn payload"
 end
 
-lbs = node[:workorder][:payLoad][:DependsOn].select { |d| d[:ciClassName] =~ /Lb/ }
+lbs = node.workorder.payLoad.DependsOn.select { |d| d[:ciClassName] =~ /Lb/ }
 
-if node[:workorder][:payLoad].has_key?("Entrypoint")
- ci = node[:workorder][:payLoad][:Entrypoint][0]
+if node.workorder.payLoad.has_key?("Entrypoint")
+ ci = node.workorder.payLoad.Entrypoint[0]
  dns_name = (ci[:ciName] +customer_domain).downcase
 
 elsif lbs.size > 0
@@ -56,13 +56,13 @@ elsif lbs.size > 0
  dns_name = (ci_name + customer_domain).downcase
 
 else
-  os = node[:workorder][:payLoad][:DependsOn].select { |d| d[:ciClassName] =~ /Os/ }
+  os = node.workorder.payLoad.DependsOn.select { |d| d[:ciClassName] =~ /Os/ }
 
   if os.size == 0
 
-    ci_name = node[:workorder][:payLoad][:RealizedAs].first['ciName']
+    ci_name = node.workorder.payLoad.RealizedAs.first['ciName']
     Chef::Log.info("using the manifest/RealizedAs ciName: #{ci_name}")
-    dns_name = (ci_name + "." + node[:workorder][:box][:ciName] + customer_domain).downcase
+    dns_name = (ci_name + "." + node.workorder.box.ciName + customer_domain).downcase
    
   else
 
@@ -84,21 +84,21 @@ end
 
 # short aliases which will use the customer/env domain
 aliases = Array.new
-if node[:workorder][:rfcCi][:ciAttributes].has_key?("aliases") && !is_hostname_entry
+if node.workorder.rfcCi.ciAttributes.has_key?("aliases") && !is_hostname_entry
   begin
-    aliases = JSON.parse(node[:workorder][:rfcCi][:ciAttributes][:aliases])
+    aliases = JSON.parse(node.workorder.rfcCi.ciAttributes.aliases)
   rescue Exception =>e
-    Chef::Log.info("could not parse aliases json: "+node[:workorder][:rfcCi][:ciAttributes][:aliases])
+    Chef::Log.info("could not parse aliases json: "+node.workorder.rfcCi.ciAttributes.aliases)
   end
 end
 
 # full aliases uses as-is, cnamed to the platform entry
 full_aliases = Array.new
-if node[:workorder][:rfcCi][:ciAttributes].has_key?("full_aliases") && !is_hostname_entry
+if node.workorder.rfcCi.ciAttributes.has_key?("full_aliases") && !is_hostname_entry
   begin
-    full_aliases = JSON.parse(node[:workorder][:rfcCi][:ciAttributes][:full_aliases])
+    full_aliases = JSON.parse(node.workorder.rfcCi.ciAttributes.full_aliases)
   rescue Exception =>e
-    Chef::Log.info("could not parse full_aliases json: "+node[:workorder][:rfcCi][:ciAttributes][:full_aliases])
+    Chef::Log.info("could not parse full_aliases json: "+node.workorder.rfcCi.ciAttributes.full_aliases)
   end
 end
 
@@ -108,7 +108,7 @@ if service_attrs[:cloud_dns_id].nil? || service_attrs[:cloud_dns_id].empty?
 end
 
 # values using DependsOn's dns_record attr
-deps = node[:workorder][:payLoad][:DependsOn].select { |d| d[:ciAttributes].has_key? "dns_record" }
+deps = node.workorder.payLoad[:DependsOn].select { |d| d[:ciAttributes].has_key? "dns_record" }
 values = get_dns_values(deps)
 
 # cloud-level add entry - will loop thru and cleanup & create them later
@@ -121,7 +121,7 @@ deletable_entries = [{:name => dns_name, :values => values }]
 aliases.each do |a|
   next if a.empty? 
   # skip if user has a short alias same as platform name
-  next if a == node[:workorder][:box][:ciName]
+  next if a == node.workorder.box.ciName
   alias_name = a + customer_domain
   Chef::Log.info("short alias dns_name: #{alias_name} values: "+dns_name)
   entries.push({:name => alias_name, :values => dns_name })
@@ -133,14 +133,14 @@ end
 primary_platform_dns_name = dns_name.gsub("\."+service_attrs[:cloud_dns_id]+"\."+service_attrs[:zone],"."+service_attrs[:zone]).downcase
 
 
-if node[:workorder][:rfcCi][:ciAttributes].has_key?("ptr_enabled") &&
-  node[:workorder][:rfcCi][:ciAttributes][:ptr_enabled] == "true"
+if node.workorder.rfcCi.ciAttributes.has_key?("ptr_enabled") &&
+  node.workorder.rfcCi.ciAttributes.ptr_enabled == "true"
 
   ptr_value = dns_name
-  if node[:workorder][:rfcCi][:ciAttributes][:ptr_source] == "platform"
+  if node.workorder.rfcCi.ciAttributes.ptr_source == "platform"
     ptr_value = primary_platform_dns_name
     if is_hostname_entry
-      ptr_value = node[:workorder][:box][:ciName]
+      ptr_value = node.workorder.box.ciName
       ptr_value += customer_domain.gsub("\."+service_attrs[:cloud_dns_id]+"\."+service_attrs[:zone],"."+service_attrs[:zone])
     end
   end
@@ -156,7 +156,7 @@ end
 
 
  # platform level
-if node[:workorder][:cloud][:ciAttributes][:priority] != "1"
+if node.workorder.cloud.ciAttributes.priority != "1"
 
   # clear platform if not primary and not gslb
   if !node.has_key?("gslb_domain")
@@ -165,8 +165,8 @@ if node[:workorder][:cloud][:ciAttributes][:priority] != "1"
   
 else
 
-  if node.has_key?("gslb_domain") && !node[:gslb_domain].nil?
-    value_array = [ node[:gslb_domain] ]
+  if node.has_key?("gslb_domain") && !node.gslb_domain.nil?
+    value_array = [ node.gslb_domain ]
   else
     # infoblox doesnt support round-robin cnames so need to get other primary cloud-level ip's
     value_array = []
@@ -185,9 +185,9 @@ else
     end
   end
 
-  if node[:dns_action] != "delete" ||
-    (node[:dns_action] == "delete" && node[:is_last_active_cloud]) ||
-    (node[:dns_action] == "delete" && is_a_record)
+  if node.dns_action != "delete" ||
+    (node.dns_action == "delete" && node.is_last_active_cloud) ||
+    (node.dns_action == "delete" && is_a_record)
 
     entries.push({:name => primary_platform_dns_name, :values => value_array })
     deletable_entries.push({:name => primary_platform_dns_name, :values => value_array })
@@ -199,15 +199,15 @@ else
 
   aliases.each do |a|
     next if a.empty?
-    next if node[:dns_action] == "delete" && !node[:is_last_active_cloud]
+    next if node.dns_action == "delete" && !node.is_last_active_cloud
     # skip if user has a short alias same as platform name
-    next if a == node[:workorder][:box][:ciName]
+    next if a == node.workorder.box.ciName
 
     alias_name = a  + customer_domain
     alias_platform_dns_name = alias_name.gsub("\."+service_attrs[:cloud_dns_id]+"\."+service_attrs[:zone],"."+service_attrs[:zone]).downcase
 
-    if node.has_key?("gslb_domain") && !node[:gslb_domain].nil?
-      primary_platform_dns_name = node[:gslb_domain]
+    if node.has_key?("gslb_domain") && !node.gslb_domain.nil?
+      primary_platform_dns_name = node.gslb_domain
     end
 
     Chef::Log.info("alias dns_name: #{alias_platform_dns_name} values: "+primary_platform_dns_name)
@@ -217,16 +217,16 @@ else
 
   if !full_aliases.nil?
     full_aliases.each do |full|
-      next if node[:dns_action] == "delete" && !node[:is_last_active_cloud]
+      next if node.dns_action == "delete" && !node.is_last_active_cloud
 
       full_value = primary_platform_dns_name
-      if node.has_key?("gslb_domain") && !node[:gslb_domain].nil?
-        full_value = node[:gslb_domain]
+      if node.has_key?("gslb_domain") && !node.gslb_domain.nil?
+        full_value = node.gslb_domain
       end
 
 
-      Chef::Log.info("full alias dns_name: #{full} values: #{full_value} hijackable: #{node[:workorder][:rfcCi][:ciAttributes][:hijackable_full_aliases]}")
-      entries.push({:name => full, :values => full_value, :is_hijackable => node[:workorder][:rfcCi][:ciAttributes][:hijackable_full_aliases] })
+      Chef::Log.info("full alias dns_name: #{full} values: #{full_value} hijackable: #{node.workorder.rfcCi.ciAttributes.hijackable_full_aliases}")
+      entries.push({:name => full, :values => full_value, :is_hijackable => node.workorder.rfcCi.ciAttributes.hijackable_full_aliases })
       deletable_entries.push({:name => full, :values => full_value})
     end
   end
@@ -234,11 +234,11 @@ else
 end
 
 if node.has_key?("dc_entry")
-  if node[:dns_action] != "delete" ||
-    (node[:dns_action] == "delete" && node[:is_last_active_cloud_in_dc])
+  if node.dns_action != "delete" ||
+    (node.dns_action == "delete" && node.is_last_active_cloud_in_dc)
 
-    entries.push(node[:dc_entry])
-    deletable_entries.push(node[:dc_entry])
+    entries.push(node.dc_entry)
+    deletable_entries.push(node.dc_entry)
   end
 end
 
@@ -254,11 +254,11 @@ node.set[:entries] = entries
 
 
 previous_entries = {}
-if node[:workorder][:rfcCi][:ciBaseAttributes].has_key?("entries")
-  previous_entries = JSON.parse(node[:workorder][:rfcCi][:ciBaseAttributes][:entries])
+if node.workorder.rfcCi.ciBaseAttributes.has_key?("entries")
+  previous_entries = JSON.parse(node.workorder.rfcCi.ciBaseAttributes.entries)
 end
-if node[:workorder][:rfcCi][:ciAttributes].has_key?("entries")
-  previous_entries.merge!(JSON.parse(node[:workorder][:rfcCi][:ciAttributes]['entries']))
+if node.workorder.rfcCi.ciAttributes.has_key?("entries")
+  previous_entries.merge!(JSON.parse(node.workorder.rfcCi.ciAttributes['entries']))
 end
 node.set[:previous_entries] = previous_entries
 

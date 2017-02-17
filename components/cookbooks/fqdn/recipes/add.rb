@@ -22,7 +22,7 @@ extend Fqdn::Base
 Chef::Resource::RubyBlock.send(:include, Fqdn::Base)
 
 # cleanup old platform version entries
-if node[:workorder][:box][:ciAttributes][:is_active] == "false"
+if node.workorder.box.ciAttributes.is_active == "false"
   Chef::Log.info("platform is_active false - only performing deletes")
   include_recipe "fqdn::delete"
   return
@@ -43,7 +43,7 @@ if node[:workorder][:services].has_key?("gdns") &&
 end
 
 # getting the environment attributes
-env = node[:workorder][:payLoad]["Environment"][0]["ciAttributes"]
+env = node.workorder.payLoad["Environment"][0]["ciAttributes"]
 Chef::Log.debug("Env is: #{env}")
 
 # skip in active (A/B update)
@@ -57,7 +57,7 @@ include_recipe "fqdn::get_authoritative_nameserver"
 
 # netscaler gslb
 depends_on_lb = false
-node[:workorder][:payLoad]["DependsOn"].each do |dep|
+node.workorder.payLoad["DependsOn"].each do |dep|
   depends_on_lb = true if dep["ciClassName"] =~ /Lb/
 end
 

@@ -17,23 +17,23 @@
 #
           
 # ex) customer_domain: env.asm.org.oneops.com
-customer_domain = node[:customer_domain]
-if node[:customer_domain] !~ /^\./
-  customer_domain = '.'+node[:customer_domain]
+customer_domain = node.customer_domain
+if node.customer_domain !~ /^\./
+  customer_domain = '.'+node.customer_domain
 end
 
 # entries Array of {name:String, values:Array}
 entries = Array.new
 aliases = Array.new
-zone = node[:designate_zone]
-ns = node[:ns]
+zone = node.designate_zone
+ns = node.ns
 
-if node[:workorder][:rfcCi][:ciBaseAttributes].has_key?("aliases")
-  aliases = JSON.parse(node[:workorder][:rfcCi][:ciBaseAttributes][:aliases])
+if node.workorder.rfcCi.ciBaseAttributes.has_key?("aliases")
+  aliases = JSON.parse(node.workorder.rfcCi.ciBaseAttributes.aliases)
 end
 
-if node[:workorder][:rfcCi][:ciAttributes].has_key?("aliases")
-  current_aliases = JSON.parse(node[:workorder][:rfcCi][:ciAttributes][:aliases])
+if node.workorder.rfcCi.ciAttributes.has_key?("aliases")
+  current_aliases = JSON.parse(node.workorder.rfcCi.ciAttributes.aliases)
 end
 
 current_aliases.each do |active_alias|

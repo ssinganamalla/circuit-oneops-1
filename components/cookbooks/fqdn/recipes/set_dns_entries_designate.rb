@@ -29,9 +29,9 @@ def get_record_type (dns_values)
 end
 
 # set in get_designate_connection  
-zone = node[:designate_zone]
-conn = node[:designate_conn]
-ns = node[:ns]
+zone = node.designate_zone
+conn = node.designate_conn
+ns = node.ns
 
 #
 # delete / create dns entries
@@ -85,8 +85,8 @@ node[:entries].each do |entry|
     Chef::Log.info("exists #{dns_type}: #{dns_name} to #{dns_values.to_s}") 
   else
     ttl = 60
-    if node[:workorder][:rfcCi][:ciAttributes].has_key?("ttl")
-      ttl = node[:workorder][:rfcCi][:ciAttributes][:ttl].to_i
+    if node.workorder.rfcCi.ciAttributes.has_key?("ttl")
+      ttl = node.workorder.rfcCi.ciAttributes.ttl.to_i
     end
  
     puts "zone: #{zone.inspect}"
