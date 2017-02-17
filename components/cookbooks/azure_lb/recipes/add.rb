@@ -1,5 +1,5 @@
 # set the proxy if it exists as a cloud var
-Utils.set_proxy(node[:workorder][:payLoad][:OO_CLOUD_VARS])
+Utils.set_proxy(node.workorder.payLoad.OO_CLOUD_VARS)
 
 # get platform resource group and availability set
 include_recipe 'azure::get_platform_rg_and_as'
@@ -9,14 +9,14 @@ include_recipe 'azure::get_platform_rg_and_as'
 def create_publicip(cred_hash, location, resource_group_name)
   pip_svc = AzureNetwork::PublicIp.new(cred_hash)
   pip_svc.location = location
-  public_ip_address = pip_svc.build_public_ip_object(node[:workorder][:rfcCi][:ciId], 'lb_publicip')
+  public_ip_address = pip_svc.build_public_ip_object(node.workorder.rfcCi.ciId, 'lb_publicip')
   pip = pip_svc.create_update(resource_group_name, public_ip_address.name, public_ip_address)
   pip
 end
 
 def get_probes_from_wo
   ci = {}
-  ci = node[:workorder].key?('rfcCi') ? node[:workorder][:rfcCi] : node[:workorder][:ci]
+  ci = node.workorder.key?('rfcCi') ? node.workorder.rfcCi : node.workorder.ci
   listeners = get_listeners()
 
   ecvs = []
@@ -95,7 +95,7 @@ end
 
 def get_listeners
   ci = {}
-  ci = node[:workorder].key?('rfcCi') ? node[:workorder][:rfcCi] : node[:workorder][:ci]
+  ci = node.workorder.key?('rfcCi') ? node.workorder.rfcCi : node.workorder.ci
 
   listeners = []
 
@@ -143,7 +143,7 @@ def get_loadbalancer_rules(subscription_id, resource_group_name, lb_name, env_na
   lb_rules = []
 
   ci = {}
-  ci = node[:workorder].key?('rfcCi') ? node[:workorder][:rfcCi] : node[:workorder][:ci]
+  ci = node.workorder.key?('rfcCi') ? node.workorder.rfcCi : node.workorder.ci
 
   listeners = get_listeners()
 
@@ -181,16 +181,16 @@ def get_loadbalancer_rules(subscription_id, resource_group_name, lb_name, env_na
 end
 
 def get_dc_lb_names
-  platform_name = node[:workorder][:box][:ciName]
-  environment_name = node[:workorder][:payLoad][:Environment][0]['ciName']
-  assembly_name = node[:workorder][:payLoad][:Assembly][0]['ciName']
-  org_name = node[:workorder][:payLoad][:Organization][0]['ciName']
+  platform_name = node.workorder.box.ciName
+  environment_name = node.workorder.payLoad.Environment[0]['ciName']
+  assembly_name = node.workorder.payLoad.Assembly[0]['ciName']
+  org_name = node.workorder.payLoad.Organization[0]['ciName']
 
-  cloud_name = node[:workorder][:cloud][:ciName]
-  dc = node[:workorder][:services]['lb'][cloud_name][:ciAttributes][:location] + '.'
-  dns_zone = node[:workorder][:services]['dns'][cloud_name][:ciAttributes][:zone]
+  cloud_name = node.workorder.cloud.ciName
+  dc = node.workorder.services['lb'][cloud_name][:ciAttributes][:location] + '.'
+  dns_zone = node.workorder.services['dns'][cloud_name][:ciAttributes][:zone]
   dc_dns_zone = dc + dns_zone
-  platform_ciId = node[:workorder][:box][:ciId].to_s
+  platform_ciId = node.workorder.box.ciId.to_s
 
   vnames = {}
   listeners = get_listeners_from_wo
@@ -210,7 +210,7 @@ end
 
 def get_compute_nodes_from_wo
   compute_nodes = []
-  computes = node[:workorder][:payLoad][:DependsOn].select { |d| d[:ciClassName] =~ /Compute/ }
+  computes = node.workorder.payLoad.DependsOn.select { |d| d[:ciClassName] =~ /Compute/ }
   if computes
     # Build computes nodes to load balance
     computes.each do |compute|
@@ -284,10 +284,10 @@ end
 # ==============================================================
 # Variables
 
-cloud_name = node[:workorder][:cloud][:ciName]
+cloud_name = node.workorder.cloud.ciName
 
 lb_service = nil
-lb_service = node[:workorder][:services]['lb'][cloud_name] unless node[:workorder][:services]['lb'].nil?
+lb_service = node.workorder.services['lb'][cloud_name] unless node.workorder.services['lb'].nil?
 
 OOLog.fatal('Missing lb service! Cannot continue.') if lb_service.nil?
 
@@ -306,8 +306,8 @@ elsif lb_service[:ciAttributes][:express_route_enabled] == 'false'
   xpress_route_enabled = false
 end
 
-platform_name = node[:workorder][:box][:ciName]
-environment_name = node[:workorder][:payLoad][:Environment][0]['ciName']
+platform_name = node.workorder.box.ciName
+environment_name = node.workorder.payLoad.Environment[0]['ciName']
 resource_group_name = node['platform-resource-group']
 
 plat_name = platform_name.gsub(/-/, '').downcase
@@ -437,8 +437,7 @@ end # end of main lb IF
 
 lbip = nil
 if xpress_route_enabled
-  puts lb.inspect
-  lbip = lb.frontend_ip_configurations[0].private_ipaddress
+  lbip = lb.frontend_ipconfigurations[0].private_ipaddress
 else
   pip_svc = AzureNetwork::PublicIp.new(creds)
   public_ip = pip_svc.get(resource_group_name, public_ip.name)
