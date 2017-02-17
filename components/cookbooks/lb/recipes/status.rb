@@ -19,16 +19,16 @@
 
 require 'fog'
 
-cloud_name = node[:workorder][:cloud][:ciName]
+cloud_name = node.workorder.cloud.ciName
 cloud_service = nil
-if !node[:workorder][:services]["lb"].nil? &&
-  !node[:workorder][:services]["lb"][cloud_name].nil?
+if !node.workorder.services["lb"].nil? &&
+  !node.workorder.services["lb"][cloud_name].nil?
   
-  cloud_service = node[:workorder][:services]["lb"][cloud_name]
+  cloud_service = node.workorder.services["lb"][cloud_name]
 end
 
 if cloud_service.nil?
-  Chef::Log.error("no cloud service defined. services: "+node[:workorder][:services].inspect)
+  Chef::Log.error("no cloud service defined. services: "+node.workorder.services.inspect)
   exit 1
 end
 
@@ -40,7 +40,7 @@ end
 #include_recipe "lb::get_lb_name"
 
 lbs = []
-JSON.parse(node[:workorder][:ci][:ciAttributes][:vnames]).keys.each do |lb_name|
+JSON.parse(node.workorder.ci.ciAttributes.vnames).keys.each do |lb_name|
   lbs.push({:name => lb_name})
 end
 node.set["loadbalancers"] = lbs

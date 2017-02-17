@@ -12,25 +12,25 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-cloud_name = node[:workorder][:cloud][:ciName]
+cloud_name = node.workorder.cloud.ciName
 cloud_service = nil
 dns_service = nil
-if !node[:workorder][:services]["lb"].nil? &&
-  !node[:workorder][:services]["lb"][cloud_name].nil?
+if !node.workorder.services["lb"].nil? &&
+  !node.workorder.services["lb"][cloud_name].nil?
 
-  cloud_service = node[:workorder][:services]["lb"][cloud_name]
-  dns_service = node[:workorder][:services]["dns"][cloud_name]
+  cloud_service = node.workorder.services["lb"][cloud_name]
+  dns_service = node.workorder.services["dns"][cloud_name]
 end
 
 if cloud_service.nil? || dns_service.nil?
-  Chef::Log.error("missing cloud service. services: "+node[:workorder][:services].inspect)
+  Chef::Log.error("missing cloud service. services: "+node.workorder.services.inspect)
   exit 1
 end
 
 cloud_dns_id = cloud_service[:ciAttributes][:cloud_dns_id]
-env_name = node[:workorder][:payLoad][:Environment][0]["ciName"]
-asmb_name = node[:workorder][:payLoad][:Assembly][0]["ciName"]
-org_name = node[:workorder][:payLoad][:Organization][0]["ciName"]
+env_name = node.workorder.payLoad.Environment[0]["ciName"]
+asmb_name = node.workorder.payLoad.Assembly[0]["ciName"]
+org_name = node.workorder.payLoad.Organization[0]["ciName"]
 dns_zone = dns_service[:ciAttributes][:zone]
 
 dc_dns_zone = ""
@@ -43,10 +43,10 @@ dc_dns_zone += dns_service[:ciAttributes][:zone]
 remote_dc_dns_zone += dns_service[:ciAttributes][:zone]
 
 ci = {}
-if node[:workorder].has_key?("rfcCi")
-  ci = node[:workorder][:rfcCi]
+if node.workorder.has_key?("rfcCi")
+  ci = node.workorder.rfcCi
 else
-  ci = node[:workorder][:ci]
+  ci = node.workorder.ci
 end
 
 
@@ -63,8 +63,8 @@ def get_ns_service_type(cloud_service_type, service_type)
   return service_type.upcase
 end
 
-platform = node[:workorder][:box]
-platform_name = node[:workorder][:box][:ciName]
+platform = node.workorder.box
+platform_name = node.workorder.box.ciName
 
 # env-platform.glb.domain.domain.domain-servicetype_tcp[port]-lb
 # d1-pricing.glb.dev.x.com-HTTP_tcp80-lb
@@ -72,8 +72,8 @@ platform_name = node[:workorder][:box][:ciName]
 
 # skip deletes if other active clouds for same dc
 has_other_cloud_in_dc_active = false
-if node[:workorder][:payLoad].has_key?("primaryactiveclouds")
-  node[:workorder][:payLoad]["primaryactiveclouds"].each do |lb_service|
+if node.workorder.payLoad.has_key?("primaryactiveclouds")
+  node.workorder.payLoad["primaryactiveclouds"].each do |lb_service|
     if lb_service[:ciAttributes][:gslb_site_dns_id] == cloud_service[:ciAttributes][:gslb_site_dns_id] &&
        lb_service[:nsPath] != cloud_service[:nsPath]
       has_other_cloud_in_dc_active = true
@@ -91,7 +91,7 @@ listeners = JSON.parse(ci[:ciAttributes][:listeners])
 
 # map for iport to node port
 override_iport_map = {}
-node[:workorder][:payLoad][:DependsOn].each do |dep|
+node.workorder.payLoad.DependsOn.each do |dep|
   if dep['ciClassName'] =~ /Container/
     JSON.parse(dep['ciAttributes']['node_ports']).each_pair do |internal_port,external_port|
       override_iport_map[internal_port] = external_port
@@ -163,14 +163,14 @@ listeners.each do |l|
     :vprotocol => vprotocol,
     :iprotocol => iprotocol
   }
-  if node[:workorder][:cloud][:ciAttributes].has_key?("priority") &&
-    node[:workorder][:cloud][:ciAttributes][:priority].to_i != 1
+  if node.workorder.cloud.ciAttributes.has_key?("priority") &&
+    node.workorder.cloud.ciAttributes.priority.to_i != 1
 
     dc_lb[:is_secondary] = true
 
   end
 
-  if node[:workorder][:rfcCi][:rfcAction] == "delete" &&
+  if node.workorder.rfcCi.rfcAction == "delete" &&
      has_other_cloud_in_dc_active
     Chef::Log.info("skipping delete of dc vip")
   else
@@ -260,8 +260,8 @@ if cloud_service[:ciClassName] != ("cloud.service.Netscaler" || "cloud.service.F
   node.set["lb_name"] = [env_name, platform_name, ci[:ciId].to_s].join(".")
 end
 
-computes = node[:workorder][:payLoad][:DependsOn].select { |d| d[:ciClassName] =~ /Compute/ }
-containers = node[:workorder][:payLoad][:DependsOn].select { |d| d[:ciClassName] =~ /Container/}
+computes = node.workorder.payLoad.DependsOn.select { |d| d[:ciClassName] =~ /Compute/ }
+containers = node.workorder.payLoad.DependsOn.select { |d| d[:ciClassName] =~ /Container/}
 if containers.size >0
   container = containers.first
   computes = []
