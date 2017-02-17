@@ -43,8 +43,9 @@ if(platform_name.size > 32)
   platform_name = platform_name.slice(0,32) #truncate to 32 chars
   Chef::Log.info("Truncated platform name to 32 chars : #{platform_name}")
 end
-node.set[:vmhostname] = platform_name+'-'+node["workorder"]["cloud"]["ciId"].to_s+'-'+node["workorder"]["rfcCi"]["ciName"].split('-').last.to_i.to_s+'-'+ node["workorder"]["rfcCi"]["ciId"].to_s
-node.set[:full_hostname] = node["vmhostname"]+'.'+node["customer_domain"]
+vmhostname = platform_name+'-'+node["workorder"]["cloud"]["ciId"].to_s+'-'+node["workorder"]["rfcCi"]["ciName"].split('-').last.to_i.to_s+'-'+ node["workorder"]["rfcCi"]["ciId"].to_s
+node.set[:vmhostname] = vmhostname.downcase
+node.set[:full_hostname] = node["vmhostname"]+'.'+node["customer_domain"].downcase
 puts "***RESULT:hostname=#{node.vmhostname}"
 
 
@@ -127,9 +128,8 @@ ruby_block 'ssh config' do
       result = `service sshd restart`.to_i
 
       if result != 0
-        Chef::Log.error("new ssh config is bad. fix the sshd_config attribute. reverting and exiting.")
         `cp /etc/ssh/sshd_config.backup /etc/ssh/sshd_config ; service sshd restart`
-        exit 1
+        exit_with_error "new ssh config is bad. fix the sshd_config attribute. reverting and exiting."
       end
 
     end
