@@ -315,7 +315,6 @@ when "fedora","redhat","centos"
   `grep PERSISTENT_DHCLIENT #{file}`
   if $?.to_i != 0
     Chef::Log.info("DHCLIENT setting ifcfg-eth0 - network restart")
-    include_recipe "os::powercycle"
     `echo "PERSISTENT_DHCLIENT=1" >> #{file} ; /sbin/service network restart`
   else
     Chef::Log.info("DHCLIENT already configured")
