@@ -94,12 +94,12 @@ include_recipe "shared::set_provider"
 
 ruby_block 'lvremove storage' do
   block do
-    unless storage.nil? 
-        
+    unless storage.nil?
+
       platform_name = node.workorder.box.ciName
       Chef::Log.info("provider_class: #{provider_class}")
       execute_command("lvremove -f #{platform_name}")
-      
+
       raid_device = "/dev/md/"+ node.workorder.rfcCi.ciName
       retry_count = 0
       max_retry_count = 3
@@ -120,18 +120,16 @@ ruby_block 'lvremove storage' do
           exit_with_error "raid device still exists after many mdadm --stop #{raid_device}"
         end
       end
-        
-      provider = node.iaas_provider
-      storage_provider = node.storage_provider
-      instance_id = node.workorder.payLoad.ManagedVia[0]["ciAttributes"]["instance_id"]
-      Chef::Log.info("instance_id: "+instance_id)
-      device_maps = storage['ciAttributes']['device_map'].split(" ")
-
+      provider = node[:iaas_provider]
+      storage_provider = node[:storage_provider]
+      instance_id = node[:workorder][:payLoad][:ManagedVia][0][:ciAttributes][:instance_id]
+      Chef::Log.info("instance_id: #{instance_id}")
+      device_maps = storage[:ciAttributes][:device_map].split(" ")
       change_count = 1
       retry_count = 0
       while change_count > 0 && retry_count < max_retry_count
-        change_count = 0    
-     
+        change_count = 0
+
         device_maps.each do |dev_vol|
           vol_id = dev_vol.split(":")[0]
           dev_id = dev_vol.split(":")[1]
@@ -144,8 +142,8 @@ ruby_block 'lvremove storage' do
             Chef::Log.info("out: #{out}")
             if $? != 0 #No more volumes, disk can be detached.
                Chef::Log.info("There is no more volumes on the disk, so disk can be detached.")
-               include_recipe 'azuredatadisk::detach'
-            end              
+               run_context.include_recipe 'azuredatadisk::detach'
+            end
           else
             volume = provider.volumes.get  vol_id
           end
@@ -159,18 +157,18 @@ ruby_block 'lvremove storage' do
             else
               vol_state = volume.state.downcase
             end
-            
+
             if vol_state != "available" && vol_state != "detached"
               if vol_state != "detaching"
                 Chef::Log.info("detaching "+vol_id)
-                
+
                 case provider_class
                 when /openstack/
                   attached_instance_id = ""
                   if volume.attachments.size >0
                      attached_instance_id = volume.attachments[0]["serverId"]
                   end
-                  
+
                   if attached_instance_id != instance_id
                      Chef::Log.info("attached_instance_id: #{attached_instance_id} doesn't match this instance_id: "+instance_id)
                   else
@@ -188,9 +186,9 @@ ruby_block 'lvremove storage' do
                         detach_wait_count += 1
                       end
                    end
-    
+
                   end
-    
+
                 when /rackspace/
     	            compute = provider.servers.get instance_id
                   compute.attachments.each do |a|
@@ -210,7 +208,7 @@ ruby_block 'lvremove storage' do
                      Chef::Log.info("attached_instance_id: #{volume.server_id} doesn't match this instance_id: "+instance_id)
                   end
                 end
-    
+
               end
               change_count += 1
             else
@@ -220,7 +218,7 @@ ruby_block 'lvremove storage' do
             exit_with_error("#{e.message}" +"\n"+ "#{e.backtrace.inspect}")
           end
         end
-    
+
         Chef::Log.info("this pass detach count: #{change_count}")
         if change_count > 0
           retry_sec = retry_count*10
@@ -229,7 +227,7 @@ ruby_block 'lvremove storage' do
         end
         retry_count += 1
       end
-  
+
     end
   end
 end
