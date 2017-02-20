@@ -437,7 +437,7 @@ end # end of main lb IF
 
 lbip = nil
 if xpress_route_enabled
-  lbip = lb.frontend_ipconfigurations[0].private_ipaddress
+  lbip = lb.frontend_ip_configurations[0].private_ipaddress
 else
   pip_svc = AzureNetwork::PublicIp.new(creds)
   public_ip = pip_svc.get(resource_group_name, public_ip.name)
