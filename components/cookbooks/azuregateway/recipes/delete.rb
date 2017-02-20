@@ -53,8 +53,11 @@ begin
   public_ip_name = Utils.get_component_name('ag_publicip', node.workorder.rfcCi.ciId)
 
   application_gateway.delete
+
   public_ip_obj = AzureNetwork::PublicIp.new(cred_hash)
-  public_ip_obj.delete(resource_group_name, public_ip_name)
+  if ag_service[:ciAttributes][:express_route_enabled] == 'false'
+    public_ip_obj.delete(resource_group_name, public_ip_name)
+  end
 rescue => e
   OOLog.fatal("Error deleting Application Gateway: #{e.message}")
 end

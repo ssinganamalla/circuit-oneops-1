@@ -110,8 +110,7 @@ module AzureNetwork
       if public_ip.nil?
         frontend_ipconfig = {
           name: frontend_name,
-          private_ipallocation_method: 'Static',
-          private_ipaddress: '10.1.2.5',
+          private_ipallocation_method: 'Dynamic',
           subnet_id: subnet.id
         }
       else

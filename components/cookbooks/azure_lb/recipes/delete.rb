@@ -1,5 +1,3 @@
-require 'azure_mgmt_network'
-
 # set the proxy if it exists as a cloud var
 Utils.set_proxy(node.workorder.payLoad.OO_CLOUD_VARS)
 
@@ -31,13 +29,11 @@ public_ip_name = Utils.get_component_name('lb_publicip', node.workorder.rfcCi.ci
 lb_svc = AzureNetwork::LoadBalancer.new(credentials)
 begin
   lb_svc.delete(resource_group_name, lb_name)
-rescue => e
-  OOLog.fatal(e.message)
-end
 
-pip_svc = AzureNetwork::PublicIp.new(credentials)
-begin
-  pip_svc.delete(resource_group_name, public_ip_name)
+  pip_svc = AzureNetwork::PublicIp.new(credentials)
+  if lb_service[:ciAttributes][:express_route_enabled] == 'false'
+    pip_svc.delete(resource_group_name, public_ip_name)
+  end
 rescue => e
   OOLog.fatal(e.message)
 end
