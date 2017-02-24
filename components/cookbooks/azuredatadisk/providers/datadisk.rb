@@ -1,33 +1,33 @@
 action :create do
-  creds, storage_account_name, rg_name_persistent_storage, instance_name, device_maps = get_datadisk_params_from_node(@new_resource.node)
-  dd_manager = Datadisk.new(creds, storage_account_name, rg_name_persistent_storage, instance_name, device_maps)
+  creds, rg_name, storage_account_name, rg_name_persistent_storage, instance_name, device_maps = get_datadisk_params_from_node(@new_resource.node)
+  dd_manager = Datadisk.new(creds, rg_name, storage_account_name, rg_name_persistent_storage, instance_name, device_maps)
   dd_manager.set_storage_account_service(creds)
   dd_manager.create
 end
 
 action :destroy do
-  creds, storage_account_name, rg_name_persistent_storage, instance_name, device_maps = get_datadisk_params_from_node(@new_resource.node)
-  dd_manager = Datadisk.new(creds, storage_account_name, rg_name_persistent_storage, instance_name, device_maps)
+  creds, rg_name, storage_account_name, rg_name_persistent_storage, instance_name, device_maps = get_datadisk_params_from_node(@new_resource.node)
+  dd_manager = Datadisk.new(creds, rg_name, storage_account_name, rg_name_persistent_storage, instance_name, device_maps)
   dd_manager.set_storage_account_service(creds)
   dd_manager.delete_datadisk
 end
 
 action :attach do
-  creds, storage_account_name, rg_name_persistent_storage, instance_name, device_maps = get_datadisk_params_from_node(@new_resource.node)
-  dd_manager = Datadisk.new(creds, storage_account_name, rg_name_persistent_storage, instance_name, device_maps)
+  creds, rg_name, storage_account_name, rg_name_persistent_storage, instance_name, device_maps = get_datadisk_params_from_node(@new_resource.node)
+  dd_manager = Datadisk.new(creds, rg_name, storage_account_name, rg_name_persistent_storage, instance_name, device_maps)
   dd_manager.set_storage_account_service(creds)
   dd_manager.attach
 end
 
 action :detach do
-  creds, storage_account_name, rg_name_persistent_storage, instance_name, device_maps = get_datadisk_params_from_node(@new_resource.node)
-  dd_manager = Datadisk.new(creds, storage_account_name, rg_name_persistent_storage, instance_name, device_maps)
+  creds, rg_name, storage_account_name, rg_name_persistent_storage, instance_name, device_maps = get_datadisk_params_from_node(@new_resource.node)
+  dd_manager = Datadisk.new(creds, rg_name, storage_account_name, rg_name_persistent_storage, instance_name, device_maps)
   dd_manager.set_storage_account_service(creds)
   dd_manager.detach
 end
 
 def get_datadisk_params_from_node(node_obj)
-  base_manager = AzureBase::AzureBaseManager.new(node_obj)
+  rg_manager = AzureBase::ResourceGroupManager.new(node_obj)
   @device_maps = nil
 
   if node_obj['device_map'] != nil
@@ -75,5 +75,5 @@ def get_datadisk_params_from_node(node_obj)
       # type code here
   end
 
-  return base_manager.creds, @storage_account_name, @rg_name_persistent_storage, @instance_name, @device_maps
+  return rg_manager.creds, rg_manager.rg_name, @storage_account_name, @rg_name_persistent_storage, @instance_name, @device_maps
 end

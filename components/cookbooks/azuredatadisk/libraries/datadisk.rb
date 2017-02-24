@@ -12,7 +12,8 @@ class Datadisk
                 :storage_client,
                 :virtual_machine_lib
 
-  def initialize(creds, storage_account_name, rg_name_persistent_storage, instance_name, device_maps)
+  def initialize(creds, rg_name, storage_account_name, rg_name_persistent_storage, instance_name, device_maps)
+    @rg_name = rg_name
     @storage_account_name = storage_account_name
     @rg_name_persistent_storage = rg_name_persistent_storage
     @instance_name = instance_name
@@ -71,7 +72,7 @@ class Datadisk
       data_disk_name = "#{component_name}-datadisk-#{dev_name}"
       OOLog.info("slice_size :#{slice_size}, dev_id: #{dev_id}")
 
-      vm = @virtual_machine_lib.get(@rg_name_persistent_storage, @instance_name)
+      vm = @virtual_machine_lib.get(@rg_name, @instance_name)
       storage_account_name = vm.storage_account_name
       #Add a data disk
       flag = false
@@ -169,7 +170,7 @@ class Datadisk
   end
 
   def detach
-    vm = @virtual_machine_lib.get(@rg_name_persistent_storage, @instance_name)
+    vm = @virtual_machine_lib.get(@rg_name, @instance_name)
     @device_maps.each do |dev_vol|
       dev_id = dev_vol.split(':')[4]
       component_name = dev_vol.split(':')[2]
