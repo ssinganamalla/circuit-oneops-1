@@ -23,18 +23,18 @@ include_recipe "lb::build_load_balancers"
 lb_name = node[:lb_name]
 
 
-lb_service_type = node.lb.lb_service_type
-
-exit_with_error "#{lb_service_type} service not found. either add it or change service type" if !node.workorder.services.has_key?("#{lb_service_type}")
-
 cloud_service = nil
-if !node.workorder.services["#{lb_service_type}"].nil? &&
-    !node.workorder.services["#{lb_service_type}"][cloud_name].nil?
-
-  cloud_service = node.workorder.services["#{lb_service_type}"][cloud_name]
+if !node.workorder.services["lb"].nil? &&
+  !node.workorder.services["lb"][cloud_name].nil?
+  
+  cloud_service = node.workorder.services["lb"][cloud_name]
 end
 
-exit_with_error "no cloud service defined or empty" if cloud_service.nil?
+if cloud_service.nil?
+  Chef::Log.error("no cloud service defined. services: "+node.workorder.services.inspect)
+  exit 1
+end
+
 
 # nsPath":"/xcom/demo/r-aws-1/bom"
 security_group_parts = node.workorder.rfcCi.nsPath.split("/")
@@ -46,6 +46,10 @@ case cloud_service[:ciClassName].split(".").last.downcase
 when /azure_lb/
 
     include_recipe "azure_lb::delete"
+
+when /azuregateway/
+
+    include_recipe "azuregateway::delete"
 
 when /f5-bigip/
 
@@ -78,7 +82,7 @@ when /haproxy/
 
   include_recipe "haproxy::delete_lb"
 
-when /octavia/
+when /neutron/
 
-  include_recipe "octavia::delete_lb"
+  include_recipe "neutron::delete_lb"
 end

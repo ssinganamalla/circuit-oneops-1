@@ -1,8 +1,8 @@
-name             'Octavia'
+name             'neutron'
 maintainer       'OneOps'
 maintainer_email 'support@oneops.com'
 license          'Apache License, Version 2.0'
-description      'Installs/Configures Octavia'
+description      'Installs/Configures neutron'
 long_description IO.read(File.join(File.dirname(__FILE__), 'README.md'))
 version          '0.1.0'
 
@@ -52,15 +52,15 @@ attribute 'password',
     :order => 4
   }
 
-attribute 'enabled_networks',
-          :description => "Enabled Networks",
-          :data_type => "array",
-          :default => '[]',
-          :format => {
-              :help => 'Enabled Network List is to find a subnet within to get a VIP for lb',
-              :category => '2.Configuration',
-              :order => 1
-          }
+attribute 'subnet_name',
+  :description => "Subnet Name",
+  :required => "required",
+  :default => "",
+  :format => {
+    :help => 'Subnet Name',
+    :category => '2.Configuration',
+    :order => 1
+  }
 
 attribute 'provider',
   :description => "Provider",
@@ -75,15 +75,4 @@ attribute 'provider',
   }
 }
 
-attribute 'gslb_site_dns_id',
-  :description => "GSLB Site DNS id",
-  :default => '',
-  :format => {
-      :category => '2.Configuration',
-      :order => 3,
-      :help => 'GSLB Site DNS id'
-  }
-
-
-
-recipe "status", "Octavia Status"
+recipe "status", "Neutron Status"
