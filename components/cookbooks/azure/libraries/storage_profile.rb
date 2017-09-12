@@ -4,7 +4,8 @@ module AzureCompute
     attr_accessor :location,
                   :resource_group_name,
                   :size_id,
-                  :ci_id
+                  :ci_id,
+                  :server_name
 
     def initialize(creds)
       @storage_client =
@@ -14,6 +15,31 @@ module AzureCompute
         Fog::Compute::AzureRM.new(creds)
     end
 
+    def get_managed_osdisk_name
+      #this is to get the OS managed disk name
+      begin
+        managed_osdiskname = @server_name.to_s + "managedos" + Utils.abbreviate_location(@location)
+        managed_osdiskname
+        rescue => e
+        OOLog.fatal("Error setting up managed os disk name: #{managed_osdiskname}: #{e.message}")
+      end
+
+    end
+
+    def get_managed_osdisk_type
+      #this is to get the Managed disk type based on compute type
+
+      if @size_id =~ /(.*)GS(.*)|(.*)DS(.*)/
+        sku_name = "PremiumLRS"
+      else
+        sku_name = "Standard_LRS"
+      end
+
+      OOLog.info("VM size: #{@size_id}")
+      OOLog.info("Storage Type: #{sku_name}")
+      sku_name
+    end
+=begin
     def get_storage_account_name
       # create storage account if needed
       begin
@@ -170,5 +196,6 @@ module AzureCompute
       end
       response
     end
+=end
   end
 end
