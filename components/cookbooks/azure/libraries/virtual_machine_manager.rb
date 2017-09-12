@@ -55,6 +55,8 @@ module AzureCompute
       @storage_profile.location = @location
       @storage_profile.size_id = @size_id
       @storage_profile.ci_id = @platform_ci_id
+      @storage_profile.server_name = @server_name
+
 
       @network_profile.location = @location
       @network_profile.rg_name = @resource_group_name
@@ -74,13 +76,15 @@ module AzureCompute
       vm_hash[:vm_size] = @size_id
 
       # storage profile values
-      vm_hash[:storage_account_name] = @storage_profile.get_storage_account_name
+      vm_hash[:storage_account_name] = @storage_profile.get_managed_osdisk_name
       vm_hash[:publisher] = @image_id[0]
       vm_hash[:offer] = @image_id[1]
       vm_hash[:sku] = @image_id[2]
       vm_hash[:version] = @image_id[3]
 
       vm_hash[:platform] = @platform
+
+      vm_hash[:managed_disk_storage_type] = @storage_profile.get_managed_osdisk_type
 
       # os profile values
       vm_hash[:username] = @initial_user
@@ -93,7 +97,7 @@ module AzureCompute
       end
 
       # network profile values
-      vm_hash[:network_interface_card_id] = @network_profile.build_network_profile(@compute_service[:express_route_enabled],
+      vm_hash[:network_interface_card_ids] = @network_profile.build_network_profile(@compute_service[:express_route_enabled],
                                                                                    @compute_service[:resource_group],
                                                                                    @compute_service[:network],
                                                                                    @compute_service[:network_address].strip,
