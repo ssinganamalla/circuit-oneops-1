@@ -1,3 +1,6 @@
+require 'fog/azurerm'
+require 'chef'
+
 module AzureCompute
   class StorageProfile
 
@@ -9,18 +12,21 @@ module AzureCompute
 
     def initialize(creds)
       @storage_client =
-        Fog::Storage::AzureRM.new(creds)
+          Fog::Storage::AzureRM.new(creds)
 
       @compute_client =
-        Fog::Compute::AzureRM.new(creds)
+          Fog::Compute::AzureRM.new(creds)
     end
 
     def get_managed_osdisk_name
       #this is to get the OS managed disk name
+
       begin
+
         managed_osdiskname = @server_name.to_s + "managedos" + Utils.abbreviate_location(@location)
         managed_osdiskname
-        rescue => e
+
+      rescue => e
         OOLog.fatal("Error setting up managed os disk name: #{managed_osdiskname}: #{e.message}")
       end
 
@@ -38,6 +44,28 @@ module AzureCompute
       OOLog.info("VM size: #{@size_id}")
       OOLog.info("Storage Type: #{sku_name}")
       sku_name
+    end
+
+    def delete_managed_osdisk(resource_group_name, managed_diskname)
+      # this is to delete managed OS disk
+
+      OOLog.info("Deleting OS Managed Disk '#{managed_diskname}' in '#{resource_group_name}' ")
+
+      begin
+        OOLog.info("Deleting OS Managed Disk '#{managed_diskname}' in '#{resource_group_name}' ")
+        start_time = Time.now.to_i
+
+        os_managed_disk = @compute_client.managed_disks.get(resource_group_name, managed_diskname)
+        os_managed_disk.destroy
+        end_time = Time.now.to_i
+        duration = end_time - start_time
+
+      rescue MsRestAzure::AzureOperationError => e
+        OOLog.fatal("Error deleting Managed Disk '#{managed_diskname}' in ResourceGroup '#{resource_group_name}'. Exception: #{e.body}")
+      rescue => e
+        OOLog.fatal("Error deleting Managed Disk  '#{managed_diskname}' in ResourceGroup '#{resource_group_name}'. Exception: #{e.message}")
+      end
+      OOLog.info(" Deleting OS Managed disk operation took #{duration} seconds")
     end
 =begin
     def get_storage_account_name
