@@ -130,8 +130,10 @@ module AzureCompute
           exit 1
         else
           # retrive the vhd name from the VM properties and use it to delete the associated VHD in the later step.
-          vhd_uri = vm.os_disk_vhd_uri
-          storage_account = vm.storage_account_name
+        #  vhd_uri = vm.os_disk_vhd_uri
+
+          os_disk = vm.os_disk_name
+
           datadisk_uri = nil
           datadisk_uri = vm.data_disks[0].vhd_uri if vm.data_disks.count > 0
           OOLog.info("Deleting Azure VM: '#{@server_name}'")
@@ -148,7 +150,8 @@ module AzureCompute
         duration = end_time - start_time
         OOLog.info("Deleting VM took #{duration} seconds")
       end
-      return storage_account, vhd_uri, datadisk_uri
+
+      return os_disk, datadisk_uri
     end
   end
 end

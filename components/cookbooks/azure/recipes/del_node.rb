@@ -9,9 +9,20 @@ include_recipe 'azure::get_platform_rg_and_as'
 
 # delete the VM
 vm_client = AzureCompute::VirtualMachineManager.new(node)
-storage_account, vhd_uri, datadisk_uri = vm_client.delete_vm
-node.set['storage_account'] = storage_account
-node.set['vhd_uri'] = vhd_uri
+#storage_account, vhd_uri, datadisk_uri = vm_client.delete_vm
+os_disk, datadisk_uri = vm_client.delete_vm
+
+
+# TODO when managed data disk service re written we need to revist the storage_account name
+node.set['storage_account'] = os_disk # storage account means here managed os disk
+
+# to delete the managed OS disk
+
+vm_storage_profile = AzureCompute::StorageProfile.new(vm_client.creds)
+vm_storage_profile.delete_managed_osdisk(vm_client.resource_group_name, os_disk)
+
+
+#node.set['vhd_uri'] = vhd_uri
 node.set['datadisk_uri'] = datadisk_uri
 
 # delete the NIC. A NIC is created with each VM, so we will delete the NIC when we delete the VM
@@ -26,9 +37,11 @@ if vm_client.ip_type == 'public'
   public_ip.delete(vm_client.resource_group_name, public_ip_name)
 end
 
+
 # delete the blobs
 # Delete both Page blob(vhd) and Block Blob from the storage account
 # Delete both osdisk and datadisk blob
-include_recipe 'azure::del_blobs'
+#include_recipe 'azure::del_blobs'
+# need to taken care enhancing the Fogcode for managed data disk
 
 OOLog.info('Exiting azure delete compute')
