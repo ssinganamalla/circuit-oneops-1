@@ -8,7 +8,11 @@ Chef::Log.info("Wiring OneOps ElasticSearch ci attributes : #{ci.to_json}")
 # === VERSION AND LOCATION
 #
 node.set[:elasticsearch][:version]       = ci["version"]
-node.set[:elasticsearch][:repository]    = "elasticsearch/#{node.elasticsearch[:version]}"
+if node[:elasticsearch][:version].start_with?('2') || node[:elasticsearch][:version].start_with?('1')
+  node.set[:elasticsearch][:repository]    = "elasticsearch/#{node.elasticsearch[:version]}"
+else
+  node.set[:elasticsearch][:repository]    = "elasticsearch"
+end
 node.set[:elasticsearch][:filename]      = "elasticsearch-#{node.elasticsearch[:version]}.tar.gz"
 
 # Search for component mirror
@@ -18,7 +22,12 @@ base_url = comp_mirrors[0] if !comp_mirrors.empty?
 # Search for cloud mirror if no mirrors added
 if base_url.empty?
   cloud_mirrors = JSON.parse(node[:workorder][:services][:mirror][@cloud_name][:ciAttributes][:mirrors])
-  base_url = cloud_mirrors[@cookbook_name] if !cloud_mirrors.nil? && cloud_mirrors.has_key?(@cookbook_name)
+
+  if node[:elasticsearch][:version].start_with?('2') || node[:elasticsearch][:version].start_with?('1')
+    base_url = cloud_mirrors[@cookbook_name] if !cloud_mirrors.nil? && cloud_mirrors.has_key?(@cookbook_name)
+  else
+    base_url = "http://gec-maven-nexus.walmart.com/nexus/content/repositories/elastic-downloads"
+  end
 end
 
 # If URL not found in cloud/comp mirrors use defaults
@@ -34,7 +43,8 @@ end
 #
 node.set[:elasticsearch][:cluster][:name] = ci["cluster_name"]
 
-if node[:elasticsearch][:version].start_with?("2")
+# for 2.x and higher
+if !node[:elasticsearch][:version].start_with?("1")
   node.set[:elasticsearch][:network][:host] = node[:ipaddress]
 end
 
