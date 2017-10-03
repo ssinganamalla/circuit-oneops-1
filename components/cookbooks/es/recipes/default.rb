@@ -70,10 +70,12 @@ end
 # Create service
 #
 init_path = ""
-if node[:elasticsearch][:version].start_with?("2")
+if node[:elasticsearch][:version].start_with?("1")
+  init_path = "elasticsearch.init.erb"
+elsif node[:elasticsearch][:version].start_with?("2")
   init_path = "elasticsearch-2.init.erb"
 else
-  init_path = "elasticsearch.init.erb"
+  init_path = "elasticsearch-5plus.init.erb"
 end  
 
 template "/etc/init.d/elasticsearch" do
@@ -254,14 +256,26 @@ end
 #include_recipe "es::config_directives"
 
 # Create ES logging file
-#
-template "logging.yml" do
-  path   "#{node.elasticsearch[:path][:conf]}/logging.yml"
-  source "logging.yml.erb"
-  owner node.elasticsearch[:user] and group node.elasticsearch[:user] and mode 0755
+# ES 5.x   enforces strict use of log4j2.properties
 
-  notifies :restart, 'service[elasticsearch]' unless node.elasticsearch[:skip_restart]
+if version.start_with?("2") || version.start_with?("1")
+  template "logging.yml" do
+    path   "#{node.elasticsearch[:path][:conf]}/logging.yml"
+    source "logging.yml.erb"
+    owner node.elasticsearch[:user] and group node.elasticsearch[:user] and mode 0755
+
+    notifies :restart, 'service[elasticsearch]' unless node.elasticsearch[:skip_restart]
+  end
+else
+  template "log4j2.properties" do
+    path   "#{node.elasticsearch[:path][:conf]}/log4j2.properties"
+    source "log4j2.properties.erb"
+    owner node.elasticsearch[:user] and group node.elasticsearch[:user] and mode 0755
+
+    notifies :restart, 'service[elasticsearch]' unless node.elasticsearch[:skip_restart]
+  end
 end
+
 
 # restart the service unless its update
 service 'elasticsearch' do
