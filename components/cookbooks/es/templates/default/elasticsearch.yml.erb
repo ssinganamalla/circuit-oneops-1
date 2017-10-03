@@ -38,13 +38,20 @@
 <%= print_value 'node.max_local_storage_nodes' -%>
 
 #################################### Index ####################################
-
+# For 5.x, these properties are no longer part of index
+<%- if node.elasticsearch[:version].start_with?("2") || node.elasticsearch[:version].start_with?("1") -%>
 <%= print_value 'index.number_of_shards' -%>
 <%= print_value 'index.number_of_replicas' -%>
 <%= print_value 'index.auto_expand_replicas' -%>
 <%= print_value 'index.mapper.dynamic' -%>
+<%- end -%>
+
 <%= print_value 'action.auto_create_index' -%>
+
+<%- if node.elasticsearch[:version].start_with?("2") || node.elasticsearch[:version].start_with?("1") -%>
 <%= print_value 'action.disable_delete_all_indices' -%>
+<%- end -%>
+
 <%= print_value 'action.destructive_requires_name' -%>
 
 #################################### Paths ####################################
@@ -62,7 +69,13 @@
 
 ################################### Memory ####################################
 
+<%- if node.elasticsearch[:version].start_with?("2") || node.elasticsearch[:version].start_with?("1") -%>
 <%= print_value 'bootstrap.mlockall' -%>
+<%- else -%>
+<%= print_value 'bootstrap.memory_lock' -%>
+<%- end -%>
+
+
 
 ############################## Network And HTTP ###############################
 
@@ -100,10 +113,17 @@
 <%= print_value 'discovery.zen.minimum_master_nodes' -%>
 <%= print_value 'discovery.zen.ping.unicast.hosts' -%>
 <%= print_value 'discovery.zen.ping.timeout' -%>
+
+<%- if node.elasticsearch[:version].start_with?("2") || node.elasticsearch[:version].start_with?("1") -%>
 <%= print_value 'discovery.zen.ping.multicast.enabled' -%>
+<%- end -%>
+
+#setting cloud.node.auto_attributes in a non aws env gives exception in es 5.x
+<%- if node.elasticsearch[:cloud] && !node.elasticsearch[:cloud][:aws][:access_key].nil? -%>
+<%= print_value 'cloud.node.auto_attributes' -%>
+<%- end -%>
 
 <%- if node.elasticsearch[:cloud] -%>
-<%= print_value 'cloud.node.auto_attributes' -%>
 <%= print_value 'cloud.aws.access_key' -%>
 <%= print_value 'cloud.aws.secret_key' -%>
 <%= print_value 'cloud.aws.region' -%>

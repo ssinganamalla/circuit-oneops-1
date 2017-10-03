@@ -25,6 +25,8 @@ module Extensions
     #
     #    <%= print_value 'bar', separator: '=' -%>
     #
+    # 3. Does not print the key, separator if the value is nil? or ""
+    #
     # Do not forget to use an ending dash (`-`) in the ERB block, so lines for missing values are not printed!
     #
     def print_value key, value=nil, options={}
@@ -36,7 +38,10 @@ module Extensions
       existing_value = node.elasticsearch[key.tr('.', '_')] if existing_value.nil? and not node.elasticsearch[key.tr('.', '_')].nil?
       existing_value = key.to_s.split('.').inject(node.elasticsearch) { |result, attr| result[attr] } rescue nil if existing_value.nil?
 
-      [key, separator, existing_value.to_s, "\n"].join unless existing_value.nil?
+      if existing_value.nil? || existing_value == ""
+        return
+      end
+      [key, separator, existing_value.to_s, "\n"].join
     end
 
   end

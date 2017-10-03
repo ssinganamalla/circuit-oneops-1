@@ -60,10 +60,12 @@ CONFIG
 #
 # By default, the `mlockall` is set to true: on weak machines and Vagrant boxes,
 # you may want to disable it.
+# For ES 5.x, use memory_lock instead of mlockall
 #
 default.elasticsearch[:bootstrap][:mlockall] = ( node.memory.total.to_i >= 1048576 ? true : false )
+default.elasticsearch[:bootstrap][:memory_lock] = ( node.memory.total.to_i >= 1048576 ? true : false )
 default.elasticsearch[:limits][:memlock] = 'unlimited'
-default.elasticsearch[:limits][:nofile]  = '64000'
+default.elasticsearch[:limits][:nofile]  = node[:elasticsearch][:version].start_with?("2") ? '64000' : '65536'
 
 # === PRODUCTION SETTINGS
 #
