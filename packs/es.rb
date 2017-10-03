@@ -47,6 +47,16 @@ resource 'volume',
                          'options' => ''
          }
 
+resource 'os',
+         :attributes => {
+             :sysctl => '{"vm.max_map_count":"262144"}'
+         }
+
+resource 'master-os',
+         :attributes => {
+             :sysctl => '{"vm.max_map_count":"262144"}'
+         }
+
 resource 'java',
          :cookbook => 'oneops.1.java',
          :design => true,
