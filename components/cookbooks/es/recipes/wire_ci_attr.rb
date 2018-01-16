@@ -23,12 +23,15 @@ base_url = comp_mirrors[0] if !comp_mirrors.empty?
 if base_url.empty?
   cloud_mirrors = JSON.parse(node[:workorder][:services][:mirror][@cloud_name][:ciAttributes][:mirrors])
 
+  Chef::Log.info("cloud mirrors : #{cloud_mirrors.to_json}")
   if node[:elasticsearch][:version].start_with?('2') || node[:elasticsearch][:version].start_with?('1')
     base_url = cloud_mirrors[@cookbook_name] if !cloud_mirrors.nil? && cloud_mirrors.has_key?(@cookbook_name)
   else
-    base_url = "http://gec-maven-nexus.walmart.com/nexus/content/repositories/elastic-downloads"
+    base_url = cloud_mirrors["es_latest"] if !cloud_mirrors.nil? && cloud_mirrors.has_key?("es_latest")  #for 5.x
   end
 end
+
+Chef::Log.info("base_url : #{base_url}")
 
 # If URL not found in cloud/comp mirrors use defaults
 if base_url.empty? 
